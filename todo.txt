@@ -1,3 +1,5 @@
+# global TODO
+
 SOCS TODO:
 
 WIP:
@@ -27,6 +29,7 @@ WIP:
 			-all (every request callable)
 		COMMENTS
 			-all (every request callable)
+
 
 DONE:
 	CONFIG
