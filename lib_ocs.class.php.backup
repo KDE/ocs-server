@@ -1,0 +1,4347 @@
+<?php
+
+include_once("gfx3/main.class.php");
+
+/**
+* OCS Lib
+*
+* @author Frank Karlitschek 
+* @copyright 2010 Frank Karlitschek karlitschek@kde.org 
+* 
+* This library is free software; you can redistribute it and/or
+* modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+* License as published by the Free Software Foundation; either 
+* version 3 of the License, or any later version.
+* 
+* This library is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+* GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+*	
+* You should have received a copy of the GNU Lesser General Public 
+* License along with this library.	If not, see <http://www.gnu.org/licenses/>.
+* 
+
+
+Documentation:
+This libary is an example implementation of the Open Collaboration Services Specification you find here:
+http://www.freedesktop.org/wiki/Specifications/open-collaboration-services
+
+This libary is using PHP 5.x and MySQL 5.x
+The OCS Libary is just an example implementation you can use as a reference or inspiration. 
+It will probalby not run on your server unmodified because your datasources are different. But you should 
+get an impression how the REST interface works and how you can make your data available in an OCS compatible way
+
+You need a database table to track the API traffic.
+The table should look like this:
+
+CREATE TABLE IF NOT EXISTS `apitraffic` (
+	`ip` bigint(20) NOT NULL,
+	`count` int(11) NOT NULL,
+	PRIMARY KEY (`ip`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+
+You need a file names "v1" in the htdocs of your webserver to handle the API requests. It could look like this:
+
+	require_once('some of your libaries');
+	require_once('ocs/lib_ocs.php');
+	H01_OCS::handle();
+
+You have to force apache to parse this file even it it doesn´t end with .php
+
+	<Files v1>
+		 ForceType application/x-httpd-php
+	</Files>
+
+
+*/
+
+/**
+ * Class to handle open collaboration services API requests
+ *
+ */
+class H01_OCS {
+	
+	/**
+	* define some configuration variables
+	**/
+	public static $whitelist = array('127.0.0.2');
+	public static $maxpersonsearchpage = 200;
+	public static $maxrequests = 1000; // per 15min from one IP
+	public static $maxrequestsauthenticated = 2000;
+	public static $main = "ciao";
+
+	/**
+	 * reads input date from get/post/cookies and converts the date to a special data-type
+	 *
+	 * @param variable $key
+	 * @param variable-type $type Supported variable types are: raw, text, int, float, array
+	 * @param priority $getpriority
+	 * @param default	$default
+	 * @return data
+	 */
+	public static function readdata($key,$type='raw',$getpriority=false,$default='') {
+		if($getpriority) {
+			if(isset($_GET[$key])) {
+				$data=$_GET[$key];
+			} elseif(isset($_POST[$key])) {
+				$data=$_POST[$key];
+			} else {
+				if($default=='') {
+					if(($type=='int') or ($type=='float')) $data=0; else $data='';
+				} else {
+					$data=$default;
+				}
+			}
+		} else {
+			if(isset($_POST[$key])) {
+				$data=$_POST[$key];
+			} elseif(isset($_GET[$key])) {
+				$data=$_GET[$key];
+			} elseif(isset($_COOKIE[$key])) {
+				$data=$_COOKIE[$key];
+			} else {
+				if($default=='') {
+					if(($type=='int') or ($type=='float')) $data=0; else $data='';
+				} else {
+					$data=$default;
+				}
+			}
+		}
+
+		if($type=='raw') return($data);
+		elseif($type=='text') return(addslashes(strip_tags($data)));
+		elseif($type=='int')	{ $data = (int) $data; return($data); }
+		elseif($type=='float')	{ $data = (float) $data; return($data); }
+		elseif($type=='array')	{ $data = $data; return($data); }
+		else { H01_UTIL::exception('readdata: internal error:'.$type); return(false); }
+	}
+
+
+	/**
+		main function to handle the REST request
+	**/
+	public static function handle() {
+
+		// overwrite the 404 error page returncode
+		header("HTTP/1.0 200 OK");
+
+
+		if($_SERVER['REQUEST_METHOD'] == 'GET') {
+			 $method='get';
+		}elseif($_SERVER['REQUEST_METHOD'] == 'PUT') {
+			 $method='put';
+			 parse_str(file_get_contents("php://input"),$put_vars);
+		}elseif($_SERVER['REQUEST_METHOD'] == 'POST') {
+			 $method='post';
+		}else{
+			echo('internal server error: method not supported');
+			exit();
+		}
+
+		// preprocess url
+		$url=$_SERVER['PHP_SELF'];
+		if(substr($url,(strlen($url)-1))<>'/') $url.='/';
+		$ex=explode('/',$url);
+
+		// eventhandler
+		if(count($ex)==2){
+			H01_GUI::showtemplate('apidoc');
+
+
+		// CONFIG
+		// apiconfig - GET - CONFIG
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='config') and (count($ex)==4)){
+			$format=H01_OCS::readdata('format','text');
+			H01_OCS::apiconfig($format);
+
+
+		// PERSON
+		// personsearch - GET - PERSON/DATA				parameter als url parameter
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='person') and (strtolower($ex[3])=='data') and (count($ex)==5)){
+			$format=H01_OCS::readdata('format','text');
+			$username=H01_OCS::readdata('name','text');
+			$country=H01_OCS::readdata('country','text');
+			$city=H01_OCS::readdata('city','text');
+			$description=H01_OCS::readdata('description','text');
+			$pc=H01_OCS::readdata('pc','text');
+			$software=H01_OCS::readdata('software','text');
+			$longitude=H01_OCS::readdata('longitude','float');
+			$latitude=H01_OCS::readdata('latitude','float');
+			$distance=H01_OCS::readdata('distance','float');
+
+			$attributeapp=H01_OCS::readdata('attributeapp','text');
+			$attributekey=H01_OCS::readdata('attributekey','text');
+			$attributevalue=H01_OCS::readdata('attributevalue','text');
+
+			$page=H01_OCS::readdata('page','int');
+			$pagesize=H01_OCS::readdata('pagesize','int');
+			if($pagesize<1 or $pagesize>100) $pagesize=10;
+			H01_OCS::personsearch($format,$username,$country,$city,$description,$pc,$software,$longitude,$latitude,$distance,$attributeapp,$attributekey,$attributevalue,$page,$pagesize);
+
+		// personget - GET - PERSON/DATA/frank		 
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='person') and	(strtolower($ex[3])=='data') and (count($ex)==6)){
+			$format=H01_OCS::readdata('format','text');
+			$username=addslashes($ex[4]);
+			H01_OCS::personget($format,$username);
+		
+		// personaccountbalance - GET - PERSON/BALANCE		 
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='person') and	(strtolower($ex[3])=='balance') and (count($ex)==5)){
+			$format=H01_OCS::readdata('format','text');
+			H01_OCS::persongetbalance($format);
+
+		// personget - GET - PERSON/SELF		 
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='person') and	(strtolower($ex[3])=='self') and (count($ex)==5)){
+			$format=H01_OCS::readdata('format','text');
+			H01_OCS::personget($format);
+
+		// personedit - POST - PERSON/SELF		 
+		}elseif(($method=='post') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='person') and	(strtolower($ex[3])=='self') and (count($ex)==5)){
+			$format=H01_OCS::readdata('format','text');
+			$longitude=H01_OCS::readdata('longitude','float');
+			$latitude=H01_OCS::readdata('latitude','float');
+			$country=H01_OCS::readdata('country','text');
+			$city=H01_OCS::readdata('city','text');
+			H01_OCS::personedit($format,$longitude,$latitude,$country,$city);
+
+		// personcheck - POST - PERSON/CHECK		 
+		}elseif(($method=='post') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='person') and	(strtolower($ex[3])=='check') and (count($ex)==5)){
+			$format=H01_OCS::readdata('format','text');
+			$login=H01_OCS::readdata('login','text');
+			$passwd=H01_OCS::readdata('password','text');
+			H01_OCS::personcheck($format,$login,$passwd);
+
+		// personadd - POST - PERSON/ADD		 
+		}elseif(($method=='post') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='person') and	(strtolower($ex[3])=='add') and (count($ex)==5)){
+			$format=H01_OCS::readdata('format','text');
+			$login=H01_OCS::readdata('login','text');
+			$passwd=H01_OCS::readdata('password','text');
+			$firstname=H01_OCS::readdata('firstname','text');
+			$lastname=H01_OCS::readdata('lastname','text');
+			$email=H01_OCS::readdata('email','text');
+			H01_OCS::personadd($format,$login,$passwd,$firstname,$lastname,$email);
+
+		// persongetea - GET - PERSON/ATTRIBUTES/frank/parley/key		 
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='person') and	(strtolower($ex[3])=='attributes') and (count($ex)==8)){
+			$format=H01_OCS::readdata('format','text');
+			$username= addslashes($ex[4]);
+			$app= addslashes($ex[5]);
+			$key= addslashes($ex[6]);
+			H01_OCS::personattributeget($format,$username,$app,$key);
+
+		// persongetea - GET - PERSON/ATTRIBUTES/frank/parley 
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='person') and	(strtolower($ex[3])=='attributes') and (count($ex)==7)){
+			$format=H01_OCS::readdata('format','text');
+			$username= addslashes($ex[4]);
+			$app= addslashes($ex[5]);
+			$key= '';
+			H01_OCS::personattributeget($format,$username,$app,$key);
+
+		// persongetea - GET - PERSON/ATTRIBUTES/frank
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='person') and	(strtolower($ex[3])=='attributes') and (count($ex)==6)){
+			$format=H01_OCS::readdata('format','text');
+			$username= addslashes($ex[4]);
+			$app= '';
+			$key= '';
+			H01_OCS::personattributeget($format,$username,$app,$key);
+
+		// persondeleteea - POST - PERSON/DELETEATTRIBUTE/app/key
+		}elseif(($method=='post') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='person') and	(strtolower($ex[3])=='deleteattribute') and (count($ex)==7)){
+			$format=H01_OCS::readdata('format','text');
+			$app= addslashes($ex[4]);
+			$key= addslashes($ex[5]);
+			H01_OCS::personattributedelete($format,$app,$key);
+
+		// personsetea - POST - PERSON/SETATTRIBUTE/app/key
+		}elseif(($method=='post') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='person') and	(strtolower($ex[3])=='setattribute') and (count($ex)==7)){
+			$format=H01_OCS::readdata('format','text');
+			$app= addslashes($ex[4]);
+			$key= addslashes($ex[5]);
+			$value=H01_OCS::readdata('value','text');
+			H01_OCS::personattributeset($format,$app,$key,$value);
+
+
+
+		// FAN
+		//fanget - GET - FAN/DATA/"contentid" - page,pagesize als url parameter, 
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='fan') and (strtolower($ex[3])=='data') and (count($ex)==6)){						 
+			$format=H01_OCS::readdata('format','text');
+			$content=addslashes($ex[4]);
+			$page=H01_OCS::readdata('page','int');
+			$pagesize=H01_OCS::readdata('pagesize','int');
+			if($pagesize<1 or $pagesize>100) $pagesize=10;
+			H01_OCS::fanget($format,$content,$page,$pagesize);
+
+		//isfan - GET - FAN/STATUS/"contentid"	
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='fan') and (strtolower($ex[3])=='status') and (count($ex)==6)){
+			$format=H01_OCS::readdata('format','text');
+			$content=addslashes($ex[4]);
+			H01_OCS::isfan($format,$content);
+		
+		//addfan - POST - FAN/ADD/"contentid"	
+		}elseif(($method=='post') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='fan') and (strtolower($ex[3])=='add') and (count($ex)==6)){
+			$format=H01_OCS::readdata('format','text');
+			$content=addslashes($ex[4]);
+			H01_OCS::addfan($format,$content);
+		
+		//removefan - POST - FAN/REMOVE/"contentid"	
+		}elseif(($method=='post') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='fan') and (strtolower($ex[3])=='remove') and (count($ex)==6)){
+			$format=H01_OCS::readdata('format','text');
+			$content=addslashes($ex[4]);
+			H01_OCS::removefan($format,$content);
+
+
+
+		// FRIEND
+		//friendget - GET - FRIEND/DATA/"personid" - page,pagesize als url parameter, 
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='friend') and (strtolower($ex[3])=='data') and (count($ex)==6)){						 
+			$format=H01_OCS::readdata('format','text');
+			$username=addslashes($ex[4]);
+			$page=H01_OCS::readdata('page','int');
+			$pagesize=H01_OCS::readdata('pagesize','int');
+			if($pagesize<1 or $pagesize>100) $pagesize=10;
+			H01_OCS::friendget($format,$username,$page,$pagesize);
+
+		//friendinvite - POST - FRIEND/INVITE/"username"/	 message als url parameter	
+		}elseif(($method=='post') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='friend') and (strtolower($ex[3])=='invite') and (count($ex)==6)){					 
+			$format=H01_OCS::readdata('format','text');
+			$username=addslashes($ex[4]);
+			$message=H01_OCS::readdata('message','text');
+			H01_OCS::friendinvite($format,$username,$message);
+
+		//friendapprove - POST - FRIEND/APPROVE/"username"/		 
+		}elseif(($method=='post') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='friend') and (strtolower($ex[3])=='approve') and (count($ex)==6)){					 
+			$format=H01_OCS::readdata('format','text');
+			$username=addslashes($ex[4]);
+			H01_OCS::friendapprove($format,$username);
+
+		//frienddecline - POST - FRIEND/DECLINE/"username"/		 
+		}elseif(($method=='post') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='friend') and (strtolower($ex[3])=='decline') and (count($ex)==6)){					 
+			$format=H01_OCS::readdata('format','text');
+			$username=addslashes($ex[4]);
+			H01_OCS::frienddecline($format,$username);
+	
+		//friendcancel - POST - FRIEND/CANCEL/"username"/		 
+		}elseif(($method=='post') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='friend') and (strtolower($ex[3])=='cancel') and (count($ex)==6)){					 
+			$format=H01_OCS::readdata('format','text');
+			$username=addslashes($ex[4]);
+			H01_OCS::friendcancel($format,$username);
+ 
+		//friendcancelinvitation - POST - FRIEND/CANCEL/"username"/		 
+		}elseif(($method=='post') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='friend') and (strtolower($ex[3])=='cancelinvitation') and (count($ex)==6)){					 
+			$format=H01_OCS::readdata('format','text');
+			$username=addslashes($ex[4]);
+			H01_OCS::friendcancelinvitation($format,$username);
+
+		//friendsentinvitations - GET - FRIEND/SENTINVITATIONS/		 
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='friend') and (strtolower($ex[3])=='sentinvitations') and (count($ex)==5)){					 
+			$format=H01_OCS::readdata('format','text');
+			$page=H01_OCS::readdata('page','int');
+			$pagesize=H01_OCS::readdata('pagesize','int');
+			if($pagesize<1 or $pagesize>100) $pagesize=10;
+			H01_OCS::friendsentinvitations($format,$page,$pagesize);
+	
+		//friendreceivedinvitations - GET - FRIEND/RECEIVEDINVITATIONS/		 
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='friend') and (strtolower($ex[3])=='receivedinvitations') and (count($ex)==5)){					 
+			$format=H01_OCS::readdata('format','text');
+			$page=H01_OCS::readdata('page','int');
+			$pagesize=H01_OCS::readdata('pagesize','int');
+			if($pagesize<1 or $pagesize>100) $pagesize=10;
+			H01_OCS::friendreceivedinvitations($format,$page,$pagesize);
+
+
+		// MESSAGE
+		//messagefolders	- GET - MESSAGE/		
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='message') and (count($ex)==4)){				 
+			$format=H01_OCS::readdata('format','text');
+			H01_OCS::messagefolders($format);
+
+		//messagelist - GET - MESSAGE/"folderid"/	 page,pagesize als url parameter
+		}elseif((($method=='get') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='message') and (count($ex)==5)){						
+			$format=H01_OCS::readdata('format','text');
+			$folder= (int) addslashes($ex[3]);
+			$filter=H01_OCS::readdata('status','text');
+			$page=H01_OCS::readdata('page','int');
+			$pagesize=H01_OCS::readdata('pagesize','int');
+			if($pagesize<1 or $pagesize>100) $pagesize=10;
+			H01_OCS::messagelist($format,$folder,$page,$pagesize,$filter);
+
+		// messagesend	- POST - MESSAGE/"folderid"
+		}elseif(($method=='post') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='message') and (strtolower($ex[3])=='2') and (count($ex)==5)){					
+			$format=H01_OCS::readdata('format','text');
+			$touser=H01_OCS::readdata('to','text');
+			$subject=H01_OCS::readdata('subject','text');
+			$message=H01_OCS::readdata('message','text');
+			H01_OCS::messagesend($format,$touser,$subject,$message);
+
+		// messageget - GET - MESSAGE/"folderid"/"messageid"	 
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='message') and (count($ex)==6)){					
+			$format=H01_OCS::readdata('format','text');
+			$folder= (int) addslashes($ex[3]);
+			$message= (int) addslashes($ex[4]);
+			H01_OCS::messageget($format,$folder,$message);
+
+
+		// ACTIVITY
+		// activityget - GET ACTIVITY	 page,pagesize als urlparameter
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1')and (strtolower($ex[2])=='activity') and (count($ex)==4)){					 
+			$format=H01_OCS::readdata('format','text');
+			$page=H01_OCS::readdata('page','int');
+			$pagesize=H01_OCS::readdata('pagesize','int');
+			if($pagesize<1 or $pagesize>100) $pagesize=10;
+			H01_OCS::activityget($format,$page,$pagesize);
+
+		// activityput - POST ACTIVITY
+		}elseif(($method=='post') and (strtolower($ex[1])=='v1')and (strtolower($ex[2])=='activity')	and (count($ex)==4)){						
+			$format=H01_OCS::readdata('format','text');
+			$message=H01_OCS::readdata('message','text');
+			H01_OCS::activityput($format,$message);
+
+
+		// CONTENT
+		// contentcategories - GET - CONTENT/CATEGORIES
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='categories') and (count($ex)==5)){			
+			$format=H01_OCS::readdata('format','text');
+			H01_OCS::contentcategories($format);
+		
+		// contentlicense - GET - CONTENT/LICENSES
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='licenses') and (count($ex)==5)){			
+			$format=H01_OCS::readdata('format','text');
+			H01_OCS::contentlicenses($format);
+
+		// contentdistributions - GET - CONTENT/DISTRIBUTIONS
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='distributions') and (count($ex)==5)){
+			$format=H01_OCS::readdata('format','text');
+			H01_OCS::contentdistributions($format);
+
+		// contentdependencies - GET - CONTENT/DISTRIBUTIONS
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='dependencies') and (count($ex)==5)){
+			$format=H01_OCS::readdata('format','text');
+			H01_OCS::contentdependencies($format);
+
+		// contenthomepage - GET - CONTENT/HOMPAGES
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='homepages') and (count($ex)==5)){
+			$format=H01_OCS::readdata('format','text');
+			H01_OCS::contenthomepages($format);
+
+
+		// contentlist - GET - CONTENT/DATA - category,search,sort,page,pagesize
+		}elseif((($method=='get') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='data') and (count($ex)==5)){						
+			$format=H01_OCS::readdata('format','text');
+			$contents=H01_OCS::readdata('categories','text');
+			$searchstr=H01_OCS::readdata('search','text');
+			$searchuser=H01_OCS::readdata('user','text');
+			$external=H01_OCS::readdata('external','text');
+			$distribution=H01_OCS::readdata('distribution','text');
+			$license=H01_OCS::readdata('license','text');
+			$sortmode=H01_OCS::readdata('sortmode','text');
+			$page=H01_OCS::readdata('page','int');
+			$pagesize=H01_OCS::readdata('pagesize','int');
+			if($pagesize<1 or $pagesize>100) $pagesize=10;
+			H01_OCS::contentlist($format,$contents,$searchstr,$searchuser,$external,$distribution,$license,$sortmode,$page,$pagesize);
+
+		// contentget - GET - CONTENT/DATA/"id"
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='data') and (count($ex)==6)){						 
+			$format=H01_OCS::readdata('format','text');
+			$id= addslashes($ex[4]);
+			H01_OCS::contentget($format,$id);
+
+		// contentdownload - GET - CONTENT/DOWNLOAD/"id"/"item"
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='download') and (count($ex)==7)){						 
+			$format=H01_OCS::readdata('format','text');
+			$id= addslashes($ex[4]);
+			$item= addslashes($ex[5]);
+			H01_OCS::contentdownload($format,$id,$item);
+
+		// getrecommendations - GET - CONTENT/RECOMMENDATIONS/"id"
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='recommendations') and (count($ex)==6)){
+			$format=H01_OCS::readdata('format','text');
+			$id= addslashes($ex[4]);
+			$page=H01_OCS::readdata('page','int');
+			$pagesize=H01_OCS::readdata('pagesize','int');
+			H01_OCS::contentrecommendations($id,$format,$page,$pagesize);
+
+
+		// contentvote - POST - CONTENT/VOTE/"id" - good/bad als url parameter 
+		}elseif((($method=='post') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='vote') and (count($ex)==6)){						
+			$format=H01_OCS::readdata('format','text');
+			$id= addslashes($ex[4]);
+			$vote=H01_OCS::readdata('vote','text');
+			H01_OCS::contentvote($format,$id,$vote);
+
+		// contentpreviewdelete - POST - CONTENT/DELETEPREVIEW/"contentid"/"previewid"	 
+		}elseif((($method=='post') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='deletepreview') and (count($ex)==7)){						
+			$format=H01_OCS::readdata('format','text');
+			$contentid= addslashes($ex[4]);
+			$previewid= addslashes($ex[5]);
+			H01_OCS::contentpreviewdelete($format,$contentid,$previewid);
+
+		// contentpreviewupload - POST - CONTENT/UPLOADPREVIEW/"contentid"/"previewid"	 
+		}elseif((($method=='post') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='uploadpreview') and (count($ex)==7)){						
+			$format=H01_OCS::readdata('format','text');
+			$contentid= addslashes($ex[4]);
+			$previewid= addslashes($ex[5]);
+			H01_OCS::contentpreviewupload($format,$contentid,$previewid);
+
+		// contentdownloaddelete - POST - CONTENT/DELETEDOWNLOAD/"contentid"	 
+		}elseif((($method=='post') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='deletedownload') and (count($ex)==6)){
+			$format=H01_OCS::readdata('format','text');
+			$contentid= addslashes($ex[4]);
+			H01_OCS::contentdownloaddelete($format,$contentid);
+
+		// contentdownloadupload - POST - CONTENT/UPLOADDOWNLOAD/"contentid"	 
+		}elseif((($method=='post') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='uploaddownload') and (count($ex)==6)){
+			$format=H01_OCS::readdata('format','text');
+			$contentid= addslashes($ex[4]);
+			H01_OCS::contentdownloadupload($format,$contentid);
+
+		// contentadd - POST - CONTENT/ADD
+		}elseif((($method=='post') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='add') and (count($ex)==5)){						
+			$format=H01_OCS::readdata('format','text');
+			H01_OCS::contentadd($format);
+
+		// contentedit - POST - CONTENT/EDIT/"contentid"	 
+		}elseif((($method=='post') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='edit') and (count($ex)==6)){						
+			$format=H01_OCS::readdata('format','text');
+			$contentid= addslashes($ex[4]);
+			H01_OCS::contentedit($format,$contentid);
+
+		// contentdelete - POST - CONTENT/DELETE/"contentid"	 
+		}elseif((($method=='post') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='delete') and (count($ex)==6)){						
+			$format=H01_OCS::readdata('format','text');
+			$contentid= addslashes($ex[4]);
+			H01_OCS::contentdelete($format,$contentid);
+		
+
+
+		// KNOWLEDGEBASE
+
+		// knowledgebaseget - GET - KNOWLEDGEBASE/DATA/"id"
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='knowledgebase') and (strtolower($ex[3])=='data') and (count($ex)==6)){
+			$format=H01_OCS::readdata('format','text');
+			$id= addslashes($ex[4]);
+			H01_OCS::knowledgebaseget($format,$id);
+
+		// knowledgebaselist - GET - KNOWLEDGEBASE/DATA - category,search,sort,page,pagesize
+		}elseif((($method=='get') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='knowledgebase') and (strtolower($ex[3])=='data') and (count($ex)==5)){
+			$format=H01_OCS::readdata('format','text');
+			$contents=H01_OCS::readdata('content','text');
+			$searchstr=H01_OCS::readdata('search','text');
+			$sortmode=H01_OCS::readdata('sortmode','text');
+			$page=H01_OCS::readdata('page','int');
+			$pagesize=H01_OCS::readdata('pagesize','int');
+			if($pagesize<1 or $pagesize>100) $pagesize=10;
+			H01_OCS::knowledgebaselist($format,$contents,$searchstr,$sortmode,$page,$pagesize);
+
+
+		// EVENT
+
+		// eventget - GET - EVENT/DATA/"id"
+		}elseif(($method=='get') and (strtolower($ex[1])=='v1') and (strtolower($ex[2])=='event') and (strtolower($ex[3])=='data') and (count($ex)==6)){
+			$format=H01_OCS::readdata('format','text');
+			$id= addslashes($ex[4]);
+			H01_OCS::eventget($format,$id);
+
+		// eventlist - GET - EVENT/DATA - type,country,startat,search,sort,page,pagesize
+		}elseif((($method=='get') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='event') and (strtolower($ex[3])=='data') and (count($ex)==5)){
+			$format=H01_OCS::readdata('format','text');
+			$type=H01_OCS::readdata('type','int');
+			$country=H01_OCS::readdata('country','text');
+			$startat=H01_OCS::readdata('startat','text');
+			$searchstr=H01_OCS::readdata('search','text');
+			$sortmode=H01_OCS::readdata('sortmode','text');
+			$page=H01_OCS::readdata('page','int');
+			$pagesize=H01_OCS::readdata('pagesize','int');
+			if($pagesize<1 or $pagesize>100) $pagesize=10;
+			H01_OCS::eventlist($format,$type,$country,$startat,$searchstr,$sortmode,$page,$pagesize);
+
+
+		// eventadd - POST - EVENT/ADD
+		}elseif((($method=='post') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='event') and (strtolower($ex[3])=='add') and (count($ex)==5)){
+			$format=H01_OCS::readdata('format','text');
+			H01_OCS::eventadd($format);
+
+		// eventedit - POST - EVENT/EDIT/"eventid"	 
+		}elseif((($method=='post') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='event') and (strtolower($ex[3])=='edit') and (count($ex)==6)){
+			$format=H01_OCS::readdata('format','text');
+			$eventid= addslashes($ex[4]);
+			H01_OCS::eventedit($format,$eventid);
+
+		// eventdelete - POST - EVENT/DELETE/"eventid"	 
+		}elseif((($method=='post') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='event') and (strtolower($ex[3])=='delete') and (count($ex)==6)){
+			$format=H01_OCS::readdata('format','text');
+			$eventid= addslashes($ex[4]);
+			H01_OCS::eventdelete($format,$eventid);
+
+
+		// COMMENTS
+
+		// commentsget - GET - COMMENTS/ADD	 
+		}elseif((($method=='get') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='comments') and (strtolower($ex[3])=='data') and (count($ex)==8)){
+			$type= addslashes($ex[4]);
+			$content= addslashes($ex[5]);
+			$content2= addslashes($ex[6]);
+			$format=H01_OCS::readdata('format','text');
+			$page=H01_OCS::readdata('page','int');
+			$pagesize=H01_OCS::readdata('pagesize','int');
+			if($pagesize<1 or $pagesize>2000) $pagesize=10;
+			H01_OCS::commentsget($format,$type,$content,$content2,$page,$pagesize);
+
+		// commentsadd - POST - COMMENTS/ADD	 
+		}elseif((($method=='post') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='comments') and (strtolower($ex[3])=='add') and (count($ex)==5)){
+			$format=H01_OCS::readdata('format','text');
+			$type=H01_OCS::readdata('type','int');
+			$content=H01_OCS::readdata('content','int');
+			$content2=H01_OCS::readdata('content2','int');
+			$parent=H01_OCS::readdata('parent','int');
+			$subject=H01_OCS::readdata('subject','text');
+			$message=H01_OCS::readdata('message','text');
+			H01_OCS::commentsadd($format,$type,$content,$content2,$parent,$subject,$message);
+
+		// commentvote - GET - COMMENTS/vote	 
+		}elseif((($method=='post') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='comments') and (strtolower($ex[3])=='vote') and (count($ex)==6)){
+			$id = addslashes($ex[4]);
+			$score = H01_OCS::readdata('score','int');
+			$format=H01_OCS::readdata('format','text');
+			H01_OCS::commentvote($format,$id,$score);
+
+
+		// FORUM
+
+		}elseif(strtolower($ex[1])=='v1' and strtolower($ex[2])=='forum'){
+			$functioncall=strtolower($ex[3]);
+			$subcall=strtolower($ex[4]);
+			$argumentcount=count($ex);
+			// list - GET - FORUM/LIST
+			if($method=='get' and $functioncall=='list' and $argumentcount==4){
+				$format=H01_OCS::readdata('format','text');
+				$page=H01_OCS::readdata('page','int');
+				$pagesize=H01_OCS::readdata('pagesize','int');
+			// TOPIC section
+			}elseif($functioncall=='topic'){
+				// list - GET - FORUM/TOPIC/LIST
+				if($method=='get' and $subcall=='list' and $argumentcount==10){
+					$format=H01_OCS::readdata('format','text');
+					$forum=H01_OCS::readdata('forum','int');
+					$search=H01_OCS::readdata('search','text');
+					$description=H01_OCS::readdata('description','text');
+					$sortmode=H01_OCS::readdata('sortmode','text');
+					$page=H01_OCS::readdata('page','int');
+					$pagesize=H01_OCS::readdata('pagesize','int');
+				// add - POST - FORUM/TOPIC/ADD
+				}elseif($method=='post' and $subcall=='add' and $argumentcount==5){
+					$format=H01_OCS::readdata('format','text');
+					$subject=H01_OCS::readdata('subject','text');
+					$content=H01_OCS::readdata('content','text');
+					$forum=H01_OCS::readdata('forum','int');
+				}
+			}
+
+		// BUILDSERVICE
+
+
+		}elseif(strtolower($ex[1])=='v1' and strtolower($ex[2])=='buildservice' and count($ex)>4){
+			$functioncall=strtolower($ex[4]);
+			$argumentcount=count($ex);
+			// PROJECT section
+			if(strtolower($ex[3]=='project')){
+				// create - POST - PROJECT/CREATE
+				if($method=='post' and $functioncall=='create' and $argumentcount==6){
+					$format=H01_OCS::readdata('format','text');
+					$name=H01_OCS::readdata('name','text');
+					$version=H01_OCS::readdata('version','text');
+					$license=H01_OCS::readdata('license','text');
+					$url=H01_OCS::readdata('url','text');
+					$developers=H01_OCS::readdata('developers','text');
+					$summary=H01_OCS::readdata('summary','text');
+					$description=H01_OCS::readdata('description','text');
+					$requirements=H01_OCS::readdata('requirements','text');
+					$specfile=H01_OCS::readdata('specfile','text');
+					
+					H01_OCS::buildserviceprojectcreate($format,$name,$version,$license,$url,$developers,$summary,$description,$requirements,$specfile);
+				// get - GET - PROJECT/GET/"project"
+				}elseif($method=='get' and $functioncall=='get' and $argumentcount==7){
+					$format=H01_OCS::readdata('format','text');
+					$projectID=$ex[5];
+					
+					H01_OCS::buildserviceprojectget($format,$projectID);
+				// delete - POST - PROJECT/DELETE/"project"
+				}elseif($method=='post' and $functioncall=='delete' and $argumentcount==7){
+					$format=H01_OCS::readdata('format','text');
+					$projectID=$ex[5];
+					
+					H01_OCS::buildserviceprojectdelete($format,$projectID);
+				// edit - POST - ROJECT/EDIT/"project"
+				}elseif($method=='post' and $functioncall=='edit' and $argumentcount==7){
+					$format=H01_OCS::readdata('format','text');
+					$projectID=$ex[5];
+					$name=H01_OCS::readdata('name','text');
+					$version=H01_OCS::readdata('version','text');
+					$license=H01_OCS::readdata('license','text');
+					$url=H01_OCS::readdata('url','text');
+					$developers=H01_OCS::readdata('developers','text');
+					$summary=H01_OCS::readdata('summary','text');
+					$description=H01_OCS::readdata('description','text');
+					$requirements=H01_OCS::readdata('requirements','text');
+					$specfile=H01_OCS::readdata('specfile','text');
+					H01_OCS::buildserviceprojectedit($format,$projectID,$name,$version,$license,$url,$developers,$summary,$description,$requirements,$specfile);
+				// listall - GET - PROJECT/LIST
+				}elseif($method=='get' and $functioncall=='list' and $argumentcount==6){
+					$format=H01_OCS::readdata('format','text');
+					$page=H01_OCS::readdata('page','int');
+					$pagesize=H01_OCS::readdata('pagesize','int');
+					H01_OCS::buildserviceprojectlist($format,$page,$pagesize);
+				// generatespecfile - GET - PROJECT/UPLOADSOURCE
+				}elseif($method=='post' and $functioncall=='uploadsource' and $argumentcount==7){
+					$format=H01_OCS::readdata('format','text');
+					$projectID=$ex[5];
+					H01_OCS::buildserviceprojectuploadsource($format,$projectID);
+				}else{
+					H01_OCS::reportapisyntaxerror('buildservice/project');
+				}
+			// REMOTEACCOUNTS section
+			}elseif(strtolower($ex[3])=='remoteaccounts'){
+				if($method=='get' and $functioncall=='list' and $argumentcount==6){
+					$format=H01_OCS::readdata('format','text');
+					$page=H01_OCS::readdata('page','int');
+					$pagesize=H01_OCS::readdata('pagesize','int');
+					H01_OCS::buildserviceremoteaccountslist($format,$page,$pagesize);
+				}elseif($method=='post' and $functioncall=='add' and $argumentcount==6){
+					$format=H01_OCS::readdata('format','text');
+					$type=H01_OCS::readdata('type','int');
+					$typeid=H01_OCS::readdata('typeid','text');
+					$data=H01_OCS::readdata('data','text');
+					$login=H01_OCS::readdata('login','text');
+					$password=H01_OCS::readdata('password','text');
+					H01_OCS::buildserviceremoteaccountsadd($format,$type,$typeid,$data,$login,$password);
+				}elseif($method=='post' and $functioncall=='edit' and $argumentcount==7){
+					$format=H01_OCS::readdata('format','text');
+					$id=$ex[5];
+					$data=H01_OCS::readdata('data','text');
+					$login=H01_OCS::readdata('login','text');
+					$password=H01_OCS::readdata('password','text');
+					H01_OCS::buildserviceremoteaccountsedit($format,$id,$login,$password,$data);
+				}elseif($method=='get' and $functioncall=='get' and $argumentcount==7){
+					$format=H01_OCS::readdata('format','text');
+					$id=$ex[5];
+					H01_OCS::buildserviceremoteaccountsget($format,$id);
+				}elseif($method=='post' and $functioncall=='remove' and $argumentcount==7){
+					$format=H01_OCS::readdata('format','text');
+					$id=$ex[5];
+					H01_OCS::buildserviceremoteaccountsremove($format,$id);
+				}else{
+					H01_OCS::reportapisyntaxerror('buildservice/remoteaccounts');
+				}
+			// BUILDSERVICES section
+			}elseif(strtolower($ex[3]=='buildservices')){
+				if($method=='get' and $functioncall=='list' and $argumentcount==6){
+					$format=H01_OCS::readdata('format','text');
+					$page=H01_OCS::readdata('page','int');
+					$pagesize=H01_OCS::readdata('pagesize','int');
+					H01_OCS::buildservicebuildserviceslist($format,$page,$pagesize);
+				}elseif($method=='get' and $functioncall=='get' and $argumentcount==7){
+					$format=H01_OCS::readdata('format','text');
+					$buildserviceID=$ex[5];
+					H01_OCS::buildservicebuildservicesget($format,$buildserviceID);
+				}else{
+					H01_OCS::reportapisyntaxerror('buildservice/buildservices');
+				}
+			// JOBS section
+			}elseif(strtolower($ex[3]=='jobs')){
+				// getbuildcapabilities - GET - JOBS/GETBUILDCAPABILITIES
+				if($method=='get' and $functioncall=='list' and $argumentcount==7){
+					$format=H01_OCS::readdata('format','text');
+					$projectID=$ex[5];
+					$page=H01_OCS::readdata('page','int');
+					$pagesize=H01_OCS::readdata('pagesize','int');
+					H01_OCS::buildservicejobslist($format,$projectID,$page,$pagesize);
+				// create - POST - JOBS/CREATE/"project"/"buildsevice"/"target"
+				}elseif($method=='post' and $functioncall=='create' and $argumentcount==9){
+					$format=H01_OCS::readdata('format','text');
+					$projectID=$ex[5];
+					$buildserviceID=$ex[6];
+					$target=$ex[7];
+					H01_OCS::buildservicejobscreate($format,$projectID,$buildserviceID,$target);
+				// cancel - POST - JOBS/CANCEL/"buildjob"
+				}elseif($method=='post' and $functioncall=='cancel' and $argumentcount==7){
+					$format=H01_OCS::readdata('format','text');
+					$buildjobID=$ex[5];
+					H01_OCS::buildservicejobscancel($format,$buildjobID);
+				// get - GET - JOBS/GET/"buildjob"
+				}elseif($method=='get' and $functioncall=='get' and $argumentcount==7){
+					$format=H01_OCS::readdata('format','text');
+					$buildjobID=$ex[5];
+					H01_OCS::buildservicejobsget($format,$buildjobID);
+				// getoutput - GET - JOBS/GETOUTPOT/"buildjob"
+				}elseif($method=='get' and $functioncall=='getoutput' and $argumentcount==7){
+					$format=H01_OCS::readdata('format','text');
+					$buildjobID=$ex[5];
+					H01_OCS::buildservicejobsgetoutput($format,$buildjobID);
+				}else{
+					H01_OCS::reportapisyntaxerror('buildservice/jobs');
+				}
+			// PUBLISHING section
+			}elseif(strtolower($ex[3]=='publishing')){
+				// getpublishingcapabilities - GET - PUBLISHING/GETPUBLISHINGCAPABILITIES
+				if($method=='get' and $functioncall=='getpublishingcapabilities' and $argumentcount==6){
+					$format=H01_OCS::readdata('format','text');
+					$page=H01_OCS::readdata('page','int');
+					$pagesize=H01_OCS::readdata('pagesize','int');
+					H01_OCS::buildservicepublishinggetpublishingcapabilities($format,$page,$pagesize);
+				// getpublisher - GET - PUBLISHING/GETPUBLISHER
+				}elseif($method=='get' and $functioncall=='getpublisher' and $argumentcount==7){
+					$format=H01_OCS::readdata('format','text');
+					$publisherID=$ex[5];
+					H01_OCS::buildservicepublishinggetpublisher($format,$publisherID);
+				// publishtargetresult - POST - PUBLISHING/PUBLISHTARGETRESULT/"buildjob"/"publisher"
+				}elseif($method=='post' and $functioncall=='publishtargetresult' and $argumentcount==8){
+					$format=H01_OCS::readdata('format','text');
+					$buildjobID=$ex[5];
+					$publisherID=$ex[6];
+					H01_OCS::buildservicepublishingpublishtargetresult($format,$buildjobID,$publisherID);
+				// savefields - POST - PUBLISHING/SAVEFIELDS/"project"
+				}elseif($method=='post' and $functioncall=='savefields' and $argumentcount==7){
+					$format=H01_OCS::readdata('format','text');
+					$projectID=$ex[5];
+					$fields=H01_OCS::readdata('fields','array');
+					H01_OCS::buildservicepublishingsavefields($format,$projectID,$fields);
+				// getfields - GET - PUBLISHING/GETFIELDS/"project"
+				}elseif($method=='get' and $functioncall=='getfields' and $argumentcount==7){
+					$format=H01_OCS::readdata('format','text');
+					$projectID=$ex[5];
+					H01_OCS::buildservicepublishinggetfields($format,$projectID);
+				}else{
+					H01_OCS::reportapisyntaxerror('buildservice/publishing');
+				}
+			}else{
+				H01_OCS::reportapisyntaxerror('buildservice');
+			}
+
+
+		}else{
+			$format=H01_OCS::readdata('format','text');
+			$txt='please check the syntax. api specifications are here: http://www.freedesktop.org/wiki/Specifications/open-collaboration-services'."\n";
+			$txt.=H01_OCS::getdebugoutput();
+			echo(H01_OCS::generatexml($format,'failed',999,$txt));
+		}
+		exit();
+	}
+	
+	/**
+	 * Use this function to inform the user that there is a syntax error in the API call. The function
+	 * will inform the user which module the error occured in.
+	 * @param apimodule The name of the module the error occured in
+	 */
+	private static function reportapisyntaxerror($apimodule){
+		$format=H01_OCS::readdata('format','text');
+		$txt='please check the syntax of the module '.$apimodule.'. api specifications are here: http://www.freedesktop.org/wiki/Specifications/open-collaboration-services'."\n";
+		$txt.=H01_OCS::getdebugoutput();
+		echo(H01_OCS::generatexml($format,'failed',999,$txt));
+	}
+
+	/**
+	 * generated some debug information to make it easier to find faild API calls
+	 * @return debug data string
+	 */
+	private static function getdebugoutput() {
+		$txt='';
+		$txt.="debug output:\n";
+		if(isset($_SERVER['REQUEST_METHOD'])) $txt.='http request method: '.$_SERVER['REQUEST_METHOD']."\n";
+		if(isset($_SERVER['REQUEST_URI'])) $txt.='http request uri: '.$_SERVER['REQUEST_URI']."\n";
+		if(isset($_GET)) foreach($_GET as $key=>$value) $txt.='get parameter: '.$key.'->'.$value."\n";
+		if(isset($_POST)) foreach($_POST as $key=>$value) $txt.='post parameter: '.$key.'->'.$value."\n";
+		return($txt);
+	}
+
+	/**
+	 * checks if the user is authenticated
+	 * checks the IP whitlist, apikeys and login/password combination
+	 * if $forceuser is true and the authentication failed it returns an 401 http response. 
+	 * if $forceuser is false and authentification fails it returns an empty username string
+	 * @param bool $forceuser
+	 * @return username string
+	 */
+	private static function checkpassword($forceuser=true) {
+
+		// check whitelist
+		if (in_array($_SERVER['REMOTE_ADDR'], H01_OCS::$whitelist)) {
+			$identifieduser='';
+		}else{
+
+			//valid user account ?
+			if(isset($_SERVER['PHP_AUTH_USER'])) $authuser=$_SERVER['PHP_AUTH_USER']; else $authuser='';
+			if(isset($_SERVER['PHP_AUTH_PW']))	 $authpw=$_SERVER['PHP_AUTH_PW']; else $authpw='';
+
+			if(empty($authuser)) {
+				if($forceuser){
+					header('WWW-Authenticate: Basic realm="your valid user account or api key"');
+					header('HTTP/1.0 401 Unauthorized');
+					exit;
+				}else{
+					$identifieduser='';
+				}
+			}else{
+	
+				$user=H01_USER::finduserbyapikey($authuser,CONFIG_USERDB);
+				if($user==false) {
+					$user=H01_USER::checklogin($authuser,CONFIG_USERDB,$authpw,PERM_Login);
+					if($user==false) {
+						if($forceuser){
+							header('WWW-Authenticate: Basic realm="your valid user account or api key"');
+							header('HTTP/1.0 401 Unauthorized');
+							exit;
+						}else{
+							$identifieduser='';
+						}
+					}else{
+						$identifieduser=$user;
+					}
+				}else{
+					$identifieduser=$user;
+				}
+			}
+		}
+
+		return($identifieduser);
+	}
+
+
+	/**
+	 * cleans up the api traffic limit database table.
+	 * this function should be call by a cronjob every 15 minutes
+	 */
+	public static function cleanuptrafficlimit() {
+		$result = H01_DB::query('truncate apitraffic');
+		H01_DB::free_result($result);
+	}
+
+
+
+	/**
+	 * check if the current user is allowed to do one more API call or if the traffic limit is exceeded.
+	 * @param string $user
+	 */
+	private static function checktrafficlimit($user) {
+		// BACKUP:
+		// $result = $db->insert('apitraffic','into apitraffic (ip,count) values ('.ip2long($_SERVER['REMOTE_ADDR']).',1) on duplicate key update count=count+1');
+		// TODO: now
+		$result = $main->db->insert('apitraffic','into apitraffic (ip,count) values ('.ip2long($_SERVER['REMOTE_ADDR']).',1) on duplicate key update count=count+1');
+		H01_DB::free_result($result);
+
+		$result = H01_DB::select('apitraffic','count from apitraffic where ip="'.ip2long($_SERVER['REMOTE_ADDR']).'"');
+		$numrows = H01_DB::numrows($result);
+		$DBcount=H01_DB::fetch_assoc($result);
+		H01_DB::free_result($result);
+
+		if($numrows==0) return(true);
+		if($user=='') $max=H01_OCS::$maxrequests; else $max=H01_OCS::$maxrequestsauthenticated;
+
+		if($DBcount['count']>$max) {
+			$format=H01_OCS::readdata('format','text');
+			echo(H01_OCS::generatexml($format,'failed',200,'too many API requests in the last 15 minutes from your IP address. please try again later.'));
+			exit();
+		}
+		return(true);
+
+	}
+
+
+
+	/**
+	 * generates the xml or json response for the API call from an multidimenional data array.
+	 * @param string $format
+	 * @param string $status
+	 * @param string $statuscode
+	 * @param string $message
+	 * @param array $data
+	 * @param string $tag
+	 * @param string $tagattribute
+	 * @param int $dimension
+	 * @param int $itemscount
+	 * @param int $itemsperpage
+	 * @return string xml/json
+	 */
+	private static function generatexml($format,$status,$statuscode,$message,$data=array(),$tag='',$tagattribute='',$dimension=-1,$itemscount='',$itemsperpage='') {
+		if($format=='json') {
+
+			$json=array();
+			$json['status']=$status;
+			$json['statuscode']=$statuscode;
+			$json['message']=$message;
+			$json['totalitems']=$itemscount;
+			$json['itemsperpage']=$itemsperpage;
+			$json['data']=$data;
+			return(json_encode($json));
+
+
+		}else{
+			$txt='';
+			$writer = xmlwriter_open_memory();
+			xmlwriter_set_indent( $writer, 2 );
+			xmlwriter_start_document($writer );
+			xmlwriter_start_element($writer,'ocs');
+			xmlwriter_start_element($writer,'meta');
+			xmlwriter_write_element($writer,'status',$status);
+			xmlwriter_write_element($writer,'statuscode',$statuscode);
+			xmlwriter_write_element($writer,'message',$message);
+			if($itemscount<>'') xmlwriter_write_element($writer,'totalitems',$itemscount);
+			if(!empty($itemsperpage)) xmlwriter_write_element($writer,'itemsperpage',$itemsperpage);
+			xmlwriter_end_element($writer);
+//echo($dimension);
+			if($dimension=='0') {
+				// 0 dimensions
+				xmlwriter_write_element($writer,'data',$data);
+
+			}elseif($dimension=='1') {
+				xmlwriter_start_element($writer,'data');
+				foreach($data as $key=>$entry) {
+					xmlwriter_write_element($writer,$key,$entry);
+				}
+				xmlwriter_end_element($writer);
+
+			}elseif($dimension=='2') {
+				xmlwriter_start_element($writer,'data');
+				foreach($data as $entry) {
+					xmlwriter_start_element($writer,$tag);
+					if(!empty($tagattribute)) {
+						xmlwriter_write_attribute($writer,'details',$tagattribute);
+					}
+					foreach($entry as $key=>$value) {
+						if(is_array($value)){
+							foreach($value as $k=>$v) {
+								xmlwriter_write_element($writer,$k,$v);
+							}
+						} else {
+							xmlwriter_write_element($writer,$key,$value);
+						}
+					}
+					xmlwriter_end_element($writer);
+				}
+				xmlwriter_end_element($writer);
+
+			}elseif($dimension=='3') {
+				xmlwriter_start_element($writer,'data');
+				foreach($data as $entrykey=>$entry) {
+					xmlwriter_start_element($writer,$tag);
+					if(!empty($tagattribute)) {
+						xmlwriter_write_attribute($writer,'details',$tagattribute);
+					}
+					foreach($entry as $key=>$value) {
+						if(is_array($value)){
+							xmlwriter_start_element($writer,$entrykey);
+							foreach($value as $k=>$v) {
+								xmlwriter_write_element($writer,$k,$v);
+							}
+							xmlwriter_end_element($writer);
+						} else {
+							xmlwriter_write_element($writer,$key,$value);
+						}
+					}
+					xmlwriter_end_element($writer);
+				}
+				xmlwriter_end_element($writer);
+			}elseif($dimension=='dynamic') {
+				xmlwriter_start_element($writer,'data');
+//				H01_OCS::toxml($writer,$data,'comment');
+				if(is_array($data)) H01_OCS::toxml($writer,$data,$tag);
+				xmlwriter_end_element($writer);
+			}
+
+			xmlwriter_end_element($writer);
+
+			xmlwriter_end_document( $writer );
+			$txt.=xmlwriter_output_memory( $writer );
+			unset($writer);
+			return($txt);
+		}
+	}
+
+	/**
+	 * Take an array of any size, and make it into xml
+	 * @param xmlwriter	An xmlwriter instance
+	 * @param array			The array which is to be transformed
+	 * @param mixed			Either a string, or an array of elements defining element names for each level in the XML hierarchy
+	 *									 In the case of multiple lists of differently titled items at the same level, adding an array inside the array will allow for this to be constructed.
+	 * @param int				Internal use (the index of the child item in question - corresponds to the index in the second level array above)
+	 */
+	public static function toxml($writer,$data,$node,$childindex=0) {
+		$nodename=$node;
+		if(is_array($node)){
+			$nodename=array_shift($node);
+		}
+
+		$childcount=-1;
+		foreach($data as $key => $value) {
+			$childcount++;
+			if (is_numeric($key)) {
+				if(is_array($nodename)) {
+					$key = $nodename[$childindex];
+				} else {
+					$key = $nodename;
+				}
+			}
+			if (is_array($value)){
+				xmlwriter_start_element($writer,$key);
+				H01_OCS::toxml($writer,$value,$node,$childcount);
+				xmlwriter_end_element($writer);
+			}else{
+				xmlwriter_write_element($writer,$key,$value);
+			}
+		}
+		if(is_array($node)) {
+			array_unshift($node,$nodename);
+		}
+	}
+
+
+
+
+	/**
+	 * return the config data of this server
+	 * @param string $format
+	 * @return string xml/json
+	 */
+	private static function apiconfig($format) {
+		echo "DEBUG";
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+
+		$xml['version']='1.6';
+		$xml['website']='openDesktop.org';
+		$xml['host']='api.openDesktop.org';
+		$xml['contact']='frank@openDesktop.org';
+		$xml['ssl']='true';
+		echo(H01_OCS::generatexml($format,'ok',100,'',$xml,'config','',1));
+	}
+
+
+
+
+	// PERSON API #############################################
+
+	/**
+	 * search and return a list of persons corresponding to different optional search parameters
+	 * @param string $format
+	 * @param string $username
+	 * @param string $country
+	 * @param string $city
+	 * @param string $description
+	 * @param string $pc
+	 * @param string $software
+	 * @param string $longitude
+	 * @param string $latitude
+	 * @param string $distance
+	 * @param string $attributeapp
+	 * @param string $attributekey
+	 * @param string $attributevalue
+	 * @param string $page
+	 * @param string $pagesize
+	 * @return string xml/json
+	 */
+	private static function personsearch($format,$username,$country,$city,$description,$pc,$software,$longitude,$latitude,$distance,$attributeapp,$attributekey,$attributevalue,$page,$pagesize) {
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+
+		if($pagesize==0) $pagesize=10; 
+		$cache = new H01_CACHE('apipersonsearch',array($_SESSION['website'],$_SESSION['lang'],$format,$username.'#'.$user.'#'.$country.'#'.$city.'#'.$description.'#'.$pc.'#'.$software.'#'.$longitude.'#'.$latitude.'#'.$distance.'#'.$attributeapp.'#'.$attributekey.'#'.$attributevalue.'#'.$page.'#'.$pagesize));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+
+			if($page>H01_OCS::$maxpersonsearchpage) {
+				$txt=H01_OCS::generatexml($format,'failed',102,'page above '.H01_OCS::$maxpersonsearchpage.'. it is not allowed to fetch such a big resultset. please specify more search conditions.');
+			}else{
+				$xml=H01_USER::search($user,$username,$country,$city,$description,$pc,$software,$longitude,$latitude,$distance,$attributeapp,$attributekey,$attributevalue,$page,$pagesize);
+				$usercount=$xml['usercount'];
+				unset($xml['usercount']);
+				$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'person','summary',2,$usercount,$pagesize);
+			}
+
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+
+	}
+
+	/**	 
+	 * edit my own useraccount
+	 * @param string $format
+	 * @param string $country
+	 * @param string $city
+	 * @param float $longitude
+	 * @param float $latitude
+	 * @return string xml/json
+	 */
+	private static function personedit($format,$longitude,$latitude,$country,$city) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+
+		if($latitude<>0 or $longitude<>0 or !empty($city) or !empty($country)){
+			H01_USER::edit($user,CONFIG_USERDB,$latitude,$longitude,$city,$country);
+
+			// cleanup the caches for this user.
+			H01_CACHEADMIN::cleancache('userdetail',array($user));
+			H01_CACHEADMIN::cleancache('avatar',array($user));
+			H01_CACHEADMIN::cleancache('apipersonget',array($user));
+			H01_CACHEADMIN::cleancache('apipersonsearch',array());
+			echo(H01_OCS::generatexml($format,'ok',100,''));
+		}else{
+			echo(H01_OCS::generatexml($format,'failed',101,'no parameters to update found'));
+		}
+	}
+
+
+	/**	 
+	 * register new user
+	 * @param string $format
+	 * @param string $login
+	 * @param string $passwd
+	 * @param string $firstname
+	 * @param string $lastname
+	 * @param string $email
+	 * @return string xml/json
+	 */
+	private static function personadd($format,$login,$passwd,$firstname,$lastname,$email) {
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+
+		if($login<>'' and $passwd<>'' and $firstname<>'' and $lastname<>'' and $email<>''){
+			if(H01_USER::isvalidpassword($passwd)){
+				if(H01_USER::isloginname($login)){
+					if(!H01_USER::exist($login,CONFIG_USERDB,false)){
+						if(H01_USER::countusersbyemail($email,CONFIG_USERDB)==0) {
+							if(H01_MAIL::valid($email)) {
+								H01_USER::register($login,$passwd,$firstname,$lastname,$email);
+								echo(H01_OCS::generatexml($format,'ok',100,''));
+							}else{
+								echo(H01_OCS::generatexml($format,'failed',106,'email already taken'));
+							}
+						}else{
+							echo(H01_OCS::generatexml($format,'failed',105,'email invalid'));
+						}
+					}else{
+						echo(H01_OCS::generatexml($format,'failed',104,'login already exists'));
+					}
+				}else{
+					echo(H01_OCS::generatexml($format,'failed',103,'please specify a valid login'));
+				}
+			}else{
+				echo(H01_OCS::generatexml($format,'failed',102,'please specify a valid password'));
+			}
+		}else{
+			echo(H01_OCS::generatexml($format,'failed',101,'please specify all mandatory fields'));
+		}
+	}
+
+	/**	 
+	 * check if the provided login/apikey/password is valid
+	 * @param string $format
+	 * @param string $login
+	 * @param string $passwd
+	 * @return string xml/json
+	 */
+	private static function personcheck($format,$login,$passwd) {
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+
+
+		if($login<>''){
+			$reallogin=H01_USER::checklogin($login,CONFIG_USERDB,$passwd,PERM_Login);
+			if($reallogin<>false){
+				$xml['person']['personid']=$reallogin;
+				echo(H01_OCS::generatexml($format,'ok',100,'',$xml,'person','check',2)); 
+			}else{
+				$user=H01_USER::finduserbyapikey($login,CONFIG_USERDB);
+				if($user==false) {
+					echo(H01_OCS::generatexml($format,'failed',102,'login not valid'));
+				}else{
+					$xml['person']['personid']=$user;
+					echo(H01_OCS::generatexml($format,'ok',100,'',$xml,'person','check',2)); 
+				}
+			}
+		}else{
+			echo(H01_OCS::generatexml($format,'failed',101,'please specify all mandatory fields'));
+		}
+	}
+
+
+
+	/**	 
+	 * get detailed information about a person
+	 * @param string $format
+	 * @param string $username
+	 * @return string xml/json
+	 */
+	private static function personget($format,$username='') {
+		if(empty($username)) {
+			$user=H01_OCS::checkpassword();
+		}else{
+			$user=H01_OCS::checkpassword(false);
+		}
+		H01_OCS::checktrafficlimit($user);
+		if(empty($username)) $username=$user;
+
+		$cache = new H01_CACHE('apipersonget',array($user,CONFIG_USERDB,$username,$format));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+			$DBuser=H01_USER::getuser($username,CONFIG_USERDB);
+			$itemscount=count($DBuser);
+
+			if($itemscount==0){
+				$txt=H01_OCS::generatexml($format,'failed',101,'person not found');
+			}else{
+				$xml=array();
+				$xml[0]['personid']=$DBuser['login'];
+				$xml[0]['privacy']=$DBuser['privacy'];
+				$xml[0]['privacytext']=H01_USER::$PRIVACY[1][$DBuser['privacy']];
+				$xml[0]['firstname']=$DBuser['firstname'];
+				$xml[0]['lastname']=$DBuser['name'];
+				$xml[0]['gender']=H01_USER::$GENDER[1][$DBuser['gender']];
+				if(CONFIG_USERCOMMUNITYROLE) $xml[0]['communityrole']=H01_USER::$COMMUNITYROLE[1][$DBuser['communityrole']];
+				$xml[0]['company']=$DBuser['company'];
+				$xml[0]['homepage']=$DBuser['homepage1'];
+				$xml[0]['homepagetype']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype1']];
+				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype1']]<>'') $xml[0]['homepageicon']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype1']];
+				$xml[0]['homepage2']=$DBuser['homepage2'];
+				$xml[0]['homepagetype2']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype2']];
+				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype2']]<>'') $xml[0]['homepageicon2']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype2']];
+				$xml[0]['homepage3']=$DBuser['homepage3'];
+				$xml[0]['homepagetype3']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype3']];
+				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype3']]<>'') $xml[0]['homepageicon3']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype3']];
+				$xml[0]['homepage4']=$DBuser['homepage4'];
+				$xml[0]['homepagetype4']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype4']];
+				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype4']]<>'') $xml[0]['homepageicon4']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype4']];
+				$xml[0]['homepage5']=$DBuser['homepage5'];
+				$xml[0]['homepagetype5']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype5']];
+				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype5']]<>'') $xml[0]['homepageicon5']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype5']];
+				$xml[0]['homepage6']=$DBuser['homepage6'];
+				$xml[0]['homepagetype6']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype6']];
+				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype6']]<>'') $xml[0]['homepageicon6']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype6']];
+				$xml[0]['homepage7']=$DBuser['homepage7'];
+				$xml[0]['homepagetype7']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype7']];
+				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype7']]<>'') $xml[0]['homepageicon7']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype7']];
+				$xml[0]['homepage8']=$DBuser['homepage8'];
+				$xml[0]['homepagetype8']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype8']];
+				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype8']]<>'') $xml[0]['homepageicon8']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype8']];
+				$xml[0]['homepage9']=$DBuser['homepage9'];
+				$xml[0]['homepagetype9']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype9']];
+				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype9']]<>'') $xml[0]['homepageicon9']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype9']];
+				$xml[0]['homepage10']=$DBuser['homepage10'];
+				$xml[0]['homepagetype10']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype10']];
+				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype10']]<>'') $xml[0]['homepageicon10']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype10']];
+
+				if		 (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.jpg')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.jpg'; $found=true; }
+				elseif (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.png')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.png'; $found=true; }
+				elseif (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.gif')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.gif'; $found=true; }
+				else	{	$pic=STATICHOST.'/usermanager/nopic.png'; $found=false ;}
+				$xml[0]['avatarpic']=$pic;
+				$xml[0]['avatarpicfound']=$found;
+
+				if		 (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-bigpics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.jpg')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-bigpics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.jpg'; $found=true; 
+				}elseif (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-bigpics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.png')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-bigpics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.png'; $found=true; 
+				}elseif (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-bigpics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.gif')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-bigpics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.gif'; $found=true; 
+				}else{ $pic=''; $found=false; }
+				$xml[0]['bigavatarpic']=$pic;
+				$xml[0]['bigavatarpicfound']=$found;
+
+
+				if($DBuser['birthyear']<1910){
+					$xml[0]['birthday']=date('Y-m-d',mktime(0, 0, 0, $DBuser['birthmonth'],$DBuser['birthday'],$DBuser['birthyear']));
+				}else{
+					$xml[0]['birthday']='';
+				}
+				if(CONFIG_USERJOBSTATUS) $xml[0]['jobstatus']=H01_USER::$JOBSTATUS[1][$DBuser['jobstatus']];
+				$xml[0]['jabber']=$DBuser['jabber'];
+				if(CONFIG_USERMESSENGER1){
+					$xml[0]['messengertype1']=H01_USER::$IM_CATEGORY[$DBuser['messengertype']];
+					$xml[0]['messenger1']=$DBuser['messenger'];
+				}
+				if(CONFIG_USERMESSENGER2){
+					$xml[0]['messengertype2']=H01_USER::$IM_CATEGORY[$DBuser['messengertype2']];
+					$xml[0]['messenger2']=$DBuser['messenger2'];
+				}
+				if(CONFIG_USERMESSENGER3){
+					$xml[0]['messengertype3']=H01_USER::$IM_CATEGORY[$DBuser['messengertype3']];
+					$xml[0]['messenger3']=$DBuser['messenger3'];
+				}
+
+				$xml[0]['city']=$DBuser['city'];
+				$xml[0]['country']=H01_USER::$COUNTRIES[$DBuser['country']];
+
+				$xml[0]['latitude']=$DBuser['latitude'];
+				$xml[0]['longitude']=$DBuser['longitude'];
+				$xml[0]['ircnick']=$DBuser['ircnick'];
+				$xml[0]['ircchannels']=$DBuser['ircchannels'];
+				$channels=explode(',',$DBuser['ircchannels']);
+				foreach($channels as $channel) $xml[0][]['irclink']='irc://irc.freenode.org/'.urlencode(trim($channel));
+
+				if(CONFIG_USERLIKES) $xml[0]['likes']=H01_UTIL::bbcode2html($DBuser['likes']);
+				if(CONFIG_USERDONTLIKES) $xml[0]['dontlikes']=H01_UTIL::bbcode2html($DBuser['dontlikes']);
+				if(CONFIG_USERINTERESTS) $xml[0]['interests']=H01_UTIL::bbcode2html($DBuser['interests']);
+				if(CONFIG_USERLANGUAGES) $xml[0]['languages']=H01_UTIL::bbcode2html($DBuser['languages']);
+				if(CONFIG_USERPROGRAMMINGLANGUAGES) $xml[0]['programminglanguages']=H01_UTIL::bbcode2html($DBuser['programminglanguages']);
+				if(CONFIG_USERFAVOURITEQUOTE) $xml[0]['favouritequote']=H01_UTIL::bbcode2html($DBuser['favouritequote']);
+				if(CONFIG_USERFAVOURITEMUSIC) $xml[0]['favouritemusic']=H01_UTIL::bbcode2html($DBuser['favouritemusic']);
+				if(CONFIG_USERFAVOURITETVSHOWS) $xml[0]['favouritetvshows']=H01_UTIL::bbcode2html($DBuser['favouritetvshows']);
+				if(CONFIG_USERFAVOURITEMOVIES) $xml[0]['favouritemovies']=H01_UTIL::bbcode2html($DBuser['favouritemovies']);
+				if(CONFIG_USERFAVOURITEBOOKS) $xml[0]['favouritebooks']=H01_UTIL::bbcode2html($DBuser['favouritebooks']);
+				if(CONFIG_USERFAVOURITEGAMES) $xml[0]['favouritegames']=H01_UTIL::bbcode2html($DBuser['favouritegames']);
+				$xml[0]['description']=H01_UTIL::bbcode2html($DBuser['description']);
+				$xml[0]['profilepage']='http://'.CONFIG_WEBSITEHOST.'/usermanager/search.php?username='.$DBuser['login'];
+
+				if($DBuser['privacy']==0) {
+					$visible=true;
+				}elseif($DBuser['privacy']==1){
+					if($user<>'') $visible=true; else $visible=false;
+				}elseif($DBuser['privacy']==2){
+					if((strtolower($username)==strtolower($user)) or (H01_RELATION::isrelation(1,$username,CONFIG_USERDB,$user))) $visible=true; else $visible=false;
+				}elseif($DBuser['privacy']==3){
+					$visible=false;
+				}
+
+				if($visible) $txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'person','full',2); else $txt=H01_OCS::generatexml($format,'failed',102,'data is private');
+			}
+
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+
+	}
+
+
+	/**	 
+	 * get my own balance
+	 * @param string $format
+	 * @return string xml/json
+	 */
+	private static function persongetbalance($format) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+
+		$balance=H01_PAYMENT::getbalance($user,CONFIG_USERDB);
+
+		$xml=array();
+		$xml[0]['currency']='USD';
+		$xml[0]['balance']=number_format(($balance/100),2);
+		$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'person','balance',2); 
+		echo($txt);
+	}
+
+
+	/**	 
+	 * get attributes from a specific person/app/key
+	 * @param string $format
+	 * @param string $username
+	 * @param string $app
+	 * @param string $key
+	 * @return string xml/json
+	 */
+	private static function personattributeget($format,$username,$app,$key)	{
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+
+		$xml=H01_USER::getattributes($username,CONFIG_USERDB,$app,$key);
+		$xml2=array();
+		$xml2['attribute']=$xml;
+		$txt=H01_OCS::generatexml($format,'ok',100,'',$xml2,'person','attributes',3,count($xml)); 
+		echo($txt);
+
+	}
+
+	/**	 
+	 * set a attribute
+	 * @param string $format
+	 * @param string $app
+	 * @param string $key
+	 * @param string $value
+	 * @return string xml/json
+	 */
+	private static function personattributeset($format,$app,$key,$value)	{
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+
+		$xml=H01_USER::setattribute($user,CONFIG_USERDB,$app,$key,$value);
+		$txt=H01_OCS::generatexml($format,'ok',100,'');
+		echo($txt);
+
+	}
+
+
+	/**	 
+	 * delete a attribute
+	 * @param string $format
+	 * @param string $app
+	 * @param string $key
+	 * @return string xml/json
+	 */
+	private static function personattributedelete($format,$app,$key)	{
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+
+		$xml=H01_USER::deleteattribute($user,CONFIG_USERDB,$app,$key);
+		$txt=H01_OCS::generatexml($format,'ok',100,'');
+		echo($txt);
+
+	}
+
+
+	// FAN API #############################################
+
+	/**	 
+	 * get the fans of a specific content
+	 * @param string $format
+	 * @param string $content
+	 * @param string $page
+	 * @param string $pagesize
+	 * @return string xml/json
+	 */
+	private static function fanget($format,$content,$page,$pagesize) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$content=strip_tags(addslashes($content));
+		$page = intval($page);
+		$start=$pagesize*$page;
+
+		$cache = new H01_CACHE('apifan',array($content,CONFIG_USERDB,$page,$pagesize,$format));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+
+			$fancount=H01_FAN::countfansofcontent($content,CONFIG_USERDB);
+			$fans=H01_FAN::getfansofcontent($content,CONFIG_USERDB,$page,$pagesize);
+			$itemscount=count($fans);
+			$xml=array();
+			for ($i=0; $i < $itemscount;$i++) {
+				$xml[$i]['personid']=$fans[$i]['user'];
+				$xml[$i]['timestamp']=date('c',$fans[$i]['timestamp']);
+			}
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'person','fans',2,$fancount,$pagesize);
+
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+
+	}
+
+
+	/**	 
+	 * add a fans to a specific content
+	 * @param string $format
+	 * @param string $content
+	 * @return string xml/json
+	 */
+	private static function addfan($format,$content) {
+		$contentid = intval($content);
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		H01_FAN::addfan($contentid,$user,CONFIG_USERDB);
+		$txt=H01_OCS::generatexml($format,'ok',100,'');
+		echo($txt);
+	}
+
+
+	/**	 
+	 * remove a fans from a specific content
+	 * @param string $format
+	 * @param string $content
+	 * @return string xml/json
+	 */
+	private static function removefan($format,$content) {
+		$contentid = intval($content);
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		H01_FAN::removefan($contentid,$user,CONFIG_USERDB);
+		$txt=H01_OCS::generatexml($format,'ok',100,'');
+		echo($txt);
+	}
+ 
+ 
+	/**	 
+	 * check if the user is a fan of a content
+	 * @param string $format
+	 * @param string $content
+	 * @return string xml/json
+	 */
+	private static function isfan($format,$content) {
+		$contentid = intval($content);
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$fan=H01_FAN::isfan($contentid,$user,CONFIG_USERDB);
+		if($fan){
+			$xml['status']='fan';
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'','',1); 
+		}else{
+			$xml['status']='not fan';
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'','',1); 
+		}
+		echo($txt);
+	}
+
+
+
+
+
+	// FRIEND API #############################################
+
+	/**	 
+	 * get the list of sent invitations
+	 * @param string $format
+	 * @param string $page
+	 * @param string $pagesize
+	 * @return string xml/json
+	 */
+	private static function friendsentinvitations($format,$page,$pagesize) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+
+		$fromuser=addslashes($user);
+		$page = intval($page);
+		$start=$pagesize*$page;
+		$count=$pagesize;
+
+		$cache = new H01_CACHE('apifriendssentinvitations',array($fromuser,CONFIG_USERDB,$page,$pagesize,$format));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+
+			$countsentinvitations=H01_RELATION::countsentrequests(1,$fromuser,CONFIG_USERDB);
+			$relations=H01_RELATION::getsentrequests(1,$fromuser,CONFIG_USERDB,$start,$count);
+			$itemscount=count($relations);
+
+			$xml=array();
+			for ($i=0; $i < $itemscount;$i++) {
+				$xml[$i]['personid']=$relations[$i]['user'];
+			}
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'user','id',2,$countsentinvitations,$pagesize);
+
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+	}
+
+	/**	 
+	 * get the list of received invitations
+	 * @param string $format
+	 * @param string $page
+	 * @param string $pagesize
+	 * @return string xml/json
+	 */
+	private static function friendreceivedinvitations($format,$page,$pagesize) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+
+		$fromuser=addslashes($user);
+		$page = intval($page);
+		$start=$pagesize*$page;
+		$count=$pagesize;
+
+		$cache = new H01_CACHE('apifriendsreceivedinvitations',array($fromuser,CONFIG_USERDB,$page,$pagesize,$format));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+
+			$countreceivedinvitations=H01_RELATION::countreceivedrequests(1,$fromuser,CONFIG_USERDB);
+			$relations=H01_RELATION::getreceivedrequests(1,$fromuser,CONFIG_USERDB,$start,$count);
+			$itemscount=count($relations);
+			$xml=array();
+			for ($i=0; $i < $itemscount;$i++) {
+				$xml[$i]['personid']=$relations[$i]['user'];
+			}
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'user','id',2,$countreceivedinvitations,$pagesize);
+
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+	}
+
+
+
+	/**	 
+	 * get the list of friends from a person
+	 * @param string $format
+	 * @param string $fromuser
+	 * @param string $page
+	 * @param string $pagesize
+	 * @return string xml/json
+	 */
+	private static function friendget($format,$fromuser,$page,$pagesize) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+
+		$fromuser=strip_tags(addslashes($fromuser));
+		$page = intval($page);
+		$start=$pagesize*$page;
+		$count=$pagesize;
+
+		$cache = new H01_CACHE('apifriends',array($fromuser,CONFIG_USERDB,$page,$pagesize,$format));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+
+			$DBuser=H01_USER::getuser($fromuser,CONFIG_USERDB);
+			if(isset($DBuser['login'])) {
+				if($DBuser['privacyrelations']==0) {
+					$visible=true;
+				}elseif($DBuser['privacyrelations']==1){
+					if($user<>'') $visible=true; else $visible=false;
+				}elseif($DBuser['privacyrelations']==2){
+					if(($fromuser==$user) or (H01_RELATION::isrelation(1,$fromuser,CONFIG_USERDB,$user))) $visible=true; else $visible=false;
+				}elseif($DBuser['privacyrelations']==3){
+					if($fromuser==$user) $visible=true; else $visible=false;
+				}
+
+			 if($visible){
+					$countapprovedrelations=H01_RELATION::countapprovedrelations(1,$fromuser,CONFIG_USERDB);
+					$relations=H01_RELATION::getapprovedrelations(1,$fromuser,CONFIG_USERDB,$start,$count,true);
+					$itemscount=count($relations);
+					$xml=array();
+					for ($i=0; $i < $itemscount;$i++) {
+						$xml[$i]['personid']=$relations[$i]['user'];
+						$xml[$i]['firstname']=$relations[$i]['firstname'];
+						$xml[$i]['lastname']=$relations[$i]['lastname'];
+
+
+						if		 (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$relations[$i]['user'].'.jpg')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$relations[$i]['user'].'.jpg'; $found=true; }
+						elseif (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$relations[$i]['user'].'.png')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$relations[$i]['user'].'.png'; $found=true; }
+						elseif (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$relations[$i]['user'].'.gif')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$relations[$i]['user'].'.gif'; $found=true; }
+						else	{	$pic=STATICHOST.'/usermanager/nopic.png'; $found=false ;}
+						$xml[$i]['avatarpic']=$pic;
+						$xml[$i]['avatarpicfound']=$found;
+
+
+					}
+					$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'user','id',2,$countapprovedrelations,$pagesize);
+				}else{
+					$txt=H01_OCS::generatexml($format,'failed',101,'data is private');
+				}
+			}else{
+				$txt=H01_OCS::generatexml($format,'failed',102,'user not found');
+			}
+
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+
+	}
+
+
+
+
+	/**	 
+	 * invite a person as a friend
+	 * @param string $format
+	 * @param string $inviteuser
+	 * @param string $message
+	 * @return string xml/json
+	 */
+	private static function friendinvite($format,$inviteuser,$message) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$inviteuser = strip_tags(addslashes($inviteuser));
+		$message = strip_tags(addslashes($message));
+
+		$u=H01_USER::getuser($inviteuser,CONFIG_USERDB);
+		if($u==false) $inviteuser=false; else $inviteuser=$u['login'];
+
+		if($user<>'' and $inviteuser<>'' and $inviteuser<>false) {
+			if($user<>$inviteuser) {
+				if($message<>'') {
+					H01_RELATION::requestrelation(1,$user,$inviteuser,CONFIG_USERDB,$message);
+					echo(H01_OCS::generatexml($format,'ok',100,''));
+				} else {
+					echo(H01_OCS::generatexml($format,'failed',101,'message must not be empty'));
+				}
+			}else{
+				echo(H01_OCS::generatexml($format,'failed',102,'you can\´t invite yourself'));
+			}
+		} else {
+			echo(H01_OCS::generatexml($format,'failed',103,'user not found'));
+		}
+
+	}
+
+	/**	 
+	 * approve a friendsship invitation
+	 * @param string $format
+	 * @param string $inviteuser
+	 * @return string xml/json
+	 */
+	private static function friendapprove($format,$inviteuser) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$inviteuser = strip_tags(addslashes($inviteuser));
+
+		if($user<>'' and $inviteuser<>'') {
+			H01_RELATION::confirmrelation(1,$user,$inviteuser,CONFIG_USERDB);
+			echo(H01_OCS::generatexml($format,'ok',100,''));
+		} else {
+			echo(H01_OCS::generatexml($format,'failed',101,'user not found'));
+		}
+
+	}
+
+
+	/**	 
+	 * decline a friendsship invitation
+	 * @param string $format
+	 * @param string $inviteuser
+	 * @return string xml/json
+	 */
+	private static function frienddecline($format,$inviteuser) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$inviteuser = strip_tags(addslashes($inviteuser));
+
+		if($user<>'' and $inviteuser<>'') {
+			H01_RELATION::declinerelation(1,$user,$inviteuser,CONFIG_USERDB);
+			echo(H01_OCS::generatexml($format,'ok',100,''));
+		} else {
+			echo(H01_OCS::generatexml($format,'failed',101,'user not found'));
+		}
+
+	}
+
+
+	/**	 
+	 * cancel a friendsship
+	 * @param string $format
+	 * @param string $inviteuser
+	 * @return string xml/json
+	 */
+	private static function friendcancel($format,$inviteuser) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$inviteuser = strip_tags(addslashes($inviteuser));
+
+		if($user<>'' and $inviteuser<>'') {
+			H01_RELATION::cancelrelation(1,$user,$inviteuser,CONFIG_USERDB);
+			echo(H01_OCS::generatexml($format,'ok',100,''));
+		} else {
+			echo(H01_OCS::generatexml($format,'failed',101,'user not found'));
+		}
+
+	}
+
+
+	/**	 
+	 * cancel a friendsship invitation
+	 * @param string $format
+	 * @param string $inviteuser
+	 * @return string xml/json
+	 */
+	private static function friendcancelrequest($format,$inviteuser) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$inviteuser = strip_tags(addslashes($inviteuser));
+
+		if($user<>'' and $inviteuser<>'') {
+			H01_RELATION::deleterelationrequest(1,$user,$inviteuser,CONFIG_USERDB);
+			echo(H01_OCS::generatexml($format,'ok',100,''));
+		} else {
+			echo(H01_OCS::generatexml($format,'failed',101,'user not found'));
+		}
+
+	}
+
+
+
+
+
+
+	// MESSAGE API #############################################
+
+	/**	 
+	 * get the list of available message foldersn
+	 * @param string $format
+	 * @return string xml/json
+	 */
+	private static function messagefolders($format) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		if(!empty($user)) {
+			$cache = new H01_CACHE('apimessagefolder',array($user,CONFIG_USERDB,$format));
+			if ($cache->exist()) {
+				$cache->get();
+				unset($cache);
+			} else {
+
+				$i=0;
+				foreach(H01_MESSAGE::$FOLDERS[1] as $key=>$value) {
+					$i++;
+					$xml[$i]['id']=$key;
+					$xml[$i]['name']=$value;
+					$count=H01_MESSAGE::countmessages($user,CONFIG_USERDB,$key);
+					$xml[$i]['messagecount']=$count;
+					if($key==0) $xml[$i]['type']='inbox';
+					elseif($key==1) $xml[$i]['type']='send';
+					elseif($key==2) $xml[$i]['type']='trash';
+					else $xml[$i]['type']='';
+				}
+				$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'folder','',2,count(H01_MESSAGE::$FOLDERS[1]));
+
+				$cache->put($txt);
+				unset($cache);
+				echo($txt);
+			}
+
+		}else{
+			$txt=H01_OCS::generatexml($format,'failed',101,'user not found');
+			echo($txt);
+		}
+
+	}
+
+
+	/**	 
+	 * get a list of messages
+	 * @param string $format
+	 * @param string $folder
+	 * @param string $page
+	 * @param string $pagesize
+	 * @param string $filter
+	 * @return string xml/json
+	 */
+	private static function messagelist($format,$folder,$page,$pagesize,$filter) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+
+		$cache = new H01_CACHE('apimessagelist',array($user,CONFIG_USERDB,$folder,$filter,$page,$pagesize,$format));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+			$messages=H01_MESSAGE::getlist($user,CONFIG_USERDB,$folder,$page,$pagesize,$filter);
+			$messagescount=$messages['count'];
+			unset($messages['count']);
+			$itemscount=count($messages);
+			$xml=array();
+			for ($i=0; $i < $itemscount;$i++) {
+				$xml[$i]['id']=$messages[$i]['id'];
+				$xml[$i]['messagefrom']=$messages[$i]['messagefrom'];
+				$xml[$i]['firstname']=$messages[$i]['firstname'];
+				$xml[$i]['lastname']=$messages[$i]['lastname'];
+				$xml[$i]['profilepage']='http://'.CONFIG_WEBSITEHOST.'/usermanager/search.php?username='.urlencode($messages[$i]['messagefrom']); 
+				$xml[$i]['messageto']=$messages[$i]['messageto'];
+				$xml[$i]['senddate']=date('c',$messages[$i]['senddate']);
+				$xml[$i]['status']=$messages[$i]['status'];
+				$xml[$i]['statustext']=strip_tags(H01_MESSAGE::$STATUS[1][$messages[$i]['status']]);
+				$xml[$i]['subject']=$messages[$i]['subject'];
+				$xml[$i]['body']=$messages[$i]['body'];
+//				$xml[$i]['folder']=$messages[$i]['folder'];
+			}
+
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'message','full',2,$messagescount,$pagesize);
+
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+	}
+
+	/**	 
+	 * get one specific message
+	 * @param string $format
+	 * @param string $folder
+	 * @param string $message
+	 * @return string xml/json
+	 */
+	private static function messageget($format,$folder,$message) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+
+		$cache = new H01_CACHE('apimessageget',array($user,CONFIG_USERDB,$folder,$message,$format));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+
+			H01_MESSAGE::setstatus($message,$user,CONFIG_USERDB,1); 
+			$message=H01_MESSAGE::get($user,CONFIG_USERDB,$folder,$message);
+			if(count($message)>0) {
+				$xml['id']=$message['id'];
+				$xml['messagefrom']=$message['messagefrom'];
+				$xml['firstname']=$message['firstname'];
+				$xml['lastname']=$message['lastname'];
+				$xml['profilepage']='http://'.CONFIG_WEBSITEHOST.'/usermanager/search.php?username='.urlencode($message['messagefrom']); 
+				$xml['messageto']=$message['messageto'];
+				$xml['senddate']=date('c',$message['senddate']);
+				$xml['status']=$message['status'];
+				$xml['statustext']=strip_tags(H01_MESSAGE::$STATUS[1][$message['status']]);
+				$xml['subject']=$message['subject'];
+				$xml['body']=$message['body'];
+				$xml2[1]=$xml;
+				$txt=H01_OCS::generatexml($format,'ok',100,'',$xml2,'message','full',2);
+			}else{
+				$txt=H01_OCS::generatexml($format,'failed',101,'message not found');
+			}
+
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+	}
+
+
+
+	/**	 
+	 * send a message
+	 * @param string $format
+	 * @param string $touser
+	 * @param string $subject
+	 * @param string $message
+	 * @return string xml/json
+	 */
+	private static function messagesend($format,$touser,$subject,$message) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+
+		if($touser<>$user) {
+			if(!empty($subject) and !empty($message)) {
+				if(!empty($user) and H01_USER::exist($touser,CONFIG_USERDB,true)) {
+					H01_MESSAGE::send($user,CONFIG_USERDB,$touser,$subject,$message);
+					echo(H01_OCS::generatexml($format,'ok',100,''));
+				}else{
+					echo(H01_OCS::generatexml($format,'failed',101,'user not found'));
+				}
+			}else{
+				echo(H01_OCS::generatexml($format,'failed',102,'subject or message not found'));
+			}
+		}else{
+			echo(H01_OCS::generatexml($format,'failed',103,'you can\´t send a message to yourself'));
+		}
+	}
+
+
+	// ACTIVITY API #############################################
+
+	/**	 
+	 * get my activities
+	 * @param string $format
+	 * @param string $page
+	 * @param string $pagesize
+	 * @return string xml/json
+	 */
+	private static function activityget($format,$page,$pagesize) {
+
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		
+		$cache = new H01_CACHE('apilog',array($user,CONFIG_USERDB,$page,$pagesize,$format));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+
+			$log=H01_LOG::getlist($user,CONFIG_USERDB,$page,$pagesize);
+			$totalcount=$log['count'];
+			unset($log['count']);
+			$itemscount=count($log);
+			$xml=array();
+			for ($i=0; $i < $itemscount;$i++) {
+				$xml[$i]['id']=$log[$i]['id'];
+				$xml[$i]['personid']=$log[$i]['user'];
+				$xml[$i]['firstname']=$log[$i]['firstname'];
+				$xml[$i]['lastname']=$log[$i]['name'];
+				$xml[$i]['profilepage']='http://'.CONFIG_WEBSITEHOST.'/usermanager/search.php?username='.urlencode($log[$i]['user']); 
+
+				if		 (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$log[$i]['user'].'.jpg')) $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$log[$i]['user'].'.jpg';
+				elseif (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$log[$i]['user'].'.png')) $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$log[$i]['user'].'.png';
+				elseif (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$log[$i]['user'].'.gif')) $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$log[$i]['user'].'.gif';
+				else	 $pic='http://'.CONFIG_WEBSITEHOST.'/usermanager/nopic.png';
+				$xml[$i]['avatarpic']=$pic;
+
+				$xml[$i]['timestamp']=date('c',$log[$i]['timestamp']);
+				$xml[$i]['type']=$log[$i]['type'];
+				$xml[$i]['message']=strip_tags($log[$i]['logmessage']);
+				$xml[$i]['link']=$log[$i]['link'];
+			}
+
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'activity','full',2,$totalcount,$pagesize);
+
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+
+	}
+
+	/**	 
+	 * submit a activity
+	 * @param string $format
+	 * @param string $message
+	 * @return string xml/json
+	 */
+	private static function activityput($format,$message) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+
+		if($user<>'') {
+			if(trim($message)<>'') {
+				H01_MICROBLOG::send($user,CONFIG_USERDB,$message);
+				echo(H01_OCS::generatexml($format,'ok',100,''));
+			} else {
+				echo(H01_OCS::generatexml($format,'failed',101,'empty message'));
+			}
+		} else {
+			echo(H01_OCS::generatexml($format,'failed',102,'user not found'));
+		}
+
+	}
+
+
+	// CONTENT API #############################################
+
+	/**	 
+	 * get a specific content
+	 * @param string $format
+	 * @param string $content
+	 * @return string xml/json
+	 */
+	private static function contentget($format,$content) {
+		global $WEBSITECONTENT;
+		global $DEPENDTYPES;
+		global $DISTRIBUTIONSTYPES;
+		global $contentlicense;
+
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+
+		$content=addslashes($content);
+
+		$cache = new H01_CACHE('apiget',array($_SESSION['website'],$_SESSION['lang'],$content,$format));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+
+			// fetch data
+			$con=H01_CONTENT::getdetail($content);
+
+			// check data
+			if ((count($con) == 0) or (!isset($con['type'])) or (!isset($WEBSITECONTENT[$con['type']])) ) {
+				$txt=H01_OCS::generatexml($format,'failed',101,'content not found');
+			} else {
+
+				$xml['id']=$con['id'];
+				$xml['name']=$con['name'];
+				$xml['version']=$con['version'];
+				$xml['typeid']=$con['type'];
+				$xml['typename']=$WEBSITECONTENT[$con['type']];
+				$xml['language']=H01_CONTENT::$LANGUAGES[$con['language']];
+				$xml['personid']=$con['user'];
+				$xml['profilepage']='http://opendesktop.org/usermanager/search.php?username='.urlencode($con['user']);
+				$xml['created']=date('c',$con['created']);
+				$xml['changed']=date('c',$con['changed']);
+				$xml['downloads']=$con['downloads'];
+				$xml['score']=$con['scoresum'];
+				$xml['description']=$con['description'];
+				$xml['summary']=$con['summary'];
+				$xml['feedbackurl']=$con['feedbackurl'];
+				$xml['changelog']=$con['changelog'];
+				$xml['homepage']=$con['homepage1'];
+				if($con['homepagetype1']<>0) $xml['homepagetype']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype1']]; else $xml['homepagetype']='';
+				$xml['homepage2']=$con['homepage2'];
+				if($con['homepagetype2']<>0) $xml['homepagetype2']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype2']]; else $xml['homepagetype2']='';
+				$xml['homepage3']=$con['homepage3'];
+				if($con['homepagetype3']<>0) $xml['homepagetype3']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype3']]; else $xml['homepagetype3']='';
+				$xml['homepage4']=$con['homepage4'];
+				if($con['homepagetype4']<>0) $xml['homepagetype4']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype4']]; else $xml['homepagetype4']='';
+				$xml['homepage5']=$con['homepage5'];
+				if($con['homepagetype5']<>0) $xml['homepagetype5']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype5']]; else $xml['homepagetype5']='';
+				$xml['homepage6']=$con['homepage6'];
+				if($con['homepagetype6']<>0) $xml['homepagetype6']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype6']]; else $xml['homepagetype6']='';
+				$xml['homepage7']=$con['homepage7'];
+				if($con['homepagetype7']<>0) $xml['homepagetype7']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype7']]; else $xml['homepagetype7']='';
+				$xml['homepage8']=$con['homepage8'];
+				if($con['homepagetype8']<>0) $xml['homepagetype8']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype8']]; else $xml['homepagetype8']='';
+				$xml['homepage9']=$con['homepage9'];
+				if($con['homepagetype9']<>0) $xml['homepagetype9']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype9']]; else $xml['homepagetype9']='';
+				$xml['homepage10']=$con['homepage10'];
+				if($con['homepagetype10']<>0) $xml['homepagetype10']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype10']]; else $xml['homepagetype10']='';
+
+				$xml['licensetype']=$con['licensetype'];
+				if (($con['licensetype']<>0) and ($con['licensetype']<>1000)) {
+					if(isset($contentlicense[$con['licensetype']])) $xml['license']=$contentlicense[$con['licensetype']];
+				} else {
+					if (!empty($con['license'])) $xml['license']=nl2br(htmlspecialchars($con['license']));
+				}
+
+				if(!empty($con['donation'])) $xml['donationpage']='http://'.CONFIG_WEBSITEHOST.'/content/donate.php?content='.$con['id']; else $xml['donationpage']='';
+				$xml['comments']=$con['commentscount'];
+				$xml['commentspage']='http://'.CONFIG_WEBSITEHOST.'/content/show.php?content='.$con['id'];
+				$xml['fans']=$con['fancount'];
+				$xml['fanspage']='http://'.CONFIG_WEBSITEHOST.'/content/show.php?action=fan&content='.$con['id'];
+				$xml['knowledgebaseentries']=$con['knowledgebasecount'];
+				$xml['knowledgebasepage']='http://'.CONFIG_WEBSITEHOST.'/content/show.php?action=knowledgebase&content='.$con['id'];
+
+				if ($con['depend']<>0) $xml['depend']=$DEPENDTYPES[$con['depend']]; else $xml['depend']='';
+
+				// preview
+				if (!empty($con['preview1'])) $pic1=$con['id'].'-1.'.$con['preview1']; else $pic1='';
+				if (!empty($con['preview2'])) $pic2=$con['id'].'-2.'.$con['preview2']; else $pic2='';
+				if (!empty($con['preview3'])) $pic3=$con['id'].'-3.'.$con['preview3']; else $pic3='';
+				if (!empty($con['preview1'])) $picsmall1='m'.$con['id'].'-1.png'; else $picsmall1='';
+				if (!empty($con['preview2'])) $picsmall2='m'.$con['id'].'-2.png'; else $picsmall2='';
+				if (!empty($con['preview3'])) $picsmall3='m'.$con['id'].'-3.png'; else $picsmall3='';
+
+
+				if(!empty($pic1)) $xml['preview1']='http://'.CONFIG_WEBSITEHOST.'/content/preview.php?preview=1&id='.$con['id'].'&file1='.$pic1.'&file2='.$pic2.'&file3='.$pic3.'&name='.urlencode($con['name']); else $xml['preview1']='';
+				if(!empty($pic2)) $xml['preview2']='http://'.CONFIG_WEBSITEHOST.'/content/preview.php?preview=2&id='.$con['id'].'&file1='.$pic1.'&file2='.$pic2.'&file3='.$pic3.'&name='.urlencode($con['name']); else $xml['preview2']='';
+				if(!empty($pic3)) $xml['preview3']='http://'.CONFIG_WEBSITEHOST.'/content/preview.php?preview=3&id='.$con['id'].'&file1='.$pic1.'&file2='.$pic2.'&file3='.$pic3.'&name='.urlencode($con['name']); else $xml['preview3']='';
+				if(!empty($pic1)) $xml['previewpic1']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-pre1/'.$pic1; else $xml['previewpic1']='';
+				if(!empty($pic2)) $xml['previewpic2']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-pre2/'.$pic2; else $xml['previewpic2']='';
+				if(!empty($pic3)) $xml['previewpic3']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-pre3/'.$pic3; else $xml['previewpic3']='';
+				if(!empty($picsmall1)) $xml['smallpreviewpic1']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-m1/'.$picsmall1; else $xml['picsmall1']='';
+				if(!empty($picsmall2)) $xml['smallpreviewpic2']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-m2/'.$picsmall2; else $xml['picsmall2']='';
+				if(!empty($picsmall3)) $xml['smallpreviewpic3']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-m3/'.$picsmall3; else $xml['picsmall3']='';
+				$xml['detailpage']='http://'.CONFIG_WEBSITEHOST.'/content/show.php?content='.$con['id'];
+
+				// download
+				if (!empty($con['download1']) or !empty($con['downloadlink1']) or ($con['downloadtyp1']==2)) {
+					if($con['downloadfiletype1']<>0) {
+						$typetmp=$DISTRIBUTIONSTYPES[$con['downloadfiletype1']].' ';
+					} else {
+						$typetmp='';
+					}
+					$xml['downloadtype1']=$typetmp;
+					if($con['downloadbuy1']==1) {
+						$xml['downloadprice1']=$con['downloadbuyprice1'];
+						$xml['downloadlink1']='http://'.CONFIG_WEBSITEHOST.'/content/buy.php?content='.$con['id'].'&id=1';
+					}else{
+						$xml['downloadprice1']='0';
+						$xml['downloadlink1']='http://'.CONFIG_WEBSITEHOST.'/content/download.php?content='.$con['id'].'&id=1';
+					}
+					if(!empty($con['downloadname1'])) $xml['downloadname1']=$con['downloadname1']; else $xml['downloadname1']='';
+					if(!empty($con['downloadgpgfingerprint1'])) $xml['downloadgpgfingerprint1']=$con['downloadgpgfingerprint1']; else $xml['downloadgpgfingerprint1']='';
+					if(!empty($con['downloadgpgsignature1']))	 $xml['downloadgpgsignature1']=$con['downloadgpgsignature1'];		 else $xml['downloadgpgsignature1']='';
+					if(!empty($con['downloadpackagename1'])) $xml['downloadpackagename1']=$con['downloadpackagename1']; else $xml['downloadpackagename1']='';
+					if(!empty($con['downloadrepository1'])) $xml['downloadrepository1']=$con['downloadrepository1']; else $xml['downloadrepository1']='';
+
+					if(($con['downloadtyp1']=='0') and (!empty($con['download1']))) $xml['downloadsize1']=ceil(@filesize(CONFIG_DOCUMENT_ROOT.'/CONTENT/content-files/'.$con['download1'])/1024); else $xml['downloadsize1']='';
+
+				}
+
+				for ($i=2; $i <= 12;$i++) {
+					if (!empty($con['downloadname'.$i]) and !empty($con['downloadlink'.$i]) ) {
+						if($con['downloadfiletype'.$i]<>0) {
+							$typetmp=$DISTRIBUTIONSTYPES[$con['downloadfiletype'.$i]].' ';
+						} else {
+							$typetmp='';
+						}
+						$xml['downloadtype'.$i]=$typetmp;
+
+						if($con['downloadbuy'.$i]==1) {
+							$xml['downloadprice'.$i]=$con['downloadbuyprice'.$i];
+							$xml['downloadlink'.$i]='http://'.CONFIG_WEBSITEHOST.'/content/buy.php?content='.$con['id'].'&id='.$i;
+						}else{
+							$xml['downloadprice'.$i]='0';
+							$xml['downloadlink'.$i]='http://'.CONFIG_WEBSITEHOST.'/content/download.php?content='.$con['id'].'&id='.$i;
+						}
+						if(!empty($con['downloadname'.$i])) $xml['downloadname'.$i]=$con['downloadname'.$i]; else $xml['downloadname'.$i]='';
+						if(!empty($con['downloadgpgfingerprint'.$i])) $xml['downloadgpgfingerprint'.$i]=$con['downloadgpgfingerprint'.$i]; else $xml['downloadgpgfingerprint'.$i]='';
+						if(!empty($con['downloadgpgsignature'.$i])) $xml['downloadgpgsignature'.$i]=$con['downloadgpgsignature'.$i]; else $xml['downloadgpgsignature'.$i]='';
+						if(!empty($con['downloadpackagename'.$i])) $xml['downloadpackagename'.$i]=$con['downloadpackagename'.$i]; else $xml['downloadpackagename'.$i]='';
+						if(!empty($con['downloadrepository'.$i])) $xml['downloadrepository'.$i]=$con['downloadrepository'.$i]; else $xml['downloadrepository'.$i]='';
+					}
+				}
+				$xml2[0]=$xml;
+				$txt=H01_OCS::generatexml($format,'ok',100,'',$xml2,'content','full',2);
+
+			}
+
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+	}
+
+
+
+	/**	 
+	 * get the download link for a content
+	 * @param string $format
+	 * @param string $content
+	 * @param string $item
+	 * @return string xml/json
+	 */
+ private static function contentdownload($format,$content,$item) {
+		global $WEBSITECONTENT;
+
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+
+		$content= (int) $content;
+		$item= (int) $item;
+
+		// item range
+		if($item<1 or $item>12) {
+			$txt=H01_OCS::generatexml($format,'failed',101,'item not found');
+		} else {
+
+			// fetch data
+			$con=H01_CONTENT::getdetail($content);
+
+			// check data
+			if ((count($con) == 0) or (!isset($con['type'])) or (!isset($WEBSITECONTENT[$con['type']])) ) {
+				$txt=H01_OCS::generatexml($format,'failed',101,'content not found');
+			} else {
+
+
+
+			if($item==1) {
+				if($con['downloadtyp1']==0) {
+					$link='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-files/'.$con['download1'];
+					$filename=CONFIG_DOCUMENT_ROOT.'/CONTENT/content-files/'.$con['download1'];
+
+					$mimetype=mime_content_type($filename);
+// enable with php 5.3
+//					$finfo = finfo_open(FILEINFO_MIME_TYPE);
+//					$mimetype=finfo_file($finfo, $filename);
+//					finfo_close($finfo);
+
+				} else {
+					$link=$con['downloadlink1'];
+					$mimetype='';
+				}
+			}
+			elseif($item==2)	$link=$con['downloadlink2'];
+			elseif($item==3)	$link=$con['downloadlink3'];
+			elseif($item==4)	$link=$con['downloadlink4'];
+			elseif($item==5)	$link=$con['downloadlink5'];
+			elseif($item==6)	$link=$con['downloadlink6'];
+			elseif($item==7)	$link=$con['downloadlink7'];
+			elseif($item==8)	$link=$con['downloadlink8'];
+			elseif($item==9)	$link=$con['downloadlink9'];
+			elseif($item==10) $link=$con['downloadlink10'];
+			elseif($item==11) $link=$con['downloadlink11'];
+			elseif($item==12) $link=$con['downloadlink12'];
+			else $link='';
+
+
+			if($item==1){
+				if(!empty($con['download1']) or !empty($con['downloadlink1']) or ($con['downloadtyp1']==2)) {
+					if($con['downloadbuy1']==1) {
+
+						if($user=='') {
+							echo(H01_OCS::generatexml($format,'failed',104,'you have to login to buy a content'));
+							exit();
+						}
+
+						$status=H01_PAYMENT::buy(addslashes($user),$con['id'],$item,$con['downloadbuyprice'.$item]);
+						if($status==true) {
+							$xml['downloadlink']=$link;
+							$xml['mimetype']=$mimetype;
+							$xml['gpgfingerprint']=$con['downloadgpgfingerprint1'];
+							$xml['gpgsignature']=$con['downloadgpgsignature1'];
+							$xml['packagename']=$con['downloadpackagename1'];
+							$xml['repository']=$con['downloadrepository1'];
+							$xml2[0]=$xml;
+							$txt=H01_OCS::generatexml($format,'ok',100,'',$xml2,'content','download',2);
+						}else{
+							$txt=H01_OCS::generatexml($format,'failed',102,'payment failed');
+						}
+					}else{
+						$xml['downloadlink']=$link;
+						$xml['mimetype']=$mimetype;
+						$xml['gpgfingerprint']=$con['downloadgpgfingerprint1'];
+						$xml['gpgsignature']=$con['downloadgpgsignature1'];
+						$xml['packagename']=$con['downloadpackagename1'];
+						$xml['repository']=$con['downloadrepository1'];
+						$xml2[0]=$xml;
+						$txt=H01_OCS::generatexml($format,'ok',100,'',$xml2,'content','download',2);
+					}
+
+				}else{
+					$txt=H01_OCS::generatexml($format,'failed',103,'content item not found');
+				}
+			}
+
+			if(($item>1) and ($item<13)){
+				if (!empty($con['downloadname'.$item]) or !empty($con['downloadlink'.$item])) {
+
+					if($con['downloadbuy'.$item]==1) {
+						if($user=='') {
+							echo(H01_OCS::generatexml($format,'failed',104,'you have to login to buy a content'));
+							exit();
+						}
+
+						$status=H01_PAYMENT::buy(addslashes($user),$con['id'],$item,$con['downloadbuyprice'.$item]);
+						if($status==true) {
+							$xml['downloadlink']=$link;
+							$xml['mimetype']=''; // no idea with external content
+							$xml['gpgfingerprint']=$con['downloadgpgfingerprint'.$item];
+							$xml['gpgsignature']=$con['downloadgpgsignature'.$item];
+							$xml['packagename']=$con['downloadpackagename'.$item];
+							$xml['repository']=$con['downloadrepository'.$item];
+							$xml2[0]=$xml;
+							$txt=H01_OCS::generatexml($format,'ok',100,'',$xml2,'content','download',2);
+						}else{
+							$txt=H01_OCS::generatexml($format,'failed',102,'payment failed');
+						}
+					}else{
+						$xml['downloadlink']=$link;
+						$xml['mimetype']='';	// no idea with external content
+						$xml['gpgfingerprint']=$con['downloadgpgfingerprint'.$item];
+						$xml['gpgsignature']=$con['downloadgpgsignature'.$item];
+						$xml['packagename']=$con['downloadpackagename'.$item];
+						$xml['repository']=$con['downloadrepository'.$item];
+						$xml2[0]=$xml;
+						$txt=H01_OCS::generatexml($format,'ok',100,'',$xml2,'content','download',2);
+					}
+				}else{
+					$txt=H01_OCS::generatexml($format,'failed',103,'content item not found');
+				}
+			}
+		}
+		}
+
+		if(isset($txt) and $txt<>'') {
+			echo($txt);
+		}else{
+			echo(H01_OCS::generatexml($format,'failed',101,'content item not found'));
+		}
+	}
+
+
+
+
+
+	/**	 
+	 * get a list of contents
+	 * @param string $format
+	 * @param string $contents
+	 * @param string $searchstr
+	 * @param string $searchuser
+	 * @param string $sortmode
+	 * @param string $page
+	 * @param string $pagesize
+	 * @return string xml/json
+	 */
+	private static function contentlist($format,$contents,$searchstr,$searchuser,$external,$distribution,$license,$sortmode,$page,$pagesize) {
+
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+
+
+		$cache = new H01_CACHE('apilist',array($_SESSION['website'],$_SESSION['lang'],$format,$searchuser,$contents.$searchstr.$external.$distribution.$license.$sortmode.$page.$pagesize));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+
+			$xml=H01_CONTENT::search($user,$contents,$searchstr,$searchuser,$external,$distribution,$license,$sortmode,$page,$pagesize);
+			$totalitems=$xml['totalitems'];
+			unset($xml['totalitems']);
+
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'content','summary',2,$totalitems,$pagesize);
+
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+
+	}
+
+
+
+
+	/**	 
+	 * get a list of recommendations for a content
+	 * @param string $format
+	 * @param string $contents
+	 * @param string $searchstr
+	 * @param string $searchuser
+	 * @param string $sortmode
+	 * @param string $page
+	 * @param string $pagesize
+	 * @return string xml/json
+	 */
+	private static function contentrecommendations($format,$contentid,$page,$pagesize) {
+
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+
+
+		$cache = new H01_CACHE('apicontentrecommendations',array($_SESSION['website'],$_SESSION['lang'],$contentid,$format));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+
+			$xml=H01_CONTENT::getrecommendations($contentid,$page,$pagesize);
+			$totalitems=$xml['totalitems'];
+			unset($xml['totalitems']);
+
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'content','basic',2,$totalitems,$pagesize);
+
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+
+	}
+
+
+
+
+
+
+	/**	 
+	 * get a list of contents categories
+	 * @param string $format
+	 * @return string xml/json
+	 */
+	private static function contentcategories($format) {
+		global $WEBSITECONTENT;
+		global $WEBSITECONTENTTHEME;
+
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+
+		$i=0;
+		foreach($WEBSITECONTENT as $key=>$value) {
+			$i++;
+			$xml[$i]['id']=$key;
+			$xml[$i]['name']=$value;
+		}
+		$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'category','',2,count($WEBSITECONTENT));
+
+		echo($txt);
+	}
+
+	/**	 
+	 * get a list of contents licenses
+	 * @param string $format
+	 * @return string xml/json
+	 */
+	private static function contentlicenses($format) {
+		global $contentlicense;
+		global $contentlicenselink;
+
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+
+		$i=0;
+		foreach($contentlicense as $key=>$value) {
+			$i++;
+			$xml[$i]['id']=$key;
+			$xml[$i]['name']=$value;
+			$xml[$i]['link']=$contentlicenselink[$key];
+		}
+		$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'license','',2,count($contentlicense));
+
+		echo($txt);
+	}
+
+	/**	 
+	 * get a list of contents distributions
+	 * @param string $format
+	 * @return string xml/json
+	 */
+	private static function contentdistributions($format) {
+		global $DISTRIBUTIONSTYPES;
+
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+
+		$i=0;
+		foreach($DISTRIBUTIONSTYPES as $key=>$value) {
+			$i++;
+			$xml[$i]['id']=$key;
+			$xml[$i]['name']=$value;
+		}
+		$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'distribution','',2,count($DISTRIBUTIONSTYPES));
+
+		echo($txt);
+	}
+
+
+	/**	 
+	 * get a list of contents homepages
+	 * @param string $format
+	 * @return string xml/json
+	 */
+	private static function contenthomepages($format) {
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+
+		$i=0;
+		foreach(H01_CONTENT::$LINK_CATEGORY as $key=>$value) {
+			$i++;
+			$xml[$i]['id']=$key;
+			$xml[$i]['name']=$value;
+		}
+		$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'homepagetypes','',2,count(H01_CONTENT::$LINK_CATEGORY));
+
+		echo($txt);
+	}
+
+
+	/**	 
+	 * get a list of contents dependencies
+	 * @param string $format
+	 * @return string xml/json
+	 */
+	private static function contentdependencies($format) {
+		global $DEPENDTYPES;
+
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+
+		$i=0;
+		foreach($DEPENDTYPES as $key=>$value) {
+			$i++;
+			$xml[$i]['id']=$key;
+			$xml[$i]['name']=$value;
+		}
+		$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'dependtypes','',2,count($DEPENDTYPES));
+
+		echo($txt);
+	}
+
+
+
+	/**	 
+	 * vote for a content
+	 * @param string $format
+	 * @param string $content
+	 * @param string $vote
+	 * @return string xml/json
+	 */
+	private static function contentvote($format,$content,$vote) {
+		global $WEBSITECONTENT;
+
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+
+		// fetch data
+		$content=addslashes($content);
+		$vote=addslashes($vote);
+		$con=H01_CONTENT::getdetail($content);
+		// check data
+		if ((count($con) == 0) or (!isset($con['type'])) or (!isset($WEBSITECONTENT[$con['type']])) ) {
+			$txt=H01_OCS::generatexml($format,'failed',101,'content not found');
+		} else {
+			if($user<>'') H01_CONTENT::setscore($user,CONFIG_USERDB,$content,$vote);
+			$txt=H01_OCS::generatexml($format,'ok',100,'');
+		}
+		echo($txt);
+	}
+
+
+	/**	 
+	 * delete a preview picture of a content
+	 * @param string $format
+	 * @param string $contentid
+	 * @param string $previewid
+	 * @return string xml/json
+	 */
+	private static function contentpreviewdelete($format,$contentid,$previewid) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$content=addslashes($contentid);
+		$preview=addslashes($previewid);
+
+		// fetch data
+		$con=H01_CONTENT::getdetail($content);
+		if(isset($con['preview'.$preview]) and $con['preview'.$preview]<>'') {
+
+			if((($con['user']==$user) and ($con['userdb']==CONFIG_USERDB) and H01_AUTH::checkuser(PERM_Content_Edit,$user,CONFIG_USERDB) ) or (H01_AUTH::checkuser(PERM_Content_Admin,$user,CONFIG_USERDB))) {
+
+				H01_CONTENTEDIT::previewdelete($content,$con['preview'.$preview],$preview);
+				H01_CACHEADMIN::cleancache('apilist',array($_SESSION['website'],$_SESSION['lang'],$format,$user));
+				H01_CACHEADMIN::cleancache('apiget',array($_SESSION['website'],$_SESSION['lang'],$content));
+				$txt=H01_OCS::generatexml($format,'ok',100,'');
+			} else {
+				$txt=H01_OCS::generatexml($format,'failed',101,'no permission to change content');
+			}
+		} else {
+			$txt=H01_OCS::generatexml($format,'failed',102,'preview not found');
+		}
+		echo($txt);
+	}
+
+	/**	 
+	 * upload a preview picture of a content
+	 * @param string $format
+	 * @param string $contentid
+	 * @param string $previewid
+	 * @return string xml/json
+	 */
+	private static function contentpreviewupload($format,$contentid,$previewid) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$content=addslashes($contentid);
+		$preview=addslashes($previewid);
+
+		// fetch data
+		$con=H01_CONTENT::getdetail($content);
+
+		if(($preview==1) or ($preview==2) or ($preview==3)) {
+
+			if((($con['user']==$user) and ($con['userdb']==CONFIG_USERDB) and H01_AUTH::checkuser(PERM_Content_Edit,$user,CONFIG_USERDB) ) or (H01_AUTH::checkuser(PERM_Content_Admin,$user,CONFIG_USERDB))) {
+
+				if(isset($_FILES['localfile']['name']) and isset($_FILES['localfile']['name']) and ($_FILES['localfile']['name']<>'' and $_FILES['localfile']['name']<>'none' and $_FILES['localfile']['tmp_name']<>'' and $_FILES['localfile']['tmp_name']<>'none')) {
+					H01_CONTENTEDIT::previewadd($content,'localfile',$preview);
+					H01_CACHEADMIN::cleancache('apilist',array($_SESSION['website'],$_SESSION['lang'],$format,$user));
+					H01_CACHEADMIN::cleancache('apiget',array($_SESSION['website'],$_SESSION['lang'],$content));
+					$txt=H01_OCS::generatexml($format,'ok',100,'');
+				} else {
+					$txt=H01_OCS::generatexml($format,'failed',101,'localfile not found');
+				}
+			} else {
+				$txt=H01_OCS::generatexml($format,'failed',102,'no permission to change content');
+			}
+		} else {
+			$txt=H01_OCS::generatexml($format,'failed',103,'preview most be 1, 2 or 3');
+		}
+		echo($txt);
+	}
+
+
+
+	/**	 
+	 * delete the downloadfile from a content
+	 * @param string $format
+	 * @param string $contentid
+	 * @return string xml/json
+	 */
+	private static function contentdownloaddelete($format,$contentid) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$content=addslashes($contentid);
+
+		// fetch data
+		$con=H01_CONTENT::getdetail($content);
+
+		if((($con['user']==$user) and ($con['userdb']==CONFIG_USERDB) and H01_AUTH::checkuser(PERM_Content_Edit,$user,CONFIG_USERDB) ) or (H01_AUTH::checkuser(PERM_Content_Admin,$user,CONFIG_USERDB))) {
+
+			H01_CONTENTEDIT::downloaddelete($content);
+			H01_CACHEADMIN::cleancache('apilist',array($_SESSION['website'],$_SESSION['lang'],$format,$user));
+			H01_CACHEADMIN::cleancache('apiget',array($_SESSION['website'],$_SESSION['lang'],$content));
+			$txt=H01_OCS::generatexml($format,'ok',100,'');
+		} else {
+			$txt=H01_OCS::generatexml($format,'failed',101,'no permission to change content');
+		}
+
+		echo($txt);
+
+	}
+
+	/**	 
+	 * upload the downloadfile for a content
+	 * @param string $format
+	 * @param string $contentid
+	 * @return string xml/json
+	 */
+	private static function contentdownloadupload($format,$contentid) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$content=addslashes($contentid);
+
+		// fetch data
+		$con=H01_CONTENT::getdetail($content);
+
+		if((($con['user']==$user) and ($con['userdb']==CONFIG_USERDB) and H01_AUTH::checkuser(PERM_Content_Edit,$user,CONFIG_USERDB) ) or (H01_AUTH::checkuser(PERM_Content_Admin,$user,CONFIG_USERDB))) {
+
+			if(isset($_FILES['localfile']['name']) and isset($_FILES['localfile']['name']) and ($_FILES['localfile']['name']<>'' and $_FILES['localfile']['name']<>'none' and $_FILES['localfile']['tmp_name']<>'' and $_FILES['localfile']['tmp_name']<>'none')) {
+				$error=H01_CONTENTEDIT::downloadadd($content,'localfile');
+				H01_CACHEADMIN::cleancache('apilist',array($_SESSION['website'],$_SESSION['lang'],$format,$user));
+				H01_CACHEADMIN::cleancache('apiget',array($_SESSION['website'],$_SESSION['lang'],$content));
+				if($error==''){
+					$txt=H01_OCS::generatexml($format,'ok',100,'');
+				}else{
+					$txt=H01_OCS::generatexml($format,'failed',101,$error);
+				} 
+			} else {
+				$txt=H01_OCS::generatexml($format,'failed',102,'localfile not found');
+			}
+		} else {
+			$txt=H01_OCS::generatexml($format,'failed',103,'no permission to change content');
+		}
+
+		echo($txt);
+
+	}
+
+
+
+
+	/**	 
+	 * add a new content
+	 * @param string $format
+	 * @return string xml/json
+	 */
+	private static function contentadd($format) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+
+		if(H01_AUTH::checkuser(PERM_Content_Upload,$user,CONFIG_USERDB)) {
+
+			$data=array();
+			$data['name']=H01_OCS::readdata('name','text');
+//			if(H01_OCS::readdata('type','int')<>0)		 $data['type']=H01_OCS::readdata('type','int');
+			$data['type']=H01_OCS::readdata('type','int');
+			if(H01_OCS::readdata('depend','int')<>0)	 $data['depend']=H01_OCS::readdata('depend','int');
+
+			if(isset($_POST['downloadtyp1']))												$data['downloadtyp1']			 =H01_OCS::readdata('downloadtyp1','int');
+			if(H01_OCS::readdata('downloadname1','text')<>'')			 $data['downloadname1']			=H01_OCS::readdata('downloadname1','text');
+			if(H01_OCS::readdata('downloadlink1','text')<>'')			 $data['downloadlink1']			=H01_OCS::readdata('downloadlink1','text');
+			if(isset($_POST['downloaddistributiontype1']))					 $data['downloadfiletype1']	=H01_OCS::readdata('downloaddistributiontype1','int');
+			if(isset($_POST['downloadbuy1']))												$data['downloadbuy1']			 =H01_OCS::readdata('downloadbuy1','int');
+			if(H01_OCS::readdata('downloadbuyreason1','text')<>'')	$data['downloadbuyreason1'] =H01_OCS::readdata('downloadbuyreason1','text');
+			if(isset($_POST['downloadbuyprice1']))									 $data['downloadbuyprice1']	=H01_OCS::readdata('downloadbuyprice1','float');
+			if(H01_OCS::readdata('downloadpackagename1','text')<>'') $data['downloadpackagename1'] =H01_OCS::readdata('downloadpackagename1','text');
+			if(H01_OCS::readdata('downloadrepository1','text')<>'')	$data['downloadrepository1'] =H01_OCS::readdata('downloadrepository1','text');
+			if(H01_OCS::readdata('downloadgpgfingerprint1','text')<>'')	$data['downloadgpgfingerprint1'] =H01_OCS::readdata('downloadgpgfingerprint1','text');
+			if(H01_OCS::readdata('downloadgpgsignature1','text')<>'')	$data['downloadgpgsignature1'] =H01_OCS::readdata('downloadgpgsignature1','text');
+
+			if(H01_OCS::readdata('downloadname2','text')<>'')			 $data['downloadname2']			=H01_OCS::readdata('downloadname2','text');
+			if(H01_OCS::readdata('downloadlink2','text')<>'')			 $data['downloadlink2']			=H01_OCS::readdata('downloadlink2','text');
+			if(isset($_POST['downloaddistributiontype2']))					 $data['downloadfiletype2']	=H01_OCS::readdata('downloaddistributiontype2','int');
+			if(isset($_POST['downloadbuy2']))												$data['downloadbuy2']			 =H01_OCS::readdata('downloadbuy2','int');
+			if(H01_OCS::readdata('downloadbuyreason2','text')<>'')	$data['downloadbuyreason2'] =H01_OCS::readdata('downloadbuyreason2','text');
+			if(isset($_POST['downloadbuyprice2']))									 $data['downloadbuyprice2']	=H01_OCS::readdata('downloadbuyprice2','float');
+			if(H01_OCS::readdata('downloadpackagename2','text')<>'') $data['downloadpackagename2'] =H01_OCS::readdata('downloadpackagename2','text');
+			if(H01_OCS::readdata('downloadrepository2','text')<>'')	$data['downloadrepository2'] =H01_OCS::readdata('downloadrepository2','text');
+			if(H01_OCS::readdata('downloadgpgfingerprint2','text')<>'')	$data['downloadgpgfingerprint2'] =H01_OCS::readdata('downloadgpgfingerprint2','text');
+			if(H01_OCS::readdata('downloadgpgsignature2','text')<>'')	$data['downloadgpgsignature2'] =H01_OCS::readdata('downloadgpgsignature2','text');
+
+			if(H01_OCS::readdata('downloadname3','text')<>'')			 $data['downloadname3']			=H01_OCS::readdata('downloadname3','text');
+			if(H01_OCS::readdata('downloadlink3','text')<>'')			 $data['downloadlink3']			=H01_OCS::readdata('downloadlink3','text');
+			if(isset($_POST['downloaddistributiontype3']))					 $data['downloadfiletype3']	=H01_OCS::readdata('downloaddistributiontype3','int');
+			if(isset($_POST['downloadbuy3']))												$data['downloadbuy3']			 =H01_OCS::readdata('downloadbuy3','int');
+			if(H01_OCS::readdata('downloadbuyreason3','text')<>'')	$data['downloadbuyreason3'] =H01_OCS::readdata('downloadbuyreason3','text');
+			if(isset($_POST['downloadbuyprice3']))									 $data['downloadbuyprice3']	=H01_OCS::readdata('downloadbuyprice3','float');
+			if(H01_OCS::readdata('downloadpackagename3','text')<>'') $data['downloadpackagename3'] =H01_OCS::readdata('downloadpackagename3','text');
+			if(H01_OCS::readdata('downloadrepository3','text')<>'')	$data['downloadrepository3'] =H01_OCS::readdata('downloadrepository3','text');
+			if(H01_OCS::readdata('downloadgpgfingerprint3','text')<>'')	$data['downloadgpgfingerprint3'] =H01_OCS::readdata('downloadgpgfingerprint3','text');
+			if(H01_OCS::readdata('downloadgpgsignature3','text')<>'')	$data['downloadgpgsignature3'] =H01_OCS::readdata('downloadgpgsignature3','text');
+
+			if(H01_OCS::readdata('downloadname4','text')<>'')			 $data['downloadname4']			=H01_OCS::readdata('downloadname4','text');
+			if(H01_OCS::readdata('downloadlink4','text')<>'')			 $data['downloadlink4']			=H01_OCS::readdata('downloadlink4','text');
+			if(isset($_POST['downloaddistributiontype4']))					 $data['downloadfiletype4']	=H01_OCS::readdata('downloaddistributiontype4','int');
+			if(isset($_POST['downloadbuy4']))												$data['downloadbuy4']			 =H01_OCS::readdata('downloadbuy4','int');
+			if(H01_OCS::readdata('downloadbuyreason4','text')<>'')	$data['downloadbuyreason4'] =H01_OCS::readdata('downloadbuyreason4','text');
+			if(isset($_POST['downloadbuyprice4']))									 $data['downloadbuyprice4']	=H01_OCS::readdata('downloadbuyprice4','float');
+			if(H01_OCS::readdata('downloadpackagename4','text')<>'') $data['downloadpackagename4'] =H01_OCS::readdata('downloadpackagename4','text');
+			if(H01_OCS::readdata('downloadrepository4','text')<>'')	$data['downloadrepository4'] =H01_OCS::readdata('downloadrepository4','text');
+			if(H01_OCS::readdata('downloadgpgfingerprint4','text')<>'')	$data['downloadgpgfingerprint4'] =H01_OCS::readdata('downloadgpgfingerprint4','text');
+			if(H01_OCS::readdata('downloadgpgsignature4','text')<>'')	$data['downloadgpgsignature4'] =H01_OCS::readdata('downloadgpgsignature4','text');
+
+			if(H01_OCS::readdata('downloadgpgfingerprint1','text')<>'')	$data['downloadgpgfingerprint1'] =H01_OCS::readdata('downloadgpgfingerprint1','text');
+			if(H01_OCS::readdata('downloadgpgsignature1','text')<>'')	$data['downloadgpgsignature1'] =H01_OCS::readdata('downloadgpgsignature1','text');
+			if(H01_OCS::readdata('downloadname5','text')<>'')			 $data['downloadname5']			=H01_OCS::readdata('downloadname5','text');
+			if(H01_OCS::readdata('downloadlink5','text')<>'')			 $data['downloadlink5']			=H01_OCS::readdata('downloadlink5','text');
+			if(isset($_POST['downloaddistributiontype5']))					 $data['downloadfiletype5']	=H01_OCS::readdata('downloaddistributiontype5','int');
+			if(isset($_POST['downloadbuy5']))												$data['downloadbuy5']			 =H01_OCS::readdata('downloadbuy5','int');
+			if(H01_OCS::readdata('downloadbuyreason5','text')<>'')	$data['downloadbuyreason5'] =H01_OCS::readdata('downloadbuyreason5','text');
+			if(isset($_POST['downloadbuyprice5']))									 $data['downloadbuyprice5']	=H01_OCS::readdata('downloadbuyprice5','float');
+			if(H01_OCS::readdata('downloadpackagename5','text')<>'') $data['downloadpackagename5'] =H01_OCS::readdata('downloadpackagename5','text');
+			if(H01_OCS::readdata('downloadrepository5','text')<>'')	$data['downloadrepository5'] =H01_OCS::readdata('downloadrepository5','text');
+			if(H01_OCS::readdata('downloadgpgfingerprint5','text')<>'')	$data['downloadgpgfingerprint5'] =H01_OCS::readdata('downloadgpgfingerprint5','text');
+			if(H01_OCS::readdata('downloadgpgsignature5','text')<>'')	$data['downloadgpgsignature5'] =H01_OCS::readdata('downloadgpgsignature5','text');
+
+			if(H01_OCS::readdata('downloadname6','text')<>'')			 $data['downloadname6']			=H01_OCS::readdata('downloadname6','text');
+			if(H01_OCS::readdata('downloadlink6','text')<>'')			 $data['downloadlink6']			=H01_OCS::readdata('downloadlink6','text');
+			if(isset($_POST['downloaddistributiontype6']))					 $data['downloadfiletype6']	=H01_OCS::readdata('downloaddistributiontype6','int');
+			if(isset($_POST['downloadbuy6']))												$data['downloadbuy6']			 =H01_OCS::readdata('downloadbuy6','int');
+			if(H01_OCS::readdata('downloadbuyreason6','text')<>'')	$data['downloadbuyreason6'] =H01_OCS::readdata('downloadbuyreason6','text');
+			if(isset($_POST['downloadbuyprice6']))									 $data['downloadbuyprice6']	=H01_OCS::readdata('downloadbuyprice6','float');
+			if(H01_OCS::readdata('downloadpackagename6','text')<>'') $data['downloadpackagename6'] =H01_OCS::readdata('downloadpackagename6','text');
+			if(H01_OCS::readdata('downloadrepository6','text')<>'')	$data['downloadrepository6'] =H01_OCS::readdata('downloadrepository6','text');
+			if(H01_OCS::readdata('downloadgpgfingerprint6','text')<>'')	$data['downloadgpgfingerprint6'] =H01_OCS::readdata('downloadgpgfingerprint6','text');
+			if(H01_OCS::readdata('downloadgpgsignature6','text')<>'')	$data['downloadgpgsignature6'] =H01_OCS::readdata('downloadgpgsignature6','text');
+
+			if(H01_OCS::readdata('downloadname7','text')<>'')			 $data['downloadname7']			=H01_OCS::readdata('downloadname7','text');
+			if(H01_OCS::readdata('downloadlink7','text')<>'')			 $data['downloadlink7']			=H01_OCS::readdata('downloadlink7','text');
+			if(isset($_POST['downloaddistributiontype7']))					 $data['downloadfiletype7']	=H01_OCS::readdata('downloaddistributiontype7','int');
+			if(isset($_POST['downloadbuy7']))												$data['downloadbuy7']			 =H01_OCS::readdata('downloadbuy7','int');
+			if(H01_OCS::readdata('downloadbuyreason7','text')<>'')	$data['downloadbuyreason7'] =H01_OCS::readdata('downloadbuyreason7','text');
+			if(isset($_POST['downloadbuyprice7']))									 $data['downloadbuyprice7']	=H01_OCS::readdata('downloadbuyprice7','float');
+			if(H01_OCS::readdata('downloadpackagename7','text')<>'') $data['downloadpackagename7'] =H01_OCS::readdata('downloadpackagename7','text');
+			if(H01_OCS::readdata('downloadrepository7','text')<>'')	$data['downloadrepository7'] =H01_OCS::readdata('downloadrepository7','text');
+			if(H01_OCS::readdata('downloadgpgfingerprint7','text')<>'')	$data['downloadgpgfingerprint7'] =H01_OCS::readdata('downloadgpgfingerprint7','text');
+			if(H01_OCS::readdata('downloadgpgsignature7','text')<>'')	$data['downloadgpgsignature7'] =H01_OCS::readdata('downloadgpgsignature7','text');
+
+			if(H01_OCS::readdata('downloadname8','text')<>'')			 $data['downloadname8']			=H01_OCS::readdata('downloadname8','text');
+			if(H01_OCS::readdata('downloadlink8','text')<>'')			 $data['downloadlink8']			=H01_OCS::readdata('downloadlink8','text');
+			if(isset($_POST['downloaddistributiontype8']))					 $data['downloadfiletype8']	=H01_OCS::readdata('downloaddistributiontype8','int');
+			if(isset($_POST['downloadbuy8']))												$data['downloadbuy8']			 =H01_OCS::readdata('downloadbuy8','int');
+			if(H01_OCS::readdata('downloadbuyreason8','text')<>'')	$data['downloadbuyreason8'] =H01_OCS::readdata('downloadbuyreason8','text');
+			if(isset($_POST['downloadbuyprice8']))									 $data['downloadbuyprice8']	=H01_OCS::readdata('downloadbuyprice8','float');
+			if(H01_OCS::readdata('downloadpackagename8','text')<>'') $data['downloadpackagename8'] =H01_OCS::readdata('downloadpackagename8','text');
+			if(H01_OCS::readdata('downloadrepository8','text')<>'')	$data['downloadrepository8'] =H01_OCS::readdata('downloadrepository8','text');
+			if(H01_OCS::readdata('downloadgpgfingerprint8','text')<>'')	$data['downloadgpgfingerprint8'] =H01_OCS::readdata('downloadgpgfingerprint8','text');
+			if(H01_OCS::readdata('downloadgpgsignature8','text')<>'')	$data['downloadgpgsignature8'] =H01_OCS::readdata('downloadgpgsignature8','text');
+
+			if(H01_OCS::readdata('downloadname9','text')<>'')			 $data['downloadname9']			=H01_OCS::readdata('downloadname9','text');
+			if(H01_OCS::readdata('downloadlink9','text')<>'')			 $data['downloadlink9']			=H01_OCS::readdata('downloadlink9','text');
+			if(isset($_POST['downloaddistributiontype9']))					 $data['downloadfiletype9']	=H01_OCS::readdata('downloaddistributiontype9','int');
+			if(isset($_POST['downloadbuy9']))												$data['downloadbuy9']			 =H01_OCS::readdata('downloadbuy9','int');
+			if(H01_OCS::readdata('downloadbuyreason9','text')<>'')	$data['downloadbuyreason9'] =H01_OCS::readdata('downloadbuyreason9','text');
+			if(isset($_POST['downloadbuyprice9']))									 $data['downloadbuyprice9']	=H01_OCS::readdata('downloadbuyprice9','float');
+			if(H01_OCS::readdata('downloadpackagename9','text')<>'') $data['downloadpackagename9'] =H01_OCS::readdata('downloadpackagename9','text');
+			if(H01_OCS::readdata('downloadrepository9','text')<>'')	$data['downloadrepository9'] =H01_OCS::readdata('downloadrepository9','text');
+			if(H01_OCS::readdata('downloadgpgfingerprint9','text')<>'')	$data['downloadgpgfingerprint9'] =H01_OCS::readdata('downloadgpgfingerprint9','text');
+			if(H01_OCS::readdata('downloadgpgsignature9','text')<>'')	$data['downloadgpgsignature9'] =H01_OCS::readdata('downloadgpgsignature9','text');
+				
+			if(H01_OCS::readdata('downloadname10','text')<>'')			 $data['downloadname10']			=H01_OCS::readdata('downloadname10','text');
+			if(H01_OCS::readdata('downloadlink10','text')<>'')			 $data['downloadlink10']			=H01_OCS::readdata('downloadlink10','text');
+			if(isset($_POST['downloaddistributiontype10']))					 $data['downloadfiletype10']	=H01_OCS::readdata('downloaddistributiontype10','int');
+			if(isset($_POST['downloadbuy10']))												$data['downloadbuy10']			 =H01_OCS::readdata('downloadbuy10','int');
+			if(H01_OCS::readdata('downloadbuyreason10','text')<>'')	$data['downloadbuyreason10'] =H01_OCS::readdata('downloadbuyreason10','text');
+			if(isset($_POST['downloadbuyprice10']))									 $data['downloadbuyprice10']	=H01_OCS::readdata('downloadbuyprice10','float');
+			if(H01_OCS::readdata('downloadpackagename10','text')<>'') $data['downloadpackagename10'] =H01_OCS::readdata('downloadpackagename10','text');
+			if(H01_OCS::readdata('downloadrepository10','text')<>'')	$data['downloadrepository10'] =H01_OCS::readdata('downloadrepository10','text');
+			if(H01_OCS::readdata('downloadgpgfingerprint10','text')<>'')	$data['downloadgpgfingerprint10'] =H01_OCS::readdata('downloadgpgfingerprint10','text');
+			if(H01_OCS::readdata('downloadgpgsignature10','text')<>'')	$data['downloadgpgsignature10'] =H01_OCS::readdata('downloadgpgsignature10','text');
+
+			if(H01_OCS::readdata('downloadname11','text')<>'')			 $data['downloadname11']			=H01_OCS::readdata('downloadname11','text');
+			if(H01_OCS::readdata('downloadlink11','text')<>'')			 $data['downloadlink11']			=H01_OCS::readdata('downloadlink11','text');
+			if(isset($_POST['downloaddistributiontype11']))					 $data['downloadfiletype11']	=H01_OCS::readdata('downloaddistributiontype11','int');
+			if(isset($_POST['downloadbuy11']))												$data['downloadbuy11']			 =H01_OCS::readdata('downloadbuy11','int');
+			if(H01_OCS::readdata('downloadbuyreason11','text')<>'')	$data['downloadbuyreason11'] =H01_OCS::readdata('downloadbuyreason11','text');
+			if(isset($_POST['downloadbuyprice11']))									 $data['downloadbuyprice11']	=H01_OCS::readdata('downloadbuyprice11','float');
+			if(H01_OCS::readdata('downloadpackagename11','text')<>'') $data['downloadpackagename11'] =H01_OCS::readdata('downloadpackagename11','text');
+			if(H01_OCS::readdata('downloadrepository11','text')<>'')	$data['downloadrepository11'] =H01_OCS::readdata('downloadrepository11','text');
+			if(H01_OCS::readdata('downloadgpgfingerprint11','text')<>'')	$data['downloadgpgfingerprint11'] =H01_OCS::readdata('downloadgpgfingerprint11','text');
+			if(H01_OCS::readdata('downloadgpgsignature11','text')<>'')	$data['downloadgpgsignature11'] =H01_OCS::readdata('downloadgpgsignature11','text');
+
+			if(H01_OCS::readdata('downloadname12','text')<>'')			 $data['downloadname12']			=H01_OCS::readdata('downloadname12','text');
+			if(H01_OCS::readdata('downloadlink12','text')<>'')			 $data['downloadlink12']			=H01_OCS::readdata('downloadlink12','text');
+			if(isset($_POST['downloaddistributiontype12']))					 $data['downloadfiletype12']	=H01_OCS::readdata('downloaddistributiontype12','int');
+			if(isset($_POST['downloadbuy12']))												$data['downloadbuy12']			 =H01_OCS::readdata('downloadbuy12','int');
+			if(H01_OCS::readdata('downloadbuyreason12','text')<>'')	$data['downloadbuyreason12'] =H01_OCS::readdata('downloadbuyreason12','text');
+			if(isset($_POST['downloadbuyprice12']))									 $data['downloadbuyprice12']	=H01_OCS::readdata('downloadbuyprice12','float');
+			if(H01_OCS::readdata('downloadpackagename12','text')<>'') $data['downloadpackagename12'] =H01_OCS::readdata('downloadpackagename12','text');
+			if(H01_OCS::readdata('downloadrepository12','text')<>'')	$data['downloadrepository12'] =H01_OCS::readdata('downloadrepository12','text');
+			if(H01_OCS::readdata('downloadgpgfingerprint12','text')<>'')	$data['downloadgpgfingerprint12'] =H01_OCS::readdata('downloadgpgfingerprint12','text');
+			if(H01_OCS::readdata('downloadgpgsignature12','text')<>'')	$data['downloadgpgsignature12'] =H01_OCS::readdata('downloadgpgsignature12','text');
+
+			if(H01_OCS::readdata('description','text')<>'')					$data['description']=H01_OCS::readdata('description','text');
+			if(H01_OCS::readdata('summary','text')<>'')							$data['summary']=H01_OCS::readdata('summary','text');
+			if(H01_OCS::readdata('feedbackurl','text')<>'')					$data['feedbackurl']=H01_OCS::readdata('feedbackurl','text');
+			if(isset($_POST['licensetype']))													$data['licensetype']=H01_OCS::readdata('licensetype','int');
+			if(H01_OCS::readdata('license','text')<>'')							$data['license']=H01_OCS::readdata('license','text');
+
+			if(H01_OCS::readdata('homepage','text')<>'')						 $data['homepage1']=H01_OCS::readdata('homepage','text');
+			if(H01_OCS::readdata('homepagetype','int')<>0)					 $data['homepagetype1']=H01_OCS::readdata('homepagetype','int');
+			if(H01_OCS::readdata('homepage2','text')<>'')						$data['homepage2']=H01_OCS::readdata('homepage2','text');
+			if(H01_OCS::readdata('homepagetype2','int')<>0)					$data['homepagetype2']=H01_OCS::readdata('homepagetype2','int');
+			if(H01_OCS::readdata('homepage3','text')<>'')						$data['homepage3']=H01_OCS::readdata('homepage3','text');
+			if(H01_OCS::readdata('homepagetype3','int')<>0)					$data['homepagetype3']=H01_OCS::readdata('homepagetype3','int');
+			if(H01_OCS::readdata('homepage4','text')<>'')						$data['homepage4']=H01_OCS::readdata('homepage4','text');
+			if(H01_OCS::readdata('homepagetype4','int')<>0)					$data['homepagetype4']=H01_OCS::readdata('homepagetype4','int');
+			if(H01_OCS::readdata('homepage5','text')<>'')						$data['homepage5']=H01_OCS::readdata('homepage5','text');
+			if(H01_OCS::readdata('homepagetype5','int')<>0)					$data['homepagetype5']=H01_OCS::readdata('homepagetype5','int');
+			if(H01_OCS::readdata('homepage6','text')<>'')						$data['homepage6']=H01_OCS::readdata('homepage6','text');
+			if(H01_OCS::readdata('homepagetype6','int')<>0)					$data['homepagetype6']=H01_OCS::readdata('homepagetype6','int');
+			if(H01_OCS::readdata('homepage7','text')<>'')						$data['homepage7']=H01_OCS::readdata('homepage7','text');
+			if(H01_OCS::readdata('homepagetype7','int')<>0)					$data['homepagetype7']=H01_OCS::readdata('homepagetype7','int');
+			if(H01_OCS::readdata('homepage8','text')<>'')						$data['homepage8']=H01_OCS::readdata('homepage8','text');
+			if(H01_OCS::readdata('homepagetype8','int')<>0)					$data['homepagetype8']=H01_OCS::readdata('homepagetype8','int');
+			if(H01_OCS::readdata('homepage9','text')<>'')						$data['homepage9']=H01_OCS::readdata('homepage9','text');
+			if(H01_OCS::readdata('homepagetype9','int')<>0)					$data['homepagetype9']=H01_OCS::readdata('homepagetype9','int');
+			if(H01_OCS::readdata('homepage10','text')<>'')					 $data['homepage10']=H01_OCS::readdata('homepage10','text');
+			if(H01_OCS::readdata('homepagetype10','int')<>0)				 $data['homepagetype10']=H01_OCS::readdata('homepagetype10','int');
+
+			if(H01_OCS::readdata('version','text')<>'')							$data['version']=H01_OCS::readdata('version','text');
+			if(H01_OCS::readdata('changelog','text')<>'')						$data['changelog']=H01_OCS::readdata('changelog','text');
+			if(isset($_POST['donation']))														 $data['donation']=H01_OCS::readdata('donation','text');
+			if(H01_OCS::readdata('osbsproject','text')<>'')					$data['osbsproject']=H01_OCS::readdata('osbsproject','text');
+			if(H01_OCS::readdata('osbspackage','text')<>'')					$data['osbspackage']=H01_OCS::readdata('osbspackage','text');
+			if(H01_OCS::readdata('donationreason','text')<>'')			 $data['donationreason']=H01_OCS::readdata('donationreason','text');
+
+			if(($data['name']<>'') and ($data['type']<>0)) {
+				$id=H01_CONTENTEDIT::add($user,$data);
+				H01_CACHEADMIN::cleancache('apilist',array($_SESSION['website'],$_SESSION['lang'],$format,$user));
+				H01_CACHEADMIN::cleancache('apiget',array($_SESSION['website'],$_SESSION['lang'],$id));
+				$xml=array();
+				$xml[0]['id']=$id;
+				$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'content','',2); 
+			}else{
+				$txt=H01_OCS::generatexml($format,'failed',101,'please specify all mandatory fields');
+			}
+		}else{
+			$txt=H01_OCS::generatexml($format,'failed',102,'no permission to change content');
+		}
+
+		echo($txt);
+
+	}
+
+
+
+	/**	 
+	 * edit a content entry
+	 * @param string $format
+	 * @param string $contentid
+	 * @return string xml/json
+	 */
+	private static function contentedit($format,$contentid) {
+
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$content=addslashes($contentid);
+
+		// fetch data
+		$con=H01_CONTENT::getdetail($content);
+		if(isset($con['user'])) {
+
+			if((($con['user']==$user) and ($con['userdb']==CONFIG_USERDB) and H01_AUTH::checkuser(PERM_Content_Edit,$user,CONFIG_USERDB) ) or (H01_AUTH::checkuser(PERM_Content_Admin,$user,CONFIG_USERDB))) {
+
+				$data=array();
+				$data['name']=H01_OCS::readdata('name','text');
+				$data['type']=H01_OCS::readdata('type','int');
+				if(H01_OCS::readdata('depend','int')<>0)	 $data['depend']=H01_OCS::readdata('depend','int');
+				
+				if(isset($_POST['downloadtyp1']))												$data['downloadtyp1']			 =H01_OCS::readdata('downloadtyp1','int');
+				if(H01_OCS::readdata('downloadname1','text')<>'')			 $data['downloadname1']			=H01_OCS::readdata('downloadname1','text');
+				if(H01_OCS::readdata('downloadlink1','text')<>'')			 $data['downloadlink1']			=H01_OCS::readdata('downloadlink1','text');
+				if(isset($_POST['downloaddistributiontype1']))					 $data['downloadfiletype1']	=H01_OCS::readdata('downloaddistributiontype1','int');
+				if(isset($_POST['downloadbuy1']))												$data['downloadbuy1']			 =H01_OCS::readdata('downloadbuy1','int');
+				if(H01_OCS::readdata('downloadbuyreason1','text')<>'')	$data['downloadbuyreason1'] =H01_OCS::readdata('downloadbuyreason1','text');
+				if(isset($_POST['downloadbuyprice1']))									 $data['downloadbuyprice1']	=H01_OCS::readdata('downloadbuyprice1','float');
+				if(isset($_POST['downloadpackagename1']))								$data['downloadpackagename1']	=H01_OCS::readdata('downloadpackagename1','text');
+				if(isset($_POST['downloadrepository1']))								 $data['downloadrepository1']	=H01_OCS::readdata('downloadrepository1','text');
+				if(H01_OCS::readdata('downloadgpgfingerprint1','text')<>'')	$data['downloadgpgfingerprint1'] =H01_OCS::readdata('downloadgpgfingerprint1','text');
+				if(H01_OCS::readdata('downloadgpgsignature1','text')<>'')		$data['downloadgpgsignature1'] =H01_OCS::readdata('downloadgpgsignature1','text');
+
+				if(H01_OCS::readdata('downloadname2','text')<>'')			 $data['downloadname2']			=H01_OCS::readdata('downloadname2','text');
+				if(H01_OCS::readdata('downloadlink2','text')<>'')			 $data['downloadlink2']			=H01_OCS::readdata('downloadlink2','text');
+				if(isset($_POST['downloaddistributiontype2']))					 $data['downloadfiletype2']	=H01_OCS::readdata('downloaddistributiontype2','int');
+				if(isset($_POST['downloadbuy2']))												$data['downloadbuy2']			 =H01_OCS::readdata('downloadbuy2','int');
+				if(H01_OCS::readdata('downloadbuyreason2','text')<>'')	$data['downloadbuyreason2'] =H01_OCS::readdata('downloadbuyreason2','text');
+				if(isset($_POST['downloadbuyprice2']))									 $data['downloadbuyprice2']	=H01_OCS::readdata('downloadbuyprice2','float');
+				if(isset($_POST['downloadpackagename2']))								$data['downloadpackagename2']	=H01_OCS::readdata('downloadpackagename2','text');
+				if(isset($_POST['downloadrepository2']))								 $data['downloadrepository2']	=H01_OCS::readdata('downloadrepository2','text');
+				if(H01_OCS::readdata('downloadgpgfingerprint2','text')<>'')	$data['downloadgpgfingerprint2'] =H01_OCS::readdata('downloadgpgfingerprint2','text');
+				if(H01_OCS::readdata('downloadgpgsignature2','text')<>'')		$data['downloadgpgsignature2'] =H01_OCS::readdata('downloadgpgsignature2','text');
+
+				if(H01_OCS::readdata('downloadname3','text')<>'')			 $data['downloadname3']			=H01_OCS::readdata('downloadname3','text');
+				if(H01_OCS::readdata('downloadlink3','text')<>'')			 $data['downloadlink3']			=H01_OCS::readdata('downloadlink3','text');
+				if(isset($_POST['downloaddistributiontype3']))					 $data['downloadfiletype3']	=H01_OCS::readdata('downloaddistributiontype3','int');
+				if(isset($_POST['downloadbuy3']))												$data['downloadbuy3']			 =H01_OCS::readdata('downloadbuy3','int');
+				if(H01_OCS::readdata('downloadbuyreason3','text')<>'')	$data['downloadbuyreason3'] =H01_OCS::readdata('downloadbuyreason3','text');
+				if(isset($_POST['downloadbuyprice3']))									 $data['downloadbuyprice3']	=H01_OCS::readdata('downloadbuyprice3','float');
+				if(isset($_POST['downloadpackagename3']))								$data['downloadpackagename3']	=H01_OCS::readdata('downloadpackagename3','text');
+				if(isset($_POST['downloadrepository3']))								 $data['downloadrepository3']	=H01_OCS::readdata('downloadrepository3','text');
+				if(H01_OCS::readdata('downloadgpgfingerprint3','text')<>'')	$data['downloadgpgfingerprint3'] =H01_OCS::readdata('downloadgpgfingerprint3','text');
+				if(H01_OCS::readdata('downloadgpgsignature3','text')<>'')		$data['downloadgpgsignature3'] =H01_OCS::readdata('downloadgpgsignature3','text');
+
+				if(H01_OCS::readdata('downloadname4','text')<>'')			 $data['downloadname4']			=H01_OCS::readdata('downloadname4','text');
+				if(H01_OCS::readdata('downloadlink4','text')<>'')			 $data['downloadlink4']			=H01_OCS::readdata('downloadlink4','text');
+				if(isset($_POST['downloaddistributiontype4']))					 $data['downloadfiletype4']	=H01_OCS::readdata('downloaddistributiontype4','int');
+				if(isset($_POST['downloadbuy4']))												$data['downloadbuy4']			 =H01_OCS::readdata('downloadbuy4','int');
+				if(H01_OCS::readdata('downloadbuyreason4','text')<>'')	$data['downloadbuyreason4'] =H01_OCS::readdata('downloadbuyreason4','text');
+				if(isset($_POST['downloadbuyprice4']))									 $data['downloadbuyprice4']	=H01_OCS::readdata('downloadbuyprice4','float');
+				if(isset($_POST['downloadpackagename4']))								$data['downloadpackagename4']	=H01_OCS::readdata('downloadpackagename4','text');
+				if(isset($_POST['downloadrepository4']))								 $data['downloadrepository4']	=H01_OCS::readdata('downloadrepository4','text');
+				if(H01_OCS::readdata('downloadgpgfingerprint4','text')<>'')	$data['downloadgpgfingerprint4'] =H01_OCS::readdata('downloadgpgfingerprint4','text');
+				if(H01_OCS::readdata('downloadgpgsignature4','text')<>'')		$data['downloadgpgsignature4'] =H01_OCS::readdata('downloadgpgsignature4','text');
+
+				if(H01_OCS::readdata('downloadname5','text')<>'')			 $data['downloadname5']			=H01_OCS::readdata('downloadname5','text');
+				if(H01_OCS::readdata('downloadlink5','text')<>'')			 $data['downloadlink5']			=H01_OCS::readdata('downloadlink5','text');
+				if(isset($_POST['downloaddistributiontype5']))					 $data['downloadfiletype5']	=H01_OCS::readdata('downloaddistributiontype5','int');
+				if(isset($_POST['downloadbuy5']))												$data['downloadbuy5']			 =H01_OCS::readdata('downloadbuy5','int');
+				if(H01_OCS::readdata('downloadbuyreason5','text')<>'')	$data['downloadbuyreason5'] =H01_OCS::readdata('downloadbuyreason5','text');
+				if(isset($_POST['downloadbuyprice5']))									 $data['downloadbuyprice5']	=H01_OCS::readdata('downloadbuyprice5','float');
+				if(isset($_POST['downloadpackagename5']))								$data['downloadpackagename5']	=H01_OCS::readdata('downloadpackagename5','text');
+				if(isset($_POST['downloadrepository5']))								 $data['downloadrepository5']	=H01_OCS::readdata('downloadrepository5','text');
+				if(H01_OCS::readdata('downloadgpgfingerprint5','text')<>'')	$data['downloadgpgfingerprint5'] =H01_OCS::readdata('downloadgpgfingerprint5','text');
+				if(H01_OCS::readdata('downloadgpgsignature5','text')<>'')		$data['downloadgpgsignature5'] =H01_OCS::readdata('downloadgpgsignature5','text');
+
+				if(H01_OCS::readdata('downloadname6','text')<>'')			 $data['downloadname6']			=H01_OCS::readdata('downloadname6','text');
+				if(H01_OCS::readdata('downloadlink6','text')<>'')			 $data['downloadlink6']			=H01_OCS::readdata('downloadlink6','text');
+				if(isset($_POST['downloaddistributiontype6']))					 $data['downloadfiletype6']	=H01_OCS::readdata('downloaddistributiontype6','int');
+				if(isset($_POST['downloadbuy6']))												$data['downloadbuy6']			 =H01_OCS::readdata('downloadbuy6','int');
+				if(H01_OCS::readdata('downloadbuyreason6','text')<>'')	$data['downloadbuyreason6'] =H01_OCS::readdata('downloadbuyreason6','text');
+				if(isset($_POST['downloadbuyprice6']))									 $data['downloadbuyprice6']	=H01_OCS::readdata('downloadbuyprice6','float');
+				if(isset($_POST['downloadpackagename6']))								$data['downloadpackagename6']	=H01_OCS::readdata('downloadpackagename6','text');
+				if(isset($_POST['downloadrepository6']))								 $data['downloadrepository6']	=H01_OCS::readdata('downloadrepository6','text');
+				if(H01_OCS::readdata('downloadgpgfingerprint6','text')<>'')	$data['downloadgpgfingerprint6'] =H01_OCS::readdata('downloadgpgfingerprint6','text');
+				if(H01_OCS::readdata('downloadgpgsignature6','text')<>'')		$data['downloadgpgsignature6'] =H01_OCS::readdata('downloadgpgsignature6','text');
+
+				if(H01_OCS::readdata('downloadname7','text')<>'')			 $data['downloadname7']			=H01_OCS::readdata('downloadname7','text');
+				if(H01_OCS::readdata('downloadlink7','text')<>'')			 $data['downloadlink7']			=H01_OCS::readdata('downloadlink7','text');
+				if(isset($_POST['downloaddistributiontype7']))					 $data['downloadfiletype7']	=H01_OCS::readdata('downloaddistributiontype7','int');
+				if(isset($_POST['downloadbuy7']))												$data['downloadbuy7']			 =H01_OCS::readdata('downloadbuy7','int');
+				if(H01_OCS::readdata('downloadbuyreason7','text')<>'')	$data['downloadbuyreason7'] =H01_OCS::readdata('downloadbuyreason7','text');
+				if(isset($_POST['downloadbuyprice7']))									 $data['downloadbuyprice7']	=H01_OCS::readdata('downloadbuyprice7','float');
+				if(isset($_POST['downloadpackagename7']))								$data['downloadpackagename7']	=H01_OCS::readdata('downloadpackagename7','text');
+				if(isset($_POST['downloadrepository7']))								 $data['downloadrepository7']	=H01_OCS::readdata('downloadrepository7','text');
+				if(H01_OCS::readdata('downloadgpgfingerprint7','text')<>'')	$data['downloadgpgfingerprint7'] =H01_OCS::readdata('downloadgpgfingerprint7','text');
+				if(H01_OCS::readdata('downloadgpgsignature7','text')<>'')		$data['downloadgpgsignature7'] =H01_OCS::readdata('downloadgpgsignature7','text');
+
+				if(H01_OCS::readdata('downloadname8','text')<>'')			 $data['downloadname8']			=H01_OCS::readdata('downloadname8','text');
+				if(H01_OCS::readdata('downloadlink8','text')<>'')			 $data['downloadlink8']			=H01_OCS::readdata('downloadlink8','text');
+				if(isset($_POST['downloaddistributiontype8']))					 $data['downloadfiletype8']	=H01_OCS::readdata('downloaddistributiontype8','int');
+				if(isset($_POST['downloadbuy8']))												$data['downloadbuy8']			 =H01_OCS::readdata('downloadbuy8','int');
+				if(H01_OCS::readdata('downloadbuyreason8','text')<>'')	$data['downloadbuyreason8'] =H01_OCS::readdata('downloadbuyreason8','text');
+				if(isset($_POST['downloadbuyprice8']))									 $data['downloadbuyprice8']	=H01_OCS::readdata('downloadbuyprice8','float');
+				if(H01_OCS::readdata('downloadgpgfingerprint8','text')<>'')	$data['downloadgpgfingerprint8'] =H01_OCS::readdata('downloadgpgfingerprint8','text');
+				if(H01_OCS::readdata('downloadgpgsignature8','text')<>'')		$data['downloadgpgsignature8'] =H01_OCS::readdata('downloadgpgsignature8','text');
+
+				if(H01_OCS::readdata('downloadname9','text')<>'')			 $data['downloadname9']			=H01_OCS::readdata('downloadname9','text');
+				if(H01_OCS::readdata('downloadlink9','text')<>'')			 $data['downloadlink9']			=H01_OCS::readdata('downloadlink9','text');
+				if(isset($_POST['downloaddistributiontype9']))					 $data['downloadfiletype9']	=H01_OCS::readdata('downloaddistributiontype9','int');
+				if(isset($_POST['downloadbuy9']))												$data['downloadbuy9']			 =H01_OCS::readdata('downloadbuy9','int');
+				if(H01_OCS::readdata('downloadbuyreason9','text')<>'')	$data['downloadbuyreason9'] =H01_OCS::readdata('downloadbuyreason9','text');
+				if(isset($_POST['downloadbuyprice9']))									 $data['downloadbuyprice9']	=H01_OCS::readdata('downloadbuyprice9','float');
+				if(isset($_POST['downloadpackagename9']))								$data['downloadpackagename9']	=H01_OCS::readdata('downloadpackagename9','text');
+				if(isset($_POST['downloadrepository9']))								 $data['downloadrepository9']	=H01_OCS::readdata('downloadrepository9','text');
+				if(H01_OCS::readdata('downloadgpgfingerprint9','text')<>'')	$data['downloadgpgfingerprint9'] =H01_OCS::readdata('downloadgpgfingerprint9','text');
+				if(H01_OCS::readdata('downloadgpgsignature9','text')<>'')		$data['downloadgpgsignature9'] =H01_OCS::readdata('downloadgpgsignature9','text');
+
+				if(H01_OCS::readdata('downloadname10','text')<>'')			 $data['downloadname10']			=H01_OCS::readdata('downloadname10','text');
+				if(H01_OCS::readdata('downloadlink10','text')<>'')			 $data['downloadlink10']			=H01_OCS::readdata('downloadlink10','text');
+				if(isset($_POST['downloaddistributiontype10']))					 $data['downloadfiletype10']	=H01_OCS::readdata('downloaddistributiontype10','int');
+				if(isset($_POST['downloadbuy10']))												$data['downloadbuy10']			 =H01_OCS::readdata('downloadbuy10','int');
+				if(H01_OCS::readdata('downloadbuyreason10','text')<>'')	$data['downloadbuyreason10'] =H01_OCS::readdata('downloadbuyreason10','text');
+				if(isset($_POST['downloadbuyprice10']))									 $data['downloadbuyprice10']	=H01_OCS::readdata('downloadbuyprice10','float');
+				if(isset($_POST['downloadpackagename10']))								$data['downloadpackagename10']	=H01_OCS::readdata('downloadpackagename10','text');
+				if(isset($_POST['downloadrepository10']))								 $data['downloadrepository10']	=H01_OCS::readdata('downloadrepository10','text');
+				if(H01_OCS::readdata('downloadgpgfingerprint10','text')<>'')	$data['downloadgpgfingerprint10'] =H01_OCS::readdata('downloadgpgfingerprint10','text');
+				if(H01_OCS::readdata('downloadgpgsignature10','text')<>'')		$data['downloadgpgsignature10'] =H01_OCS::readdata('downloadgpgsignature10','text');
+
+				if(H01_OCS::readdata('downloadname11','text')<>'')			 $data['downloadname11']			=H01_OCS::readdata('downloadname11','text');
+				if(H01_OCS::readdata('downloadlink11','text')<>'')			 $data['downloadlink11']			=H01_OCS::readdata('downloadlink11','text');
+				if(isset($_POST['downloaddistributiontype11']))					 $data['downloadfiletype11']	=H01_OCS::readdata('downloaddistributiontype11','int');
+				if(isset($_POST['downloadbuy11']))												$data['downloadbuy11']			 =H01_OCS::readdata('downloadbuy11','int');
+				if(H01_OCS::readdata('downloadbuyreason11','text')<>'')	$data['downloadbuyreason11'] =H01_OCS::readdata('downloadbuyreason11','text');
+				if(isset($_POST['downloadbuyprice11']))									 $data['downloadbuyprice11']	=H01_OCS::readdata('downloadbuyprice11','float');
+				if(isset($_POST['downloadpackagename11']))								$data['downloadpackagename11']	=H01_OCS::readdata('downloadpackagename11','text');
+				if(isset($_POST['downloadrepository11']))								 $data['downloadrepository11']	=H01_OCS::readdata('downloadrepository11','text');
+				if(H01_OCS::readdata('downloadgpgfingerprint11','text')<>'')	$data['downloadgpgfingerprint11'] =H01_OCS::readdata('downloadgpgfingerprint11','text');
+				if(H01_OCS::readdata('downloadgpgsignature11','text')<>'')		$data['downloadgpgsignature11'] =H01_OCS::readdata('downloadgpgsignature11','text');
+
+				if(H01_OCS::readdata('downloadname12','text')<>'')			 $data['downloadname12']			=H01_OCS::readdata('downloadname12','text');
+				if(H01_OCS::readdata('downloadlink12','text')<>'')			 $data['downloadlink12']			=H01_OCS::readdata('downloadlink12','text');
+				if(isset($_POST['downloaddistributiontype12']))					 $data['downloadfiletype12']	=H01_OCS::readdata('downloaddistributiontype12','int');
+				if(isset($_POST['downloadbuy12']))												$data['downloadbuy12']			 =H01_OCS::readdata('downloadbuy12','int');
+				if(H01_OCS::readdata('downloadbuyreason12','text')<>'')	$data['downloadbuyreason12'] =H01_OCS::readdata('downloadbuyreason12','text');
+				if(isset($_POST['downloadbuyprice12']))									 $data['downloadbuyprice12']	=H01_OCS::readdata('downloadbuyprice12','float');
+				if(isset($_POST['downloadpackagename12']))								$data['downloadpackagename12']	=H01_OCS::readdata('downloadpackagename12','text');
+				if(isset($_POST['downloadrepository12']))								 $data['downloadrepository12']	=H01_OCS::readdata('downloadrepository12','text');
+				if(H01_OCS::readdata('downloadgpgfingerprint12','text')<>'')	$data['downloadgpgfingerprint12'] =H01_OCS::readdata('downloadgpgfingerprint12','text');
+				if(H01_OCS::readdata('downloadgpgsignature12','text')<>'')		$data['downloadgpgsignature12'] =H01_OCS::readdata('downloadgpgsignature12','text');
+
+				if(H01_OCS::readdata('description','text')<>'')					$data['description']=H01_OCS::readdata('description','text');
+				if(H01_OCS::readdata('summary','text')<>'')							$data['summary']=H01_OCS::readdata('summary','text');
+				if(H01_OCS::readdata('feedbackurl','text')<>'')					$data['feedbackurl']=H01_OCS::readdata('feedbackurl','text');
+				if(isset($_POST['licensetype']))													$data['licensetype']=H01_OCS::readdata('licensetype','int');
+				if(H01_OCS::readdata('license','text')<>'')							$data['license']=H01_OCS::readdata('license','text');
+
+//				if(H01_OCS::readdata('homepage','text')<>'')						 $data['homepage']=H01_OCS::readdata('homepage','text');
+
+				if(H01_OCS::readdata('homepage','text')<>'')						 $data['homepage1']=H01_OCS::readdata('homepage','text');
+				if(H01_OCS::readdata('homepagetype','int')<>0)					 $data['homepagetype1']=H01_OCS::readdata('homepagetype','int');
+				if(H01_OCS::readdata('homepage2','text')<>'')						$data['homepage2']=H01_OCS::readdata('homepage2','text');
+				if(H01_OCS::readdata('homepagetype2','int')<>0)					$data['homepagetype2']=H01_OCS::readdata('homepagetype2','int');
+				if(H01_OCS::readdata('homepage3','text')<>'')						$data['homepage3']=H01_OCS::readdata('homepage3','text');
+				if(H01_OCS::readdata('homepagetype3','int')<>0)					$data['homepagetype3']=H01_OCS::readdata('homepagetype3','int');
+				if(H01_OCS::readdata('homepage4','text')<>'')						$data['homepage4']=H01_OCS::readdata('homepage4','text');
+				if(H01_OCS::readdata('homepagetype4','int')<>0)					$data['homepagetype4']=H01_OCS::readdata('homepagetype4','int');
+				if(H01_OCS::readdata('homepage5','text')<>'')						$data['homepage5']=H01_OCS::readdata('homepage5','text');
+				if(H01_OCS::readdata('homepagetype5','int')<>0)					$data['homepagetype5']=H01_OCS::readdata('homepagetype5','int');
+				if(H01_OCS::readdata('homepage6','text')<>'')						$data['homepage6']=H01_OCS::readdata('homepage6','text');
+				if(H01_OCS::readdata('homepagetype6','int')<>0)					$data['homepagetype6']=H01_OCS::readdata('homepagetype6','int');
+				if(H01_OCS::readdata('homepage7','text')<>'')						$data['homepage7']=H01_OCS::readdata('homepage7','text');
+				if(H01_OCS::readdata('homepagetype7','int')<>0)					$data['homepagetype7']=H01_OCS::readdata('homepagetype7','int');
+				if(H01_OCS::readdata('homepage8','text')<>'')						$data['homepage8']=H01_OCS::readdata('homepage8','text');
+				if(H01_OCS::readdata('homepagetype8','int')<>0)					$data['homepagetype8']=H01_OCS::readdata('homepagetype8','int');
+				if(H01_OCS::readdata('homepage9','text')<>'')						$data['homepage9']=H01_OCS::readdata('homepage9','text');
+				if(H01_OCS::readdata('homepagetype9','int')<>0)					$data['homepagetype9']=H01_OCS::readdata('homepagetype9','int');
+				if(H01_OCS::readdata('homepage10','text')<>'')					 $data['homepage10']=H01_OCS::readdata('homepage10','text');
+				if(H01_OCS::readdata('homepagetype10','int')<>0)				 $data['homepagetype10']=H01_OCS::readdata('homepagetype10','int');
+
+				if(H01_OCS::readdata('version','text')<>'')							$data['version']=H01_OCS::readdata('version','text');
+				if(H01_OCS::readdata('changelog','text')<>'')						$data['changelog']=H01_OCS::readdata('changelog','text');
+				if(isset($_POST['donation']))														 $data['donation']=H01_OCS::readdata('donation','text');
+				if(H01_OCS::readdata('osbsproject','text')<>'')					$data['osbsproject']=H01_OCS::readdata('osbsproject','text');
+				if(H01_OCS::readdata('osbspackage','text')<>'')					$data['osbspackage']=H01_OCS::readdata('osbspackage','text');
+				if(H01_OCS::readdata('donationreason','text')<>'')			 $data['donationreason']=H01_OCS::readdata('donationreason','text');
+				if(isset($_POST['announceupdate']))											 $data['announceupdate']=H01_OCS::readdata('announceupdate','int'); else $data['announceupdate']=1;
+	
+				if(($data['name']<>'') and ($data['type']<>0)) {
+					H01_CONTENTEDIT::edit($contentid,$user,$data);
+					H01_CACHEADMIN::cleancache('apilist',array($_SESSION['website'],$_SESSION['lang'],$format,$user));
+					H01_CACHEADMIN::cleancache('apiget',array($_SESSION['website'],$_SESSION['lang'],$contentid));
+					$txt=H01_OCS::generatexml($format,'ok',100,'');
+				}else{
+					$txt=H01_OCS::generatexml($format,'failed',101,'please specify all mandatory fields');
+				}
+			}else{
+				$txt=H01_OCS::generatexml($format,'failed',102,'no permission to change content');
+			}
+		}else{
+			$txt=H01_OCS::generatexml($format,'failed',102,'no permission to change content');
+		}
+
+		echo($txt);
+
+	}
+
+
+
+	/**	 
+	 * delete a content
+	 * @param string $format
+	 * @param string $contentid
+	 * @return string xml/json
+	 */
+	private static function contentdelete($format,$contentid) {
+
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$content=addslashes($contentid);
+
+		// fetch data
+		$con=H01_CONTENT::getdetail($content);
+		if(isset($con['user'])) {
+
+			if((($con['user']==$user) and ($con['userdb']==CONFIG_USERDB) and H01_AUTH::checkuser(PERM_Content_Edit,$user,CONFIG_USERDB) ) or (H01_AUTH::checkuser(PERM_Content_Admin,$user,CONFIG_USERDB))) {
+				H01_CONTENTEDIT::delete($content,$user);
+				H01_CACHEADMIN::cleancache('apilist',array($_SESSION['website'],$_SESSION['lang'],$format,$user));
+				H01_CACHEADMIN::cleancache('apiget',array($_SESSION['website'],$_SESSION['lang'],$content));
+				$txt=H01_OCS::generatexml($format,'ok',100,'');
+			}else{
+				$txt=H01_OCS::generatexml($format,'failed',101,'no permission to change content');
+			}
+		}else{
+			$txt=H01_OCS::generatexml($format,'failed',101,'no permission to change content');
+		}
+
+		echo($txt);
+
+	}
+
+
+
+	//KNOWLEDGEBASE API #############################################
+
+	/**	 
+	 * get a specific knowledgebase entry
+	 * @param string $format
+	 * @param string $kbid
+	 * @return string xml/json
+	 */
+	private static function knowledgebaseget($format,$kbid) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$kbid=addslashes($kbid);
+
+		$cache = new H01_CACHE('apiknowledgebaseget',array($_SESSION['website'],$_SESSION['lang'],$kbid,$format));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+
+			// fetch data
+			$con=H01_KNOWLEDGEBASE::getentry($kbid);
+
+			// check data
+			if (($con['id'])==0)	{
+				$txt=H01_OCS::generatexml($format,'failed',101,'entry not found');
+			} else {
+
+				if(trim($con['answer'])=='') $status=1; else $status=2;
+				$xml['id']=$con['id'];
+				$xml['status']=H01_KNOWLEDGEBASE::$STATUS[1][$status];
+				$xml['contentid']=$con['contentid'];
+				$xml['category']=H01_KNOWLEDGEBASE::$TYPE[1][1][$con['type']];
+				$xml['user']=$con['user'];
+				$xml['changed']=date('c',$con['changed']);
+				$xml['name']=$con['name'];
+				$xml['description']=$con['description'];
+				$xml['answeruser']=$con['user2'];
+				$xml['answer']=$con['answer'];
+				$xml['comments']=$con['commentscount'];
+				$xml['detailpage']='http://'.CONFIG_WEBSITEHOST.'/content/show.php?action=knowledgebase&content='.$con['contentid'].'&kbid='.$con['id'];
+
+				// preview
+				if (!empty($con['pic1'])) $pic1=$con['pic1']; else $pic1='';
+				if (!empty($con['pic2'])) $pic2=$con['pic2']; else $pic2='';
+				if (!empty($con['pic3'])) $pic3=$con['pic3']; else $pic3='';
+
+
+				if(!empty($pic1)) $xml['previewpic1']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/knowledgebase-pics1/'.$pic1;
+				if(!empty($pic1)) $xml['smallpreviewpic1']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/knowledgebase-m1/'.$pic1;
+
+				if(!empty($pic2)) $xml['previewpic2']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/knowledgebase-pics2/'.$pic2;
+				if(!empty($pic2)) $xml['smallpreviewpic2']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/knowledgebase-m2/'.$pic2;
+
+				if(!empty($pic3)) $xml['previewpic3']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/knowledgebase-pics3/'.$pic3;
+				if(!empty($pic3)) $xml['smallpreviewpic3']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/knowledgebase-m3/'.$pic3;
+
+				if(!empty($pic4)) $xml['previewpic4']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/knowledgebase-pics4/'.$pic4;
+				if(!empty($pic4)) $xml['smallpreviewpic4']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/knowledgebase-m4/'.$pic4;
+
+				$xml2[0]=$xml;
+				$txt=H01_OCS::generatexml($format,'ok',100,'',$xml2,'knowledgebase','',2);
+
+			}
+
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+	}
+
+
+	/**	 
+	 * get a list of knowledgebase entries
+	 * @param string $format
+	 * @param string $contents
+	 * @param string $searchstr
+	 * @param string $sortmode
+	 * @param string $page
+	 * @param string $pagesize
+	 * @return string xml/json
+	 */
+	private static function knowledgebaselist($format,$contents,$searchstr,$sortmode,$page,$pagesize) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+
+		$cache = new H01_CACHE('apiknowledgebaselist',array($_SESSION['website'],$_SESSION['lang'],$format,$contents.$searchstr.$sortmode.$page.$pagesize));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+
+			$xml=H01_KNOWLEDGEBASE::search($contents,$searchstr,$sortmode,$page,$pagesize);
+			$totalitems=$xml['totalitems'];
+			unset($xml['totalitems']);
+
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'content','detail',2,$totalitems,$pagesize);
+
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+
+	}
+
+
+
+	// EVENT API #############################################
+
+	/**	 
+	 * get a specific event
+	 * @param string $format
+	 * @param string $evid
+	 * @return string xml/json
+	 */
+	private static function eventget($format,$evid) {
+
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$evid=addslashes($evid);
+
+		$cache = new H01_CACHE('apieventget',array($_SESSION['website'],$_SESSION['lang'],$evid,$format));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+
+			// fetch data
+			$con=H01_EVENT::get($evid,0);
+
+			// check data
+			if (($con['id'])==0)	{
+				$txt=H01_OCS::generatexml($format,'failed',100,'entry not found');
+			} else {
+
+				$xml['id']=$con['id'];
+				$xml['name']=$con['name'];
+				$xml['description']=$con['description'];
+				$xml['category']=H01_EVENT::$CATEGORIES[0][1][$con['category']];
+				$xml['startdate']=date('c',$con['startdate']);
+				$xml['enddate']=date('c',$con['enddate']);
+				$xml['user']=$con['user'];
+				$xml['organizer']=$con['organizer'];
+				$xml['location']=$con['location'];
+				$xml['city']=$con['city'];
+				$xml['country']=H01_USER::$COUNTRIES[$con['country']];
+				$xml['longitude']=$con['longitude'];
+				$xml['latitude']=$con['latitude'];
+				$xml['homepage']=$con['homepage'];
+				$xml['tel']=$con['tel'];
+				$xml['fax']=$con['fax'];
+				$xml['email']=$con['email'];
+				$xml['changed']=date('c',$con['changed']);
+				$xml['comments']=$con['comments'];
+				$xml['participants']=$con['participants'];
+				$xml['detailpage']='http://'.CONFIG_WEBSITEHOST.'/events/?id='.$con['id'];
+
+				$photourl='/CONTENT/event-badge/0/'.$con['id'].'.';
+				if (file_exists(CONFIG_DOCUMENT_ROOT.$photourl.'gif')) $xml['badge']='http://'.CONFIG_WEBSITEHOST.$photourl.'gif';
+				elseif (file_exists(CONFIG_DOCUMENT_ROOT.$photourl.'png')) $xml['badge']='http://'.CONFIG_WEBSITEHOST.$photourl.'png';
+				elseif (file_exists(CONFIG_DOCUMENT_ROOT.$photourl.'jpg')) $xml['badge']='http://'.CONFIG_WEBSITEHOST.$photourl.'jpg';
+				else $xml['badge']='';
+
+
+				$photourl='/CONTENT/event-image/0/'.$con['id'].'.';
+				if (file_exists(CONFIG_DOCUMENT_ROOT.$photourl.'gif')) $xml['image']='http://'.CONFIG_WEBSITEHOST.$photourl.'gif';
+				elseif (file_exists(CONFIG_DOCUMENT_ROOT.$photourl.'png')) $xml['image']='http://'.CONFIG_WEBSITEHOST.$photourl.'png';
+				elseif (file_exists(CONFIG_DOCUMENT_ROOT.$photourl.'jpg')) $xml['image']='http://'.CONFIG_WEBSITEHOST.$photourl.'jpg';
+				else $xml['image']='';
+
+
+				$xml2[0]=$xml;
+				$txt=H01_OCS::generatexml($format,'ok',100,'',$xml2,'event','',2);
+
+			}
+
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+	}
+
+
+	/**	 
+	 * get a list of events
+	 * @param string $format
+	 * @param string $type
+	 * @param string $country
+	 * @param string $startat
+	 * @param string $searchstr
+	 * @param string $sortmode
+	 * @param string $page
+	 * @param string $pagesize
+	 * @return string xml/json
+	 */
+	private static function eventlist($format,$type,$country,$startat,$searchstr,$sortmode,$page,$pagesize) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+
+		$cache = new H01_CACHE('apieventlist',array($_SESSION['website'],$_SESSION['lang'],$format,$type.$country.$startat.$searchstr.$sortmode.$page.$pagesize));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+
+			$xml=H01_EVENT::search($type,$country,$startat,$searchstr,$sortmode,$page,$pagesize);
+			$totalitems=$xml['totalitems'];
+			unset($xml['totalitems']);
+
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'event','detail',2,$totalitems,$pagesize);
+
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+
+	}
+
+
+	/**	 
+	 * add a new event
+	 * @param string $format
+	 * @return string xml/json
+	 */
+	private static function eventadd($format) {
+
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+
+		$name=H01_OCS::readdata('name','text');
+		$category=H01_OCS::readdata('category','int');
+
+		if(H01_OCS::readdata('description','text')<>'')			$description=H01_OCS::readdata('description','text'); else $description='';
+		if(H01_OCS::readdata('startdate','text')<>'')				$startdate=strtotime(H01_OCS::readdata('startdate','raw')); else $startdate=0;
+		if(H01_OCS::readdata('enddate','text')<>'')					$enddate=strtotime(H01_OCS::readdata('enddate','raw')); else $enddate=0;
+
+		if(H01_OCS::readdata('organizer','text')<>'')				$organizer=H01_OCS::readdata('organizer','text'); else $organizer='';
+		if(H01_OCS::readdata('location','text')<>'')				 $location=H01_OCS::readdata('location','text'); else $location='';
+		if(H01_OCS::readdata('city','text')<>'')						 $city=H01_OCS::readdata('city','text'); else $city='';
+		if(H01_OCS::readdata('country','text')<>'')					$country=H01_OCS::readdata('country','text'); else $country='';
+		$co=array_search(strtoupper($country),H01_USER::$COUNTRIESISO);
+
+		if(H01_OCS::readdata('longitude','float')<>'')			 $longitude=H01_OCS::readdata('longitude','float'); else $longitude='';
+		if(H01_OCS::readdata('latitude','float')<>'')				$latitude=H01_OCS::readdata('latitude','float'); else $latitude='';
+
+		if(H01_OCS::readdata('homepage','text')<>'')				 $homepage=H01_OCS::readdata('homepage','text'); else $homepage='';
+		if(H01_OCS::readdata('tel','text')<>'')							$tel=H01_OCS::readdata('tel','text'); else $tel='';
+		if(H01_OCS::readdata('fax','text')<>'')							$fax=H01_OCS::readdata('fax','text'); else $fax='';
+		if(H01_OCS::readdata('email','text')<>'')						$email=H01_OCS::readdata('email','text'); else $email='';
+
+		if($user<>'') {
+			if(($name<>'' and $category<>0)) {
+				$id=H01_EVENT::create(CONFIG_EVENTDB,$name,$description,$category,$startdate,$enddate,$user,CONFIG_USERDB,$organizer,$location,$city,$co,$longitude,$latitude,$homepage,$tel,$fax,$email);
+				$xml=array();
+				$xml[0]['id']=$id;
+				$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'event','',2);
+			}else{
+				$txt=H01_OCS::generatexml($format,'failed',101,'please specify all mandatory fields');
+			}
+		}else{
+			$txt=H01_OCS::generatexml($format,'failed',102,'no permission to add event');
+		}
+
+		echo($txt);
+
+	}
+
+
+	/**	 
+	 * delete a event
+	 * @param string $format
+	 * @param string $eventid
+	 * @return string xml/json
+	 */
+	private static function eventdelete($format,$eventid) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$event=addslashes($eventid);
+
+		// fetch data
+		$con=H01_EVENT::get($event,CONFIG_EVENTDB);
+		if(isset($con['user'])) {
+
+			if((($con['user']==$user) and ($con['userdb']==CONFIG_USERDB) ) or (H01_AUTH::checkuser(PERM_Event_Admin,$user,CONFIG_USERDB))) {
+				H01_EVENT::del($event,$user);
+				$txt=H01_OCS::generatexml($format,'ok',100,'');
+			}else{
+				$txt=H01_OCS::generatexml($format,'failed',101,'no permission to change event');
+			}
+		}else{
+			$txt=H01_OCS::generatexml($format,'failed',101,'ano permission to change event');
+		}
+
+		echo($txt);
+
+	}
+
+
+	/**	 
+	 * edit a event
+	 * @param string $format
+	 * @param string $eventid
+	 * @return string xml/json
+	 */
+	private static function eventedit($format,$eventid) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$event=addslashes($eventid);
+
+		// fetch data
+		$DBevent=H01_EVENT::get($event,CONFIG_EVENTDB);
+		if(isset($DBevent['user'])) {
+
+			if((($DBevent['user']==$user) and ($DBevent['userdb']==CONFIG_USERDB) ) or (H01_AUTH::checkuser(PERM_Event_Admin,$user,CONFIG_USERDB))) {
+
+				if(isset($_POST['name']))						 $name=H01_OCS::readdata('name','text');											 else $name=$DBevent['name'];
+				if(isset($_POST['category']))				 $category=H01_OCS::readdata('category','int');								else $category=$DBevent['category'];
+
+				if(isset($_POST['description']))			$description=H01_OCS::readdata('description','text');				 else $description=$DBevent['description'];
+				if(isset($_POST['startdate']))				$startdate=strtotime(H01_OCS::readdata('startdate','raw'));	 else $startdate=$DBevent['startdate'];
+				if(isset($_POST['enddate']))					$enddate=strtotime(H01_OCS::readdata('enddate','raw'));			 else $enddate=$DBevent['enddate'];
+				if(isset($_POST['organizer']))				$organizer=H01_OCS::readdata('organizer','text');						 else $organizer=$DBevent['organizer'];
+				if(isset($_POST['location']))				 $location=H01_OCS::readdata('location','text');							 else $location=$DBevent['location'];
+				if(isset($_POST['city']))						 $city=H01_OCS::readdata('city','text');											 else $city=$DBevent['city'];
+				if(isset($_POST['country'])) {
+					$country=H01_OCS::readdata('country','text');	 
+					$country=array_search(strtoupper($country),H01_USER::$COUNTRIESISO);
+				}else {
+					$country=$DBevent['country'];
+				}
+				if(isset($_POST['longitude']))				$longitude=H01_OCS::readdata('longitude','float');						else $longitude=$DBevent['longitude'];
+				if(isset($_POST['latitude']))				 $latitude=H01_OCS::readdata('latitude','float');							else $latitude=$DBevent['latitude'];
+				if(isset($_POST['homepage']))				 $homepage=H01_OCS::readdata('homepage','text');							 else $homepage=$DBevent['homepage'];
+				if(isset($_POST['tel']))							$tel=H01_OCS::readdata('tel','text');												 else $tel=$DBevent['tel'];
+				if(isset($_POST['fax']))							$fax=H01_OCS::readdata('fax','text');												 else $fax=$DBevent['fax'];
+				if(isset($_POST['email']))						$email=H01_OCS::readdata('email','text');										 else $email=$DBevent['email'];
+
+				if(($name<>'') and ($category<>0)) {
+
+					H01_EVENT::edit($event,CONFIG_EVENTDB,$name,$description,$category,$startdate,$enddate,$user,CONFIG_USERDB,$organizer,$location,$city,$country,$longitude,$latitude,$homepage,$tel,$fax,$email);
+					$txt=H01_OCS::generatexml($format,'ok',100,'');
+				}else{
+					$txt=H01_OCS::generatexml($format,'failed',101,'please specify all mandatory fields');
+				}
+			}else{
+				$txt=H01_OCS::generatexml($format,'failed',102,'no permission to change event');
+			}
+		}else{
+			$txt=H01_OCS::generatexml($format,'failed',102,'event not found');
+		}
+
+		echo($txt);
+	}
+
+
+
+	// COMMENTS API #############################################
+
+	/**	 
+	 * add a comment
+	 * @param string $format
+	 * @param string $content
+	 * @param string $parent
+	 * @param string $subject
+	 * @param string $message
+	 * @return string xml/json
+	 */
+	private static function commentsadd($format,$type,$content,$content2,$parent,$subject,$message) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		$parent = strip_tags(addslashes($parent));
+		$subject = strip_tags(addslashes($subject));
+		$message = strip_tags(addslashes($message));
+		$content = strip_tags(addslashes($content));
+		$content2= strip_tags(addslashes($content2));
+		$type=		 strip_tags(addslashes($type));
+
+	 //types
+	 // 1 - content
+	 // 4 - forum
+	 // 7 - knowledgebase
+	 // 8 - event
+
+		if(!in_array($type,array(1,4,7,8))) $type=1;
+
+		if($user<>'') {
+			if($message<>'' and $subject<>'') {
+				if($content<>0) {
+					$notify='';
+					$pictodata='0';
+					H01_COMMENTS::add($user,$type,$content,$content2,$parent,$pictodata,$notify,$subject,$message,'');
+					$xml[0]['id']=H01_COMMENTS::getlastid();
+					echo(H01_OCS::generatexml($format,'ok',100,'',$xml,'comment','',2));
+				} else {
+					echo(H01_OCS::generatexml($format,'failed',101,'content must not be empty'));
+				}
+			} else {
+				echo(H01_OCS::generatexml($format,'failed',102,'message or subject must not be empty'));
+			}
+		} else {
+			echo(H01_OCS::generatexml($format,'failed',103,'no permission to add a comment'));
+		}
+
+	}
+
+
+
+	private static function commentsget($format,$type,$content,$content2,$page,$pagesize) {
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+		$type = strip_tags(addslashes($type));
+		$content = strip_tags(addslashes($content));
+		$content2 = strip_tags(addslashes($content2));
+		$page = strip_tags(addslashes($page));
+		$pagesize = strip_tags(addslashes($pagesize));
+
+	 //types
+	 // 1 - content
+	 // 4 - forum
+	 // 7 - knowledgebase
+	 // 8 - event
+
+		if(!in_array($type,array(1,4,7,8))) $type=1;
+
+		$cache = new H01_CACHE('forum',array($_SESSION['website'],$_SESSION['lang'],$type,$content,$content2,$page,$pagesize));
+
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+
+			$comments=H01_COMMENTS::fetchcomments($type,$content,$content2,0,0,0,$page,$pagesize);
+			$totalitems=$comments['totalitems'];
+			unset($comments['totalitems']);
+//			$txt=H01_OCS::generatexml($format,'ok',100,'',$xml,'event','detail',2,$totalitems,$pagesize);
+
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$comments,'comment','','dynamic',$totalitems,$pagesize);
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+
+
+	}
+
+
+	/**	 
+	 * vote for a comment
+	 * @param string $format
+	 * @param string $id
+	 * @param string $score
+	 * @return string xml/json
+	 */
+	private static function commentvote($format,$id,$score) {
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+
+		H01_COMMENTS::vote($user,CONFIG_USERDB,$id,$score,'');
+		$txt=H01_OCS::generatexml($format,'ok',100,'');
+		echo($txt);
+	}
+
+
+	// FORUM
+	
+	/**
+	 * Get a list of forums
+	 * @param string	$format
+	 * @param int		 $page			The list page. You can control the size of a page with the pagesize argument. The first page is 0, the second is 1.
+	 * @param int		 $pagesize	The amount of entries per page.
+	 * @return	string	xml/json
+	 */
+	private static function forumlist($format,$page,$pagesize){
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		
+		// Call forum implementation here
+		$txt=H01_OCS::generatexml($format,'ok',100,'');
+		echo($txt);
+	}
+
+	/**
+	 * Gets a list of a specific set of topics.
+	 * @param string	$format
+	 * @param string	$forum				Id of the forum you are requesting a list of. Not required if a search term is provided.
+	 * @param string	$search			 a keyword you want find in the name.
+	 * @param string	$description	the description or comment of a topic. Not required if a forum id is provided.
+	 * @param string	$sortmode		 The sortmode of the list. Possible values are: "new" - newest first or "alpha" - alphabetical
+	 * @param int		 $page				 The list page. You can control the size of a page with the pagesize argument. The first page is 0, the second is 1.
+	 * @param int		 $pagesize		 The amount of entries per page.
+	 * @return string xml/json
+	 */
+	private static function forumtopiclist($format,$forum,$search,$description,$sortmode,$page,$pagesize){
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		
+		// Call forum implementation here
+		$txt=H01_OCS::generatexml($format,'ok',100,'');
+		echo($txt);
+	}
+	
+	/**
+	 * Add a new topic to a forum. Only authenticated users are allowed to access this method.
+	 * Authentication is done by sending a Basic HTTP Authorisation header. All arguments are
+	 * mandatory.
+	 * @param string	$format
+	 * @param string	$subject	Subject of the new topic
+	 * @param string	$content	Content of the first post of the new topic
+	 * @param string	$forum		id of the forum entry to be added to if available
+	 * @return string xml/json
+	 */
+	private static function forumtopicadd($format,$subject,$content,$forum){
+		$user=H01_OCS::checkpassword();
+		H01_OCS::checktrafficlimit($user);
+		
+		// Call forum implementation here
+		$txt=H01_OCS::generatexml($format,'ok',100,'');
+		echo($txt);
+	}
+
+	// BUILDSERVICE
+
+	/**
+	 * Create a new project in the build service
+	 * @param string $format
+	 * @param string $name
+	 * @param string $version
+	 * @param string $license
+	 * @param string $url
+	 * @param array	$developers
+	 * @param string $summary
+	 * @param string $description
+	 * @param string $requirements
+	 * @param string $specfile
+	 * @return string xml/json
+	 */
+	private static function buildserviceprojectcreate($format,$name='',$version='',$license='',$url='',$developers='',$summary='',$description='',$requirements='',$specfile=''){
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		if(strlen($name)<1){
+			echo(H01_OCS::generatexml($format,'failed',101,'required argument missing: name'));
+			return;
+		}
+		
+		$data=H01_BUILDSERVICE::projectcreate($user,CONFIG_USERDB,$name,$version,$license,$url,$developers,$summary,$description,$requirements,$specfile);
+		$txt="";
+		if($data!=NULL) {
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$data,'buildservice','','dynamic');
+			// This looks a bit odd - but errors are also cached, and as such we got to expire the error
+			// page for attempting to fetch a wrongly IDd project
+			H01_CACHEADMIN::cleancache('apibuildserviceprojectget',$_SESSION['website'],$_SESSION['lang'],$format,$user.'#'.$data['projectid']);
+			H01_CACHEADMIN::cleancache('apibuildserviceprojectlist',$_SESSION['website'],$_SESSION['lang'],$format,$user);
+		} else
+			$txt=H01_OCS::generatexml($format,'failed',101,'');
+		echo($txt);
+	}
+	
+	/**
+	 * Get the data for a project in the build service
+	 * @param string $format
+	 * @param int $projectID
+	 * @return string xml/json
+	 */
+	private static function buildserviceprojectget($format,$projectID){
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+	
+		$cache = new H01_CACHE('apibuildserviceprojectget',array($_SESSION['website'],$_SESSION['lang'],$format,$user.'#'.$projectID));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+			$txt="";
+			$data=H01_BUILDSERVICE::projectget($user,CONFIG_USERDB,$projectID);
+
+			if(count($data["project"])>0)
+				$txt=H01_OCS::generatexml($format,'ok',100,'',$data,'buildservice','','dynamic');
+			else {
+				if(is_numeric($projectID))
+					$txt=H01_OCS::generatexml($format,'failed',101,'no such project');
+				else
+					$txt=H01_OCS::generatexml($format,'failed',102,'project id should be an integer');
+			}
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+	}
+
+	/**
+	 * Delete a project in the build service
+	 * @param string $format
+	 * @param int $projectID
+	 * @return string xml/json
+	 */
+	private static function buildserviceprojectdelete($format,$projectID){
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		$data=H01_BUILDSERVICE::projectdelete($user,CONFIG_USERDB,$projectID);
+		
+		$txt="";
+		if($data==true) {
+			$txt=H01_OCS::generatexml($format,'ok',100,'');
+			H01_CACHEADMIN::cleancache('apibuildserviceprojectget',$_SESSION['website'],$_SESSION['lang'],$format,$user.'#'.$projectID);
+			H01_CACHEADMIN::cleancache('apibuildserviceprojectlist',$_SESSION['website'],$_SESSION['lang'],$format,$user);
+		} else {
+			if(is_numeric($projectID))
+				$txt=H01_OCS::generatexml($format,'failed',101,'no such project');
+			else
+				$txt=H01_OCS::generatexml($format,'failed',102,'project id should be an integer');
+		}
+		
+		echo($txt);
+	}
+	
+	/**
+	 * Change the details of a project in the build service
+	 * @param string $format
+	 * @param int		@projectID
+	 * @param string $name
+	 * @param string $version
+	 * @param string $license
+	 * @param string $url
+	 * @param array	$developers
+	 * @param string $summary
+	 * @param string $description
+	 * @param string $requirements
+	 * @param string $specfile
+	 * @return string xml/json
+	 */
+	private static function buildserviceprojectedit($format,$projectID,$name="",$version="",$license="",$url="",$developers='',$summary="",$description="",$requirements="",$specfile=""){
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		// This looks slightly odd - we do this because the function in the buildservice module requires
+		// a 0 here if you do not intend to clear the field - it checks the data type to be a real int.
+		if(!array_key_exists("specfile",$_POST))
+			$specfile=0;
+
+		$data=H01_BUILDSERVICE::projectedit($user,CONFIG_USERDB,$projectID,$name,$version,$license,$url,$developers,$summary,$description,$requirements,$specfile);
+		$txt="";
+		if($data===true) {
+			$txt=H01_OCS::generatexml($format,'ok',100,'');
+			H01_CACHEADMIN::cleancache('apibuildserviceprojectget',$_SESSION['website'],$_SESSION['lang'],$format,$user.'#'.$projectID);
+			H01_CACHEADMIN::cleancache('apibuildserviceprojectlist',$_SESSION['website'],$_SESSION['lang'],$format,$user);
+		} else {
+			if(is_numeric($projectID))
+				$txt=H01_OCS::generatexml($format,'failed',101,'no such project');
+			else
+				$txt=H01_OCS::generatexml($format,'failed',102,'project id should be an integer');
+		}
+		
+		echo($txt);
+	}
+
+	/**
+	 * List all the projects in the build service owned by the authorized user
+	 * @param string $format
+	 * @param int		$page
+	 * @param int		$pagesize
+	 * @return string xml/json
+	 */
+	private static function buildserviceprojectlist($format,$page,$pagesize){
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		$cache = new H01_CACHE('apibuildserviceprojectlist',array($_SESSION['website'],$_SESSION['lang'],$format,$user));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+			$data=H01_BUILDSERVICE::projectlist($user,CONFIG_USERDB);
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$data,'project','','dynamic');
+			
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+	}
+
+	/**
+	 * Upload a new source bundle (a compressed file in .zip, .tar.gz or .tar.bz2 format) containing
+	 * the source code of the project
+	 * @param string $format
+	 * @param int		$projectID
+	 * @return string xml/json
+	 */
+	private static function buildserviceprojectuploadsource($format,$projectID){
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		if(!is_numeric($projectID)){
+			$txt=H01_OCS::generatexml($format,'failed',102,'project id should be an integer');
+		}else{
+			$error=H01_BUILDSERVICE::projectuploadsource($user,CONFIG_USERDB,$projectID);
+
+			if($error==''){
+				$txt=H01_OCS::generatexml($format,'ok',100,'');
+			}else{
+				$txt=H01_OCS::generatexml($format,'failed',103,$error);
+			}
+
+		}
+
+		
+		echo($txt);
+	}
+	
+	// REMOTEACCOUNTS section
+	
+	/**
+	 * List all accounts for the currently authorised user
+	 * @param string $format
+	 * @return string xml/json
+	 */
+	private static function buildserviceremoteaccountslist($format,$page,$pagesize) {
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		$data=H01_BUILDSERVICE::remoteaccountslist($user,CONFIG_USERDB);
+		$txt=H01_OCS::generatexml($format,'ok',100,'',$data,'remoteaccount','','dynamic');
+		echo($txt);
+	}
+	
+	/**
+	 * Add a remote account entry for the currently authorised user
+	 * @param string $format
+	 * @param int		 $type The type of account (1 == build service, 2 == publisher)
+	 * @param string	$typeid The ID of the service the account pertains to
+	 * @param string	$data The data to enter into the data section (any arbitrary string data)
+	 * @param string	$login The user's login on the remote service
+	 * @param string	$password The user's password on the remote service
+	 * @return string xml/json
+	 */
+	private static function buildserviceremoteaccountsadd($format,$type,$typeid,$data,$login,$password) {
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		$txt='';
+		$data=H01_BUILDSERVICE::remoteaccountsadd($user,CONFIG_USERDB,$type,$typeid,$data,$login,$password);
+		if(array_key_exists('remoteaccountid',$data)) {
+			$txt=H01_OCS::generatexml($format,'ok',100,'');
+		} else {
+			$txt=H01_OCS::generatexml($format,'failed',$data['code'],$data['message']);
+		}
+		
+		echo($txt);
+	}
+	
+	/**
+	 * Edit the specified remote account entry
+	 * @param string $format
+	 * @param int		 $id The ID of the remote account to edit
+	 * @param string	$data The data to enter into the data section (any arbitrary string data)
+	 * @param string	$login The user's login on the remote service
+	 * @param string	$password The user's password on the remote service
+	 * @return string xml/json
+	 */
+	private static function buildserviceremoteaccountsedit($format,$id,$login,$password,$data) {
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		$txt='';
+		$data=H01_BUILDSERVICE::remoteaccountsedit($user,CONFIG_USERDB,$id,$login,$password,$data);
+		if($data) {
+			$txt=H01_OCS::generatexml($format,'ok',100,'');
+		} else {
+			$txt=H01_OCS::generatexml($format,'failed',101,'no such remote account');
+		}
+		
+		echo($txt);
+	}
+	
+	/**
+	 * Fetch all known information about a specified remote account
+	 * @param string $format
+	 * @param int		 $id The ID of the remote account to get
+	 * @return string xml/json
+	 */
+	private static function buildserviceremoteaccountsget($format,$id) {
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		$txt='';
+		$data=H01_BUILDSERVICE::remoteaccountsget($user,CONFIG_USERDB,$id);
+		if(!array_key_exists('code',$data)) {
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$data,'remoteaccount','','dynamic');
+		} else {
+			$txt=H01_OCS::generatexml($format,'failed',$data['code'],$data['message']);
+		}
+		
+		echo($txt);
+	}
+	
+	/**
+	 * Delete the specified remote account entry
+	 * @param string $format
+	 * @param int		 $id The ID of the remote account to remove
+	 * @return string xml/json
+	 */
+	private static function buildserviceremoteaccountsremove($format,$id) {
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		$txt='';
+		$data=H01_BUILDSERVICE::remoteaccountsremove($user,CONFIG_USERDB,$id);
+		if(!is_array($data)) {
+			$txt=H01_OCS::generatexml($format,'ok',100,'');
+		} else {
+			$txt=H01_OCS::generatexml($format,'failed',$data['code'],$data['message']);
+		}
+		
+		echo($txt);
+	}
+
+	// BUILDSERVICES section
+
+	/**
+	 * get build service listing
+	 * @param string	$format
+	 * @return string xml/json
+	 */
+	private static function buildservicebuildserviceslist($format,$page,$pagesize) {
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+
+		$data=H01_BUILDSERVICE::buildserviceslist($user,CONFIG_USERDB);
+		$txt=H01_OCS::generatexml($format,'ok',100,'',$data,array('','buildservice','','target'),'','dynamic');
+		echo($txt);
+	}
+	
+	/**
+	 * get build service data
+	 * @param string	$format
+	 * @param string	$buildserviceID
+	 * @return string xml/json
+	 */
+	private static function buildservicebuildservicesget($format,$buildserviceID) {
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+
+		$data=H01_BUILDSERVICE::buildservicesget($user,CONFIG_USERDB,$buildserviceID);
+		if(is_array($data['buildservice']) && count($data['buildservice'])>0) {
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$data,array('buildservice','','target'),'','dynamic');
+		} else {
+			if(is_numeric($buildserviceID)) {
+				$txt=H01_OCS::generatexml($format,'failed',101,'no such build service');
+			} else {
+				$txt=H01_OCS::generatexml($format,'failed',101,'no such build service - the build service ID should be an integer');
+			}
+		}
+		echo($txt);
+	}
+
+	// JOBS section
+	
+	/**
+	 * Get a list of jobs pertaining to one project on the build service
+	 * @param string	$format
+	 * @param int		 $projectID
+	 * @param int		 $page
+	 * @param int		 $pagesize
+	 * @return string xml/json
+	 */
+	private static function buildservicejobslist($format,$projectID,$page,$pagesize){
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		$data=H01_BUILDSERVICE::jobslist($user,CONFIG_USERDB,$projectID);
+		if(!array_key_exists('code',$data)) {
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$data,'buildjob','','dynamic');
+		} else {
+			$txt=H01_OCS::generatexml($format,'failed',$data['code'],$data['message']);
+		}
+		
+		echo($txt);
+	}
+	
+	/**
+	 * Create a new build job for a specified project, on a specified build service, with a specified
+	 * target
+	 * @param string	$format
+	 * @param int		 $projectID
+	 * @param int		 $buildserviceID
+	 * @param string	$target
+	 * @return string xml/json
+	 */
+	private static function buildservicejobscreate($format,$projectID,$buildserviceID,$target){
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		$data=H01_BUILDSERVICE::jobscreate($projectID,$buildserviceID,$target,$user,CONFIG_USERDB);
+		$txt="";
+		if(array_key_exists('buildjobid',$data) && $data['buildjobid']!=NULL)
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$data,'buildservice','','dynamic');
+		else{
+			if(is_array($data) and array_key_exists('code',$data)){
+				$txt=H01_OCS::generatexml($format,'failed',$data['code'],$data['message']);
+			}else
+				$txt=H01_OCS::generatexml($format,'failed',102,'project id should be an integer');
+		}
+		
+		echo($txt);
+	}
+	
+	/**
+	 * Cancel a specified build job
+	 * @param string	$format
+	 * @param int		 $buildjobID
+	 * @return string xml/json
+	 */
+	private static function buildservicejobscancel($format,$buildjobID){
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		$data=H01_BUILDSERVICE::jobscancel($buildjobID,$user,CONFIG_USERDB);
+		$txt="";
+		if($data===true)
+			$txt=H01_OCS::generatexml($format,'ok',100,'');
+		else{
+			if(is_numeric($buildjobID))
+				$txt=H01_OCS::generatexml($format,'failed',101,'no such build job');
+			else
+				$txt=H01_OCS::generatexml($format,'failed',102,'build job id should be an integer');
+		}
+			
+		echo($txt);
+	}
+	
+	/**
+	 * Get information about a specified build job
+	 * @param string	$format
+	 * @param int		 $buildjobID
+	 * @return string xml/json
+	 */
+	private static function buildservicejobsget($format,$buildjobID){
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		$data=H01_BUILDSERVICE::jobsget($buildjobID,$user,CONFIG_USERDB);
+		$txt="";
+		if(count($data["buildjob"])>0)
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$data,'buildservice','','dynamic');
+		else{
+			if(is_numeric($buildjobID))
+				$txt=H01_OCS::generatexml($format,'failed',101,'no such build job');
+			else
+				$txt=H01_OCS::generatexml($format,'failed',102,'build job id should be an integer');
+		}
+		
+		echo($txt);
+	}
+	
+	/**
+	 * Get the command output from a specified build job
+	 * @param string	$format
+	 * @param int		 $buildjobID
+	 * @return string xml/json
+	 */
+	private static function buildservicejobsgetoutput($format,$buildjobID){
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		$data=H01_BUILDSERVICE::jobsgetoutput($buildjobID,$user,CONFIG_USERDB);
+		$txt="";
+		if($data["output"]!==NULL)
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$data,'buildservice','','dynamic');
+		else{
+			if(is_numeric($buildjobID))
+				$txt=H01_OCS::generatexml($format,'failed',101,'no such build job');
+			else
+				$txt=H01_OCS::generatexml($format,'failed',102,'build job id should be an integer');
+		}
+		
+		echo($txt);
+	}
+
+	// Publishing
+	
+	/**
+	 * Get a list of supported publishers, optionally for the currently authorised user
+	 * @param string	$format
+	 * @param int		 $page
+	 * @param int		 $pagesize
+	 * @return string xml/json
+	 */
+	private static function buildservicepublishinggetpublishingcapabilities($format,$page,$pagesize){
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+		
+		$data=H01_BUILDSERVICE::publishinggetpublishingcapabilities($user,CONFIG_USERDB);
+		$txt="";
+		if(count($data["publishers"])>0){
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$data,array('','publisher','',array(3=>'field',4=>'target'),'','option'),'','dynamic');
+		}else{
+			if($user=='')
+				$txt=H01_OCS::generatexml($format,'failed',101,'no such user');
+			else
+				$txt=H01_OCS::generatexml($format,'failed',102,'user has not registered with any publishers');
+		}
+		
+		echo($txt);
+	}
+	
+	/**
+	 * Get information on a specified publisher
+	 * @param string	$format
+	 * @param int		 $publisherID
+	 * @return string xml/json
+	 */
+	private static function buildservicepublishinggetpublisher($format,$publisherID){
+		$user=H01_OCS::checkpassword(false);
+		H01_OCS::checktrafficlimit($user);
+		
+		$data=H01_BUILDSERVICE::publishinggetpublisher($publisherID);
+		$txt="";
+		if(count($data["publisher"])>0)
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$data,array('','',array(3=>'field',4=>'target'),'','option'),'','dynamic');
+		else{
+			if(is_numeric($publisherID))
+				$txt=H01_OCS::generatexml($format,'failed',101,'no such publisher');
+			else
+				$txt=H01_OCS::generatexml($format,'failed',102,'publisher id should be an integer');
+		}
+		
+		echo($txt);
+	}
+	
+	/**
+	 * Publish the result of a bulid job on some specified project to a publisher
+	 * @param string	$format
+	 * @param int		 $buildjobID
+	 * @param int		 $publisherID
+	 * @return string xml/json
+	 */
+	private static function buildservicepublishingpublishtargetresult($format,$buildjobID,$publisherID){
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		$data=H01_BUILDSERVICE::publishingpublishtargetresult($buildjobID,$publisherID,$user,CONFIG_USERDB);
+		$txt="";
+		if($data===true)
+			$txt=H01_OCS::generatexml($format,'ok',100,'');
+		else {
+			if(is_array($data)) {
+				$txt=H01_OCS::generatexml($format,'failed',$data['code'],$data['message']);
+			} else if(is_numeric($buildjobID)) {
+				if(is_numeric($publisherID)) {
+					$txt=H01_OCS::generatexml($format,'failed',108,'publishing failed');
+				} else {
+					$txt=H01_OCS::generatexml($format,'failed',107,'publisher id should be an integer');
+				}
+			} else {
+				$txt=H01_OCS::generatexml($format,'failed',105,'build job id should be an integer');
+			}
+		}
+		
+		echo($txt);
+	}
+	
+	/**
+	 * Save some field data (as connected to publishing the project) into that project
+	 * @param string	$format
+	 * @param int		 $projectID
+	 * @param array	 $fields A bunch of field data, in the form
+	 *								array( array("name"=>value,"fieldtype"=>value,"data"=>value), array(...))
+	 * @return string xml/json
+	 */
+	private static function buildservicepublishingsavefields($format,$projectID,$fields){
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		$data=H01_BUILDSERVICE::publishingsavefields($projectID,$fields,$user,CONFIG_USERDB);
+		$txt="";
+		if($data===true)
+			$txt=H01_OCS::generatexml($format,'ok',100,'');
+		else {
+			if(is_numeric($projectID))
+				$txt=H01_OCS::generatexml($format,'failed',101,'no such project');
+			else
+				$txt=H01_OCS::generatexml($format,'failed',102,'project id should be an integer');
+		}
+		
+		echo($txt);
+	}
+	
+	/**
+	 * Get all the saved fields for some specified project
+	 * @param string	$format
+	 * @param int		 $projectID
+	 * @return string xml/json
+	 */
+	private static function buildservicepublishinggetfields($format,$projectID){
+		$user=H01_OCS::checkpassword(true);
+		H01_OCS::checktrafficlimit($user);
+		
+		$data=H01_BUILDSERVICE::publishinggetfields($projectID,$user,CONFIG_USERDB);
+		$txt="";
+		if(!array_key_exists('code',$data))
+			$txt=H01_OCS::generatexml($format,'ok',100,'',$data,'field','','dynamic');
+		else {
+			$txt=H01_OCS::generatexml($format,'failed',$data['code'],$data['message']);
+		}
+		
+		echo($txt);
+	}
+}
+// Little hack to get kdevelop to pick up the functions...
+//include_once("../buildservice/lib_buildservice.php");
+
+?>

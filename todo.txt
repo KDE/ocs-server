@@ -1,0 +1,35 @@
+SOCS TODO:
+
+WIP:
+		PERSON
+			check
+			search
+			get
+			get self
+			edit
+			balance
+			get attributes
+			set attribute
+			delete attribute
+		CONTENT
+			list
+			get
+			download
+			vote
+			add
+			edit
+			delete
+			upload download file
+			delete download file
+			upload preview image
+			delete preview image
+		FAN
+			-all (every request callable)
+		COMMENTS
+			-all (every request callable)
+
+DONE:
+	CONFIG
+			config
+	PERSON
+			add

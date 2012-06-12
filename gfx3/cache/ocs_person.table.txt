@@ -1,0 +1,6 @@
+id|int
+login|varchar
+password|varchar
+firstname|varchar
+lastname|varchar
+email|varchar
