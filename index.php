@@ -4,7 +4,6 @@
 include_once("gfx3/lib.php");
 
 $main = new EMain();
-$main->cache();
 
 /*
 echo

@@ -11,18 +11,16 @@
  */ 
 
 //db related include files
-include_once("datasetter.class.php");
-include_once("data.class.php");
-
-include("config/config.inc.php");
+include_once("EDatasetter.class.php");
+include_once("EData.class.php");
 
 class EDatabase {
 	
     //server config
-	private $db_name;
-	private $db_host;
-	private $db_user;
-	private $db_pass;
+	private $db_name = "prova";
+	private $db_host = "localhost";
+	private $db_user = "root";
+	private $db_pass = "asd";
 	
 	private $db_link = 0;
 	private $main;
@@ -43,15 +41,6 @@ class EDatabase {
 	 */
 	
 	public function __construct(){
-		//loading config
-		global $db_name;
-		global $db_host;
-		global $db_user;
-		global $db_pass;
-		$this->db_name = $db_name;
-		$this->db_host = $db_host;
-		$this->db_user = $db_user;
-		$this->db_pass = $db_pass;
 		//opening session
 		$db = mysql_connect($this->db_host, $this->db_user, $this->db_pass) or $this->status = 2;
 		$db_select = mysql_select_db($this->db_name, $db) or $this->status = 1;

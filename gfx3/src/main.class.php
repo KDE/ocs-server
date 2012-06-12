@@ -11,17 +11,27 @@
  *   http://opensource.org/licenses/mit-license.php
  */ 
 
-include_once("error.class.php");
-include_once("structure.class.php");
-include_once("cache.class.php");
-include_once("data.class.php");
-include_once("database.class.php");
-include_once("filemod.class.php");
-include_once("form.class.php");
-include_once("slider.class.php");
-include_once("user.class.php");
-include_once("ocs_user.class.php");
-include_once("utility.class.php");
+
+/*
+ * Small module includer. Used to include php modules automatically.
+ */
+
+class EIncluder{
+	
+	public static $gfx_path = "gfx3/src";
+	
+	public static function loadAllModules(){
+		chdir(EIncluder::$gfx_path);
+		foreach(glob("*.class.php") as $filename){
+			include_once($filename);
+		}
+		chdir("..");
+	}
+	
+}
+
+//including all modules automatically
+EIncluder::loadAllModules();
 
 /*
  * Main class used to handle all the other classes.
@@ -50,11 +60,11 @@ class EMain {
 		$this->time_start = microtime(true);
 		
 		//standard global objects
-		$GLOBALS['emain'] = $this;
-		$GLOBALS['edbg'] = $this->dbg = true;
-		$GLOBALS['elog'] = $this->log = new EError(); //plain text, don't preserve as default
-		$GLOBALS['edb'] = $this->db = new EDatabase(); //config in config.php
-		$GLOBALS['euser'] = $this->user = new OCS_User(); //user compatible with the OCS protocol
+		$GLOBALS['EMain'] = $this;
+		$GLOBALS['EDbg'] = $this->dbg = true;
+		$GLOBALS['ELog'] = $this->log = new Elog(); //plain text, don't preserve as default
+		$GLOBALS['EDb'] = $this->db = new EDatabase(); //config in config.php
+		$GLOBALS['EUser'] = $this->user = new OCSUser(); //user compatible with the OCS protocol
 		
 	}
 	
@@ -80,9 +90,8 @@ class EMain {
 	 */
 	public function __destruct(){
 		// actually unsetting the objects will cause the page to be generated
-		unset($this->structure);
-		unset($this->user);
-		unset($this->db);
+		//
+		// nothing to be done here yet...
 	}
 	
 }

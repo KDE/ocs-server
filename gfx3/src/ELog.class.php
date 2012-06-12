@@ -15,7 +15,7 @@
  * FIXME: Aims to replace current "die()" error system.
  */
 
-class EError {
+class ELog {
 	/*
 	 * mode:
 	 *  0 - print log on screen in plain text

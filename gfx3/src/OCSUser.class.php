@@ -11,7 +11,7 @@
  *   http://opensource.org/licenses/mit-license.php
  */ 
 
-class OCS_User{
+class OCSUser{
 	
 	//ocs mandatory user attributes
 	private $login;
