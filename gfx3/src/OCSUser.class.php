@@ -20,8 +20,12 @@ class OCSUser{
 	private $lastname;
 	private $email;
 	
+	private $main;
+	
 	public function __construct(){
-		//
+		//storing root object
+		global $main;
+		$this->main = $main;
 	}
 	
 	//TODO: ask for more infos about password validation
@@ -42,7 +46,8 @@ class OCSUser{
 	}
 	
 	public function exists($login){
-		$login = $edb->safe($login);
+		//assure input is secure against injection
+		$login = $this->main->db->safe($login);
 		
 		$persons = new EData("ocs_person",$this->main);
 		$r = $persons->count("login", "login='$login'");
@@ -54,7 +59,7 @@ class OCSUser{
 	}
 	
 	public function countusersbyemail($email){
-		$email = $edb->safe($email);
+		$email = $this->main->db->safe($email);
 		$persons = new EData("ocs_person",$this->main);
 		$r = $persons->count("login", "email='$email'");
 		return $r;
@@ -69,13 +74,13 @@ class OCSUser{
 	}
 	
 	public function register($login,$passwd,$firstname,$lastname,$email){
-		$login = $edb->safe($login);
-		$passwd = $edb->safe($passwd);
-		$firstname = $edb->safe($firstname);
-		$lastname = $edb->safe($lastname);
-		$email = $edb->safe($email);
+		$login = $this->main->db->safe($login);
+		$passwd = $this->main->db->safe($passwd);
+		$firstname = $this->main->db->safe($firstname);
+		$lastname = $this->main->db->safe($lastname);
+		$email = $this->main->db->safe($email);
 		
-		$edb->q("INSERT INTO ocs_person (login,password,firstname,lastname,email) VALUES ('$login','$passwd','$firstname','$lastname','$email')");
+		$this->main->db->q("INSERT INTO ocs_person (login,password,firstname,lastname,email) VALUES ('$login','$passwd','$firstname','$lastname','$email')");
 	}
 	
 }

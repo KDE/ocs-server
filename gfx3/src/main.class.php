@@ -60,11 +60,11 @@ class EMain {
 		$this->time_start = microtime(true);
 		
 		//standard global objects
-		$GLOBALS['EMain'] = $this;
-		$GLOBALS['EDbg'] = $this->dbg = true;
-		$GLOBALS['ELog'] = $this->log = new Elog(); //plain text, don't preserve as default
-		$GLOBALS['EDb'] = $this->db = new EDatabase(); //config in config.php
-		$GLOBALS['EUser'] = $this->user = new OCSUser(); //user compatible with the OCS protocol
+		$GLOBALS['main'] = $this;
+		$this->dbg = true;
+		$this->log = new Elog(); //plain text, don't preserve as default
+		$this->db = new EDatabase(); //config in config.php
+		$this->user = new OCSUser(); //user compatible with the OCS protocol
 		
 	}
 	

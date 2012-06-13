@@ -49,7 +49,12 @@ class EData {
 	private $fields = array();
 	private $noquery = false;
 	
+	private $main;
+	
 	public function __construct($tbl){
+		global $main;
+		$this->main = $main;
+		
 		$this->table = $tbl;
 		$this->tableInfo();
 		$this->dbg = false;
@@ -57,8 +62,7 @@ class EData {
 	
 	
 	
-	//stampa informazioni sulle variabili interne della classe
-	//da non usare in ambiente di produzione
+	// DEBUG informations about EData object
 	public function debugInfo(){
 		echo "tcount: ".$this->tcount."<br>";
 		echo "table: ".$this->table."<br>";
@@ -71,20 +75,20 @@ class EData {
 		$this->noquery = true;
 	}
 	
-	//methods
+	//set table infos
 	private function tableInfo(){
 		//if already cached load from cache else load with a describe AND cache
-		if(file_exists("gfx3/cache/".$this->table.".table.txt")){
-			$cache = file("gfx3/cache/".$this->table.".table.txt");
+		if(file_exists("cache/".$this->table.".table.txt")){
+			$cache = file("cache/".$this->table.".table.txt");
 			for($i=0; $i<count($cache); $i++){
 				$pattern = explode("|", $cache[$i]);
 				$this->fields[$i]["field"] = $pattern[0];
 				$this->fields[$i]["type"] = rtrim($pattern[1], "\n");
 			}
 		} else {
-			$tbldata = $edb->q("DESCRIBE ".$this->table);
+			$tbldata = $this->main->db->q("DESCRIBE ".$this->table);
 			$fieldsIndex = 0;
-			$stream = fopen("gfx3/cache/".$this->table.".table.txt",'a+');
+			$stream = fopen("cache/".$this->table.".table.txt",'a+');
 			while($row=mysql_fetch_array($tbldata)){
 				$type = "null";
 				if(stristr($row['Type'], "varchar")){ $type = "varchar"; }
@@ -126,7 +130,7 @@ class EData {
 					$sql = $sql."'".$entry['value']."',";
 				} else if($field['type']=="int") {
 					if(preg_match("/[^0-9]/", $entry['value'])){
-						//data type error
+						//TODO: rewrite using ELog class
 						echo "<span style=\"font-family:Arial,sans-serif\">Warning! GFX3 <span style=\"color:red\">EData Object Error</span>: wrong data passed for <i><big>`".$field['field']."`</big></i> with type `INT`! freezing...</span><br>";
 						die();
 					}
@@ -188,7 +192,7 @@ class EData {
 		
 		if(!empty($where)){ $where = " WHERE ".$where." "; }
 		
-		$r = $edb->q("SELECT COUNT($field) FROM ".$this->table." $where");
+		$r = $this->main->db->q("SELECT COUNT($field) FROM ".$this->table." $where");
 		while($row=mysql_fetch_array($r)){
 			$result = $row[0];
 		}

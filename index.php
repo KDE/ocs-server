@@ -5,7 +5,7 @@ include_once("gfx3/lib.php");
 
 $main = new EMain();
 
-/*
+
 echo
 "<html>
 <body>
@@ -24,5 +24,5 @@ email <input type=\"text\" name=\"email\"><br>
 </body>
 </html>
 ";
-*/
+
 ?>

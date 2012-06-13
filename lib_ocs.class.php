@@ -1,6 +1,6 @@
 <?php
 
-include_once("gfx3/main.class.php");
+include_once("gfx3/lib.php");
 
 /**
 * OCS Lib
