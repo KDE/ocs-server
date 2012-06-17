@@ -21,11 +21,45 @@ class OCSUser{
 	private $email;
 	
 	private $main;
+	private $persons;
 	
 	public function __construct(){
 		//storing root object
 		global $main;
 		$this->main = $main;
+		$this->persons = new EData("ocs_person");
+	}
+	
+	public function checklogin($login,$passwd){
+		$r = $this->persons->count("login", "login='$login' and password='$passwd'");
+		if($r==0){
+			return false;
+		} else {
+			return $login;
+		}
+	}
+	
+	public function user_exists($user){
+		$r = $this->persons->is_there("login","login='$user'");
+		return $r;
+	}
+	
+	public function get_user_info($user){
+		$user = $this->main->db->safe($user);
+		if($this->user_exists($user)){
+			$r = $this->main->db->q("select login,firstname,lastname,email from ocs_person where login='$user'");
+			
+			while($row=mysql_fetch_array($r)){
+				$user_info["login"] = $row["login"];
+				$user_info["firstname"] = $row["firstname"];
+				$user_info["lastname"] = $row["lastname"];
+				$user_info["email"] = $row["email"];
+			}
+			
+			return $user_info;
+		} else {
+			return NULL;
+		}
 	}
 	
 	//TODO: ask for more infos about password validation
@@ -49,7 +83,7 @@ class OCSUser{
 		//assure input is secure against injection
 		$login = $this->main->db->safe($login);
 		
-		$persons = new EData("ocs_person",$this->main);
+		$persons = new EData("ocs_person");
 		$r = $persons->count("login", "login='$login'");
 		if($r==0){
 			return false;
@@ -60,7 +94,7 @@ class OCSUser{
 	
 	public function countusersbyemail($email){
 		$email = $this->main->db->safe($email);
-		$persons = new EData("ocs_person",$this->main);
+		$persons = new EData("ocs_person");
 		$r = $persons->count("login", "email='$email'");
 		return $r;
 	}

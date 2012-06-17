@@ -892,10 +892,11 @@ class H01_OCS {
 					$identifieduser='';
 				}
 			}else{
-	
+				/*
 				$user=H01_USER::finduserbyapikey($authuser,CONFIG_USERDB);
 				if($user==false) {
-					$user=H01_USER::checklogin($authuser,CONFIG_USERDB,$authpw,PERM_Login);
+				*/
+					$user=$this->main->user->checklogin($authuser,$authpw);
 					if($user==false) {
 						if($forceuser){
 							header('WWW-Authenticate: Basic realm="your valid user account or api key"');
@@ -907,12 +908,12 @@ class H01_OCS {
 					}else{
 						$identifieduser=$user;
 					}
+					/*
 				}else{
 					$identifieduser=$user;
-				}
+				}*/
 			}
 		}
-
 		return($identifieduser);
 	}
 
@@ -1255,18 +1256,24 @@ class H01_OCS {
 
 
 		if($login<>''){
-			$reallogin=H01_USER::checklogin($login,CONFIG_USERDB,$passwd,PERM_Login);
+			$reallogin=$this->main->user->checklogin($login,$passwd); // $login,CONFIG_USERDB,$passwd,PERM_Login
 			if($reallogin<>false){
 				$xml['person']['personid']=$reallogin;
 				echo($this->generatexml($format,'ok',100,'',$xml,'person','check',2)); 
 			}else{
+				/*
+				 * TODO: uncomment and implement login by API key
 				$user=H01_USER::finduserbyapikey($login,CONFIG_USERDB);
 				if($user==false) {
+					*/
 					echo($this->generatexml($format,'failed',102,'login not valid'));
+					/*
 				}else{
 					$xml['person']['personid']=$user;
 					echo($this->generatexml($format,'ok',100,'',$xml,'person','check',2)); 
+					
 				}
+				*/
 			}
 		}else{
 			echo($this->generatexml($format,'failed',101,'please specify all mandatory fields'));
@@ -1290,131 +1297,19 @@ class H01_OCS {
 		$this->checktrafficlimit($user);
 		if(empty($username)) $username=$user;
 
-		$cache = new H01_CACHE('apipersonget',array($user,CONFIG_USERDB,$username,$format));
-		if ($cache->exist()) {
-			$cache->get();
-			unset($cache);
-		} else {
-			$DBuser=H01_USER::getuser($username,CONFIG_USERDB);
-			$itemscount=count($DBuser);
+		$DBuser=$this->main->user->get_user_info($username);
 
-			if($itemscount==0){
-				$txt=$this->generatexml($format,'failed',101,'person not found');
-			}else{
-				$xml=array();
-				$xml[0]['personid']=$DBuser['login'];
-				$xml[0]['privacy']=$DBuser['privacy'];
-				$xml[0]['privacytext']=H01_USER::$PRIVACY[1][$DBuser['privacy']];
-				$xml[0]['firstname']=$DBuser['firstname'];
-				$xml[0]['lastname']=$DBuser['name'];
-				$xml[0]['gender']=H01_USER::$GENDER[1][$DBuser['gender']];
-				if(CONFIG_USERCOMMUNITYROLE) $xml[0]['communityrole']=H01_USER::$COMMUNITYROLE[1][$DBuser['communityrole']];
-				$xml[0]['company']=$DBuser['company'];
-				$xml[0]['homepage']=$DBuser['homepage1'];
-				$xml[0]['homepagetype']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype1']];
-				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype1']]<>'') $xml[0]['homepageicon']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype1']];
-				$xml[0]['homepage2']=$DBuser['homepage2'];
-				$xml[0]['homepagetype2']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype2']];
-				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype2']]<>'') $xml[0]['homepageicon2']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype2']];
-				$xml[0]['homepage3']=$DBuser['homepage3'];
-				$xml[0]['homepagetype3']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype3']];
-				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype3']]<>'') $xml[0]['homepageicon3']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype3']];
-				$xml[0]['homepage4']=$DBuser['homepage4'];
-				$xml[0]['homepagetype4']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype4']];
-				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype4']]<>'') $xml[0]['homepageicon4']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype4']];
-				$xml[0]['homepage5']=$DBuser['homepage5'];
-				$xml[0]['homepagetype5']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype5']];
-				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype5']]<>'') $xml[0]['homepageicon5']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype5']];
-				$xml[0]['homepage6']=$DBuser['homepage6'];
-				$xml[0]['homepagetype6']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype6']];
-				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype6']]<>'') $xml[0]['homepageicon6']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype6']];
-				$xml[0]['homepage7']=$DBuser['homepage7'];
-				$xml[0]['homepagetype7']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype7']];
-				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype7']]<>'') $xml[0]['homepageicon7']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype7']];
-				$xml[0]['homepage8']=$DBuser['homepage8'];
-				$xml[0]['homepagetype8']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype8']];
-				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype8']]<>'') $xml[0]['homepageicon8']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype8']];
-				$xml[0]['homepage9']=$DBuser['homepage9'];
-				$xml[0]['homepagetype9']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype9']];
-				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype9']]<>'') $xml[0]['homepageicon9']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype9']];
-				$xml[0]['homepage10']=$DBuser['homepage10'];
-				$xml[0]['homepagetype10']=H01_USER::$LINK_CATEGORY[$DBuser['homepagetype10']];
-				if(H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype10']]<>'') $xml[0]['homepageicon10']='http://'.CONFIG_WEBSITEHOST.'/img/socialicons/'.H01_USER::$LINK_CATEGORYICON[$DBuser['homepagetype10']];
-
-				if		 (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.jpg')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.jpg'; $found=true; }
-				elseif (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.png')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.png'; $found=true; }
-				elseif (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.gif')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.gif'; $found=true; }
-				else	{	$pic=HOST.'/usermanager/nopic.png'; $found=false ;}
-				$xml[0]['avatarpic']=$pic;
-				$xml[0]['avatarpicfound']=$found;
-
-				if		 (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-bigpics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.jpg')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-bigpics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.jpg'; $found=true; 
-				}elseif (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-bigpics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.png')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-bigpics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.png'; $found=true; 
-				}elseif (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-bigpics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.gif')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-bigpics/'.CONFIG_USERDB.'/'.$DBuser['login'].'.gif'; $found=true; 
-				}else{ $pic=''; $found=false; }
-				$xml[0]['bigavatarpic']=$pic;
-				$xml[0]['bigavatarpicfound']=$found;
-
-
-				if($DBuser['birthyear']<1910){
-					$xml[0]['birthday']=date('Y-m-d',mktime(0, 0, 0, $DBuser['birthmonth'],$DBuser['birthday'],$DBuser['birthyear']));
-				}else{
-					$xml[0]['birthday']='';
-				}
-				if(CONFIG_USERJOBSTATUS) $xml[0]['jobstatus']=H01_USER::$JOBSTATUS[1][$DBuser['jobstatus']];
-				$xml[0]['jabber']=$DBuser['jabber'];
-				if(CONFIG_USERMESSENGER1){
-					$xml[0]['messengertype1']=H01_USER::$IM_CATEGORY[$DBuser['messengertype']];
-					$xml[0]['messenger1']=$DBuser['messenger'];
-				}
-				if(CONFIG_USERMESSENGER2){
-					$xml[0]['messengertype2']=H01_USER::$IM_CATEGORY[$DBuser['messengertype2']];
-					$xml[0]['messenger2']=$DBuser['messenger2'];
-				}
-				if(CONFIG_USERMESSENGER3){
-					$xml[0]['messengertype3']=H01_USER::$IM_CATEGORY[$DBuser['messengertype3']];
-					$xml[0]['messenger3']=$DBuser['messenger3'];
-				}
-
-				$xml[0]['city']=$DBuser['city'];
-				$xml[0]['country']=H01_USER::$COUNTRIES[$DBuser['country']];
-
-				$xml[0]['latitude']=$DBuser['latitude'];
-				$xml[0]['longitude']=$DBuser['longitude'];
-				$xml[0]['ircnick']=$DBuser['ircnick'];
-				$xml[0]['ircchannels']=$DBuser['ircchannels'];
-				$channels=explode(',',$DBuser['ircchannels']);
-				foreach($channels as $channel) $xml[0][]['irclink']='irc://irc.freenode.org/'.urlencode(trim($channel));
-
-				if(CONFIG_USERLIKES) $xml[0]['likes']=H01_UTIL::bbcode2html($DBuser['likes']);
-				if(CONFIG_USERDONTLIKES) $xml[0]['dontlikes']=H01_UTIL::bbcode2html($DBuser['dontlikes']);
-				if(CONFIG_USERINTERESTS) $xml[0]['interests']=H01_UTIL::bbcode2html($DBuser['interests']);
-				if(CONFIG_USERLANGUAGES) $xml[0]['languages']=H01_UTIL::bbcode2html($DBuser['languages']);
-				if(CONFIG_USERPROGRAMMINGLANGUAGES) $xml[0]['programminglanguages']=H01_UTIL::bbcode2html($DBuser['programminglanguages']);
-				if(CONFIG_USERFAVOURITEQUOTE) $xml[0]['favouritequote']=H01_UTIL::bbcode2html($DBuser['favouritequote']);
-				if(CONFIG_USERFAVOURITEMUSIC) $xml[0]['favouritemusic']=H01_UTIL::bbcode2html($DBuser['favouritemusic']);
-				if(CONFIG_USERFAVOURITETVSHOWS) $xml[0]['favouritetvshows']=H01_UTIL::bbcode2html($DBuser['favouritetvshows']);
-				if(CONFIG_USERFAVOURITEMOVIES) $xml[0]['favouritemovies']=H01_UTIL::bbcode2html($DBuser['favouritemovies']);
-				if(CONFIG_USERFAVOURITEBOOKS) $xml[0]['favouritebooks']=H01_UTIL::bbcode2html($DBuser['favouritebooks']);
-				if(CONFIG_USERFAVOURITEGAMES) $xml[0]['favouritegames']=H01_UTIL::bbcode2html($DBuser['favouritegames']);
-				$xml[0]['description']=H01_UTIL::bbcode2html($DBuser['description']);
-				$xml[0]['profilepage']='http://'.CONFIG_WEBSITEHOST.'/usermanager/search.php?username='.$DBuser['login'];
-
-				if($DBuser['privacy']==0) {
-					$visible=true;
-				}elseif($DBuser['privacy']==1){
-					if($user<>'') $visible=true; else $visible=false;
-				}elseif($DBuser['privacy']==2){
-					if((strtolower($username)==strtolower($user)) or (H01_RELATION::isrelation(1,$username,CONFIG_USERDB,$user))) $visible=true; else $visible=false;
-				}elseif($DBuser['privacy']==3){
-					$visible=false;
-				}
-
-				if($visible) $txt=$this->generatexml($format,'ok',100,'',$xml,'person','full',2); else $txt=$this->generatexml($format,'failed',102,'data is private');
-			}
-
-			$cache->put($txt);
-			unset($cache);
+		if(is_null($DBuser)){
+			$txt=$this->generatexml($format,'failed',101,'person not found');
+		}else{
+			$xml=array();
+			$xml[0]['personid']=$DBuser['login'];
+			$xml[0]['firstname']=$DBuser['firstname'];
+			$xml[0]['lastname']=$DBuser['lastname'];
+			//$xml[0]['description']=H01_UTIL::bbcode2html($DBuser['description']);
+			
+			$txt=$this->generatexml($format,'ok',100,'',$xml,'person','full',2);
+			//$txt=$this->generatexml($format,'failed',102,'data is private');
 			echo($txt);
 		}
 

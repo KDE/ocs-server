@@ -1,18 +1,10 @@
-# global TODO
+[property] = Not strictly necessary
+
+
 
 SOCS TODO:
 
 WIP:
-		PERSON
-			check
-			search
-			get
-			get self
-			edit
-			balance
-			get attributes
-			set attribute
-			delete attribute
 		CONTENT
 			list
 			get
@@ -36,3 +28,6 @@ DONE:
 			config
 	PERSON
 			add
+			check (api key needs implementation)
+			get self
+			get

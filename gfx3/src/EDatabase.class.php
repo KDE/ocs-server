@@ -41,6 +41,8 @@ class EDatabase {
 	 */
 	
 	public function __construct(){
+		global $main;
+		$this->main = $main;
 		//opening session
 		$db = mysql_connect($this->db_host, $this->db_user, $this->db_pass) or $this->status = 2;
 		$db_select = mysql_select_db($this->db_name, $db) or $this->status = 1;
@@ -81,16 +83,19 @@ class EDatabase {
 			if(empty($error)){ 
 				$ret = $ret;
 			} else {
-				$elog->error($error."<br>Query string: ".$q);
+				$this->main->log->error($error."<br>Query string: ".$q);
 			}
 			return $ret;
 		} else {
 			if($this->debug==false){
-				$elog->error("sql session not already opened!");
+				$this->main->log->error("sql session not already opened!");
 			}
 		}
 	}
 	
+	/*TODO:	What's is this method supposed to do?
+	 *		Inspect.
+	 */
 	public function sq($q){
 		if($this->opened==true){
 			$this->queries += 1;

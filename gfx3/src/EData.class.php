@@ -20,29 +20,8 @@
  * update()
  */
 
-class EDataSetter{
-	
-	private $table_list = array();
-	
-	public function __construct(){
-		//
-	}
-	
-	public function table_list(){
-		$tlbs = new ECache("tables_list");
-		if(!$tbls->exists()){
-			$q = $edb->q('show tables');
-			while($row=mysql_fetch_array($q)){
-				
-			}
-		}
-	}
-	
-}
-
 class EData {
-	//VARIABILI
-	//variabile cache per evitare queries inutili
+	//in order to avoid avoidable queries
 	private $dbg = false;
 	private $tcount = "nd";
 	private $table = false;
@@ -201,11 +180,21 @@ class EData {
 		return $result;
 	}
 	
+	//check if exists a $field in $this->table $where
+	public function is_there($field="", $where=""){
+		$result = $this->count($field, $where);
+		if($result){
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
 	public function delete($where="", $howmany=""){
 		if(!empty($where)){ $where = " WHERE ".$where." "; }
 		if(!empty($howmany)){ $howmany = " LIMIT ".$howmany." "; }
 		
-		$edb->q("DELETE FROM ".$this->table." $where $howmany");
+		$this->main->db->q("DELETE FROM ".$this->table." $where $howmany");
 	}
 	
 	public function update($where="", $entries=array()) {
