@@ -23,11 +23,14 @@ class OCSContent{
 	private $type;
 	private $description;
 	private $summary;
-	private $version
+	private $version;
 	private $changelog;
 	private $downloadname1;
 	private $downloadlink1;
 	
+	/*
+	 * Enabling main to be on a global context.
+	 */
 	public function __construct(){
 		global $main;
 		$this->main = $main;
@@ -37,26 +40,44 @@ class OCSContent{
 	 * Saving the ram rapresentation into memory (database).
 	 */
 	public function save(){
-		$this->main->db->q("INSERT INTO ocs_content (name,type,downloadname1,downloadlink1,summary,version,changelog) VALUES ('".$this->downloadname1."','".$this->downloadlink1."','".$this->description."','".$this->summary."','".$this->version."','".$this->changelog."')");
+		//TODO: implement unique name.
+		
+		//saving
+		$this->main->db->q("INSERT INTO ocs_content (name,type,owner,downloadname,downloadlink,description,summary,version,changelog) VALUES ('".$this->name."',".$this->type.",".$this->owner.",'".$this->downloadname1."','".$this->downloadlink1."','".$this->description."','".$this->summary."','".$this->version."','".$this->changelog."')");
+		//updating new id, got from database
+		$r = $this->main->db->q("SELECT id FROM ocs_content where name='".$this->name."' and owner=".$this->owner." LIMIT 1");
+		$this->id = $r[0]["id"];
 	}
 	
 	/*
 	 * Setting id of the owner of the content.
 	 */
-	public function setOwner($owner){
+	public function set_owner($owner){
 		$this->owner = $owner;
 	}
 	
 	/*
 	 * Manually setting internal data.
 	 */
-	public function setData($data){
+	public function set_data($data){
+		// assuring those are not evil data to be used as SQL injections
+		$this->main->db->safe($data);
+		//data validations
+		if(!isset($data['type'])){ $this->main->elog->error("OCSContent: type not defined. Mandatory field"); } else { $this->type = $data['type']; }
+		if(!isset($data['name'])){ $this->main->elog->error("OCSContent: name not defined. Mandatory field"); } else { $this->name = $data['name']; }
 		if(!isset($data['downloadname1'])){ $this->downloadname1 = ""; } else { $this->downloadname1 = $data['downloadname1']; }
 		if(!isset($data['downloadlink1'])){ $this->downloadlink1 = ""; } else { $this->downloadlink1 = $data['downloadlink1']; }
 		if(!isset($data['description'])){ $this->description = ""; } else { $this->description = $data['description']; }
 		if(!isset($data['summary'])){ $this->summary = ""; } else { $this->summary = $data['summary']; }
 		if(!isset($data['version'])){ $this->version = ""; } else { $this->version = $data['version']; }
 		if(!isset($data['changelog'])){ $this->changelog = ""; } else { $this->changelog = $data['changelog']; }
+	}
+	
+	/*
+	 * This function returns the associated id for the selected content
+	 */
+	public function id(){
+		return $this->id;
 	}
 	
 }

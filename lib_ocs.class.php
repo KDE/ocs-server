@@ -2703,15 +2703,15 @@ class H01_OCS {
 			if($this->readdata('summary','text')<>'')							$data['summary']=$this->readdata('summary','text');
 			if($this->readdata('version','text')<>'')							$data['version']=$this->readdata('version','text');
 			if($this->readdata('changelog','text')<>'')						$data['changelog']=$this->readdata('changelog','text');
-
+			
 			if(($data['name']<>'') and ($data['type']<>0)) {
 				$content = new OCSContent();
-				$content->setOwner($this->main->user->id());
-				$content->setData($data);
+				$content->set_owner($this->main->user->id());
+				$content->set_data($data);
 				$content->save();
 				
 				$xml = array();
-				$xml[0]['id'] = $id;
+				$xml[0]['id'] = $content->id();
 				$txt = $this->generatexml($format,'ok',100,'',$xml,'content','',2); 
 			}else{
 				$txt = $this->generatexml($format,'failed',101,'please specify all mandatory fields');

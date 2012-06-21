@@ -56,7 +56,7 @@ class OCSUser{
 		} else {
 			$this->logged = true;
 			
-			$r = $this->persons->find("*","login='$login' and password='$passwd'");
+			$data = $this->persons->find("*","where login='$login' and password='$passwd'");
 			$this->id = $data[0]["id"];
 			$this->login = $data[0]["login"];
 			$this->firstname = $data[0]["firstname"];

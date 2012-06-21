@@ -129,7 +129,7 @@ class EData {
 		if($this->dbg==true){
 			echo "EXECUTING: SELECT $what FROM ".$this->table." $where <br>";
 		}
-		$r = $edb->q("SELECT $what FROM ".$this->table." $where");
+		$r = $this->main->db->q("SELECT $what FROM ".$this->table." $where");
 		while($row=mysql_fetch_array($r)){
 			$result[] = $row;
 		}

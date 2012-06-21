@@ -64,10 +64,20 @@ class EDatabase {
 	public function get_db_user(){ return $this->db_user; }
 	public function get_db_pass(){ return $this->db_pass; }
 	
-	
+	/*
+	 * This function is to assure that string or string array 
+	 * are safe to be executed as parts of SQL queries
+	 */
 	public function safe($s){
-		$s = mysql_real_escape_string($s);
-		return $s;
+		if(is_array($s)){
+			foreach($s as $key => $value){
+				$s[$key] = mysql_real_escape_string($s[$key]);
+			}
+			return $s;
+		} else {
+			$s = mysql_real_escape_string($s);
+			return $s;
+		}
 	}
 	
 	/**

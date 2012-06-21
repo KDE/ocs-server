@@ -8,7 +8,7 @@ echo
 "<html>
 <body>
 
-<form action=\"v1/content/add\" method=\"post\">
+<form action=\"http://snizzo:pec@localhost/v1/content/add\" method=\"post\">
 name: <input type=\"text\" name=\"name\"><br>
 type: <input type=\"text\" name=\"type\"><br>
 downloadname1: <input type=\"text\" name=\"downloadname1\"><br>
