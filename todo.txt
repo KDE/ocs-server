@@ -9,8 +9,6 @@ WIP:
 			list
 			get
 			download
-			vote
-			add
 			edit
 			delete
 			upload download file
@@ -31,3 +29,6 @@ DONE:
 			check (api key needs implementation)
 			get self
 			get
+	CONTENT
+			add
+			vote

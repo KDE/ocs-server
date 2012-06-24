@@ -41,7 +41,9 @@ class EData {
 	
 	
 	
-	// DEBUG informations about EData object
+	/*
+	 * Prints debug informations about a database table.
+	 */
 	public function debugInfo(){
 		echo "tcount: ".$this->tcount."<br>";
 		echo "table: ".$this->table."<br>";
@@ -50,11 +52,19 @@ class EData {
 		echo "</pre>";
 	}
 	
-	public function setNoQuery(){
-		$this->noquery = true;
+	/*
+	 * Set this to true in order to make EData just simulate modifications
+	 * and echo the query. Use only for debug purposes.
+	 */
+	public function setNoQuery($b){
+		$this->noquery = $b;
 	}
 	
-	//set table infos
+	/*
+	 * Load info from a database table.
+	 * Results are also cached.
+	 * TODO: move cache to new ECacheVar.
+	 */
 	private function tableInfo(){
 		//if already cached load from cache else load with a describe AND cache
 		if(file_exists("cache/".$this->table.".table.txt")){
@@ -85,10 +95,17 @@ class EData {
 		}
 	}
 	
+	/*
+	 * Returns all fields contained in table structure.
+	 */
 	public function fields(){
 		return $this->fields;
 	}
 	
+	/*
+	 * Perform an automatic insert using data passed through GET/POST.
+	 * To use only if user has every access to the database table.
+	 */
 	public function insert($entries=array()) {
 		if(empty($entries)){
 			$index = 0;
@@ -118,13 +135,16 @@ class EData {
 			}
 			$sql = rtrim($sql,",").")";
 			if($this->noquery==false){
-				$edb->q($sql);
+				$this->main->db->q($sql);
 			} else {
 				echo $sql;
 			}
 		}
 	}
 	
+	/*
+	 * Extrapolates data and map it into an associative array
+	 */
 	public function find($what=" * ", $where="") {
 		if($this->dbg==true){
 			echo "EXECUTING: SELECT $what FROM ".$this->table." $where <br>";
@@ -141,19 +161,25 @@ class EData {
 		
 	}
 	
+	/*
+	 * Return result from a single query.
+	 */
 	public function take($what=" * ", $where="") {
 		if(!empty($where)){ $where = " WHERE ".$where." "; }
 		
-		$result = $edb->sq("SELECT $what FROM ".$this->table." $where");
+		$result = $this->main->db->sq("SELECT $what FROM ".$this->table." $where");
 		
 		return $result;
 		
 	}
 	
+	/*
+	 * Return a single row from an associative array
+	 */
 	public function row($what=" * ", $where="") {
 		if(!empty($where)){ $where = " ".$where." "; }
 		
-		$r = $edb->q("SELECT $what FROM ".$this->table." $where");
+		$r = $this->main->db->q("SELECT $what FROM ".$this->table." $where");
 		
 		while($row=mysql_fetch_array($r)){
 			$result = $row;
@@ -163,6 +189,9 @@ class EData {
 		
 	}
 	
+	/*
+	 * Performs counts on selected table.
+	 */
 	public function count($field="id", $where=""){
 		//optimized... only one query in a page!
 		if($this->tcount!="nd"){
@@ -180,7 +209,9 @@ class EData {
 		return $result;
 	}
 	
-	//check if exists a $field in $this->table $where
+	/*
+	 * check if exists a $field in $this->table $where
+	 */
 	public function is_there($field="", $where=""){
 		$result = $this->count($field, $where);
 		if($result){
@@ -190,6 +221,9 @@ class EData {
 		}
 	}
 	
+	/*
+	 * Deletion method.
+	 */
 	public function delete($where="", $howmany=""){
 		if(!empty($where)){ $where = " WHERE ".$where." "; }
 		if(!empty($howmany)){ $howmany = " LIMIT ".$howmany." "; }
@@ -197,6 +231,11 @@ class EData {
 		$this->main->db->q("DELETE FROM ".$this->table." $where $howmany");
 	}
 	
+	
+	/*
+	 * Automatic update method. Works basically like insert method.
+	 * Remember to specifies where when used!
+	 */
 	public function update($where="", $entries=array()) {
 		//recupero le informazioni di where
 		if(!empty($where)){ $where = " WHERE ".$where." "; }
@@ -236,7 +275,7 @@ class EData {
 				}
 			}
 			$sql = rtrim($sql,",")." $where";
-			$edb->q($sql);
+			$this->main->db->q($sql);
 		}
 	}
 	

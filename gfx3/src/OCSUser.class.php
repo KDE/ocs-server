@@ -71,24 +71,6 @@ class OCSUser{
 	 * Some utils functions regarding users
 	 */
 	
-	/*
-	 * TODO: these two methods does pretty much the same. Refactor.
-	 * 
-	  * Backup copy. In case of horrible disasters.
-	  * 
-	public function exists($login){
-		//assure input is secure against injection
-		$login = $this->main->db->safe($login);
-		
-		$persons = new EData("ocs_person");
-		$r = $persons->count("login", "login='$login'");
-		if($r==0){
-			return false;
-		} else {
-			return true;
-		}
-	}
-	*/
 	public function exists($user){
 		$user = $this->main->db->safe($user);
 		$r = $this->persons->is_there("login","login='$user'");
@@ -142,6 +124,10 @@ class OCSUser{
 		return $r;
 	}
 	
+	/*
+	 * Obscure magic string told me by the elders.
+	 * If modified, I don't guarantee you'll be safe anymore.
+	 */
 	public function isvalidemail($email){
 		if(preg_match("/^([\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+\.)*[\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+@((((([a-z0-9]{1}[a-z0-9\-]{0,62}[a-z0-9]{1})|[a-z])\.)+[a-z]{2,6})|(\d{1,3}\.){3}\d{1,3}(\:\d{1,5})?)$/i", $email)){
 			return true;

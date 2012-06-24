@@ -27,6 +27,11 @@ class OCSContent{
 	private $changelog;
 	private $downloadname1;
 	private $downloadlink1;
+	private $votes;
+	private $score;
+	
+	private $ocs_content;
+	
 	
 	/*
 	 * Enabling main to be on a global context.
@@ -34,6 +39,69 @@ class OCSContent{
 	public function __construct(){
 		global $main;
 		$this->main = $main;
+		$this->ocs_content = new EData("ocs_content");
+	}
+	
+	/*
+	 * Load into memory a content from table ocs_content
+	 */
+	public function load($id){
+		if($this->ocs_content->is_there("id","id=$id")) {
+			$r = $this->ocs_content->find("*", "where id=$id LIMIT 1");
+			$this->id = $id;
+			$this->owner = $r[0]["owner"];
+			$this->votes = $r[0]["votes"];
+			$this->score = $r[0]["score"];
+			$this->name = $r[0]["name"];
+			$this->type = $r[0]["type"];
+			$this->description = $r[0]["description"];
+			$this->summary = $r[0]["summary"];
+			$this->version = $r[0]["version"];
+			$this->changelog = $r[0]["changelog"];
+			$this->downloadname1 = $r[0]["downloadname"];
+			$this->downloadlink1 = $r[0]["downloadlink"];
+			$this->votes = $r[0]["votes"];
+			$this->score = $r[0]["score"];
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	/*
+	 * Set a weighted score to the content.
+	 */
+	public function set_score($score){
+		//acquiring data
+		$oldmedia = $this->score;
+		$newscore = $score;
+		
+		$oldvotes = $this->votes;
+		$newvotes = $this->votes + 1;
+		//calculating new media
+		$newmedia = ($oldmedia * $oldvotes + $newscore) / ($newvotes);
+		
+		//setting new infos to local memory object
+		$this->score = $newmedia;
+		$this->votes = $newvotes;
+		
+		//updating db
+		$this->main->db->q("UPDATE ocs_content SET score=".$this->score.", votes=".$this->votes." WHERE id=".$this->id." LIMIT 1");
+		
+	}
+	
+	/*
+	 * Return the number of people who has performed a vote action on this object.
+	 */
+	public function votes(){
+		return $this->votes;
+	}
+	
+	/*
+	 * Returns the weighted score for this object.
+	 */
+	public function score(){
+		return $this->score;
 	}
 	
 	/*
@@ -84,3 +152,4 @@ class OCSContent{
 
 
 ?>
+

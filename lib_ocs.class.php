@@ -2524,20 +2524,21 @@ class H01_OCS {
 	 * @return string xml/json
 	 */
 	private  function contentvote($format,$content,$vote) {
-		global $WEBSITECONTENT;
-
-		$user=$this->checkpassword(false);
+		
+		$user=$this->checkpassword(true);
 		$this->checktrafficlimit($user);
-
+		
+		$con = new OCSContent();
+		
 		// fetch data
 		$content=addslashes($content);
 		$vote=addslashes($vote);
-		$con=H01_CONTENT::getdetail($content);
+		
 		// check data
-		if ((count($con) == 0) or (!isset($con['type'])) or (!isset($WEBSITECONTENT[$con['type']])) ) {
+		if (!$con->load($content)) {
 			$txt=$this->generatexml($format,'failed',101,'content not found');
 		} else {
-			if($user<>'') H01_CONTENT::setscore($user,CONFIG_USERDB,$content,$vote);
+			if($user<>'') $con->set_score($vote);
 			$txt=$this->generatexml($format,'ok',100,'');
 		}
 		echo($txt);
