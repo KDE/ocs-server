@@ -14,23 +14,22 @@
 
 class OCSContent{
 	
-	private $data;
-	private $main;
-	private $id;
-	private $owner;
-	
-	private $name;
-	private $type;
-	private $description;
-	private $summary;
-	private $version;
-	private $changelog;
-	private $downloadname1;
-	private $downloadlink1;
-	private $votes;
-	private $score;
+	public $id;
+	public $owner;
+	public $name;
+	public $type;
+	public $description;
+	public $summary;
+	public $version;
+	public $changelog;
+	public $downloadname1;
+	public $downloadlink1;
+	public $votes;
+	public $score;
 	
 	private $ocs_content;
+	private $data;
+	private $main;
 	
 	
 	/*
@@ -152,4 +151,3 @@ class OCSContent{
 
 
 ?>
-

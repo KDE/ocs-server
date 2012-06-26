@@ -8,7 +8,6 @@ WIP:
 		CONTENT
 			list
 			get
-			download
 			edit
 			delete
 			upload download file
@@ -32,3 +31,4 @@ DONE:
 	CONTENT
 			add
 			vote
+			download

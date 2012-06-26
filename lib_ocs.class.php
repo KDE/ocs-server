@@ -2179,141 +2179,45 @@ class H01_OCS {
 	 * @param string $item
 	 * @return string xml/json
 	 */
- private  function contentdownload($format,$content,$item) {
-		global $WEBSITECONTENT;
+	 private  function contentdownload($format,$content,$item) {
+			$user=$this->checkpassword(false);
+			$this->checktrafficlimit($user);
 
-		$user=$this->checkpassword(false);
-		$this->checktrafficlimit($user);
+			$content = (int) $content;
+			$item = (int) $item;
 
-		$content= (int) $content;
-		$item= (int) $item;
-
-		// item range
-		if($item<1 or $item>12) {
-			$txt=$this->generatexml($format,'failed',101,'item not found');
-		} else {
-
-			// fetch data
-			$con=H01_CONTENT::getdetail($content);
-
-			// check data
-			if ((count($con) == 0) or (!isset($con['type'])) or (!isset($WEBSITECONTENT[$con['type']])) ) {
-				$txt=$this->generatexml($format,'failed',101,'content not found');
+			// item range
+			if($item<1 or $item>12) {
+				$txt=$this->generatexml($format,'failed',103,'item not found');
 			} else {
 
+				// fetch data
+				$con = new OCSContent();
 
-
-			if($item==1) {
-				if($con['downloadtyp1']==0) {
-					$link='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-files/'.$con['download1'];
-					$filename=CONFIG_DOCUMENT_ROOT.'/CONTENT/content-files/'.$con['download1'];
-
-					$mimetype=mime_content_type($filename);
-// enable with php 5.3
-//					$finfo = finfo_open(FILEINFO_MIME_TYPE);
-//					$mimetype=finfo_file($finfo, $filename);
-//					finfo_close($finfo);
-
+				// check data
+				if (!$con->load($content)) {
+					$txt=$this->generatexml($format,'failed',101,'content not found');
 				} else {
-					$link=$con['downloadlink1'];
-					$mimetype='';
-				}
-			}
-			elseif($item==2)	$link=$con['downloadlink2'];
-			elseif($item==3)	$link=$con['downloadlink3'];
-			elseif($item==4)	$link=$con['downloadlink4'];
-			elseif($item==5)	$link=$con['downloadlink5'];
-			elseif($item==6)	$link=$con['downloadlink6'];
-			elseif($item==7)	$link=$con['downloadlink7'];
-			elseif($item==8)	$link=$con['downloadlink8'];
-			elseif($item==9)	$link=$con['downloadlink9'];
-			elseif($item==10) $link=$con['downloadlink10'];
-			elseif($item==11) $link=$con['downloadlink11'];
-			elseif($item==12) $link=$con['downloadlink12'];
-			else $link='';
-
-
-			if($item==1){
-				if(!empty($con['download1']) or !empty($con['downloadlink1']) or ($con['downloadtyp1']==2)) {
-					if($con['downloadbuy1']==1) {
-
-						if($user=='') {
-							echo($this->generatexml($format,'failed',104,'you have to login to buy a content'));
-							exit();
-						}
-
-						$status=H01_PAYMENT::buy(addslashes($user),$con['id'],$item,$con['downloadbuyprice'.$item]);
-						if($status==true) {
+						//download link
+						$link = $con->downloadlink1;
+						//mimetype
+						$headers = get_headers($link);
+						$mimetype = $headers[3];
+						
+						if (!empty($con->downloadname1) or !empty($con->downloadlink1)) {
 							$xml['downloadlink']=$link;
 							$xml['mimetype']=$mimetype;
-							$xml['gpgfingerprint']=$con['downloadgpgfingerprint1'];
-							$xml['gpgsignature']=$con['downloadgpgsignature1'];
-							$xml['packagename']=$con['downloadpackagename1'];
-							$xml['repository']=$con['downloadrepository1'];
 							$xml2[0]=$xml;
 							$txt=$this->generatexml($format,'ok',100,'',$xml2,'content','download',2);
-						}else{
-							$txt=$this->generatexml($format,'failed',102,'payment failed');
+						} else {
+							$txt=$this->generatexml($format,'failed',103,'content item not found');
 						}
-					}else{
-						$xml['downloadlink']=$link;
-						$xml['mimetype']=$mimetype;
-						$xml['gpgfingerprint']=$con['downloadgpgfingerprint1'];
-						$xml['gpgsignature']=$con['downloadgpgsignature1'];
-						$xml['packagename']=$con['downloadpackagename1'];
-						$xml['repository']=$con['downloadrepository1'];
-						$xml2[0]=$xml;
-						$txt=$this->generatexml($format,'ok',100,'',$xml2,'content','download',2);
-					}
-
-				}else{
-					$txt=$this->generatexml($format,'failed',103,'content item not found');
+				
 				}
+
+			if(isset($txt) and $txt<>'') {
+				echo($txt);
 			}
-
-			if(($item>1) and ($item<13)){
-				if (!empty($con['downloadname'.$item]) or !empty($con['downloadlink'.$item])) {
-
-					if($con['downloadbuy'.$item]==1) {
-						if($user=='') {
-							echo($this->generatexml($format,'failed',104,'you have to login to buy a content'));
-							exit();
-						}
-
-						$status=H01_PAYMENT::buy(addslashes($user),$con['id'],$item,$con['downloadbuyprice'.$item]);
-						if($status==true) {
-							$xml['downloadlink']=$link;
-							$xml['mimetype']=''; // no idea with external content
-							$xml['gpgfingerprint']=$con['downloadgpgfingerprint'.$item];
-							$xml['gpgsignature']=$con['downloadgpgsignature'.$item];
-							$xml['packagename']=$con['downloadpackagename'.$item];
-							$xml['repository']=$con['downloadrepository'.$item];
-							$xml2[0]=$xml;
-							$txt=$this->generatexml($format,'ok',100,'',$xml2,'content','download',2);
-						}else{
-							$txt=$this->generatexml($format,'failed',102,'payment failed');
-						}
-					}else{
-						$xml['downloadlink']=$link;
-						$xml['mimetype']='';	// no idea with external content
-						$xml['gpgfingerprint']=$con['downloadgpgfingerprint'.$item];
-						$xml['gpgsignature']=$con['downloadgpgsignature'.$item];
-						$xml['packagename']=$con['downloadpackagename'.$item];
-						$xml['repository']=$con['downloadrepository'.$item];
-						$xml2[0]=$xml;
-						$txt=$this->generatexml($format,'ok',100,'',$xml2,'content','download',2);
-					}
-				}else{
-					$txt=$this->generatexml($format,'failed',103,'content item not found');
-				}
-			}
-		}
-		}
-
-		if(isset($txt) and $txt<>'') {
-			echo($txt);
-		}else{
-			echo($this->generatexml($format,'failed',101,'content item not found'));
 		}
 	}
 
