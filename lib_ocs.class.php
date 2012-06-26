@@ -2850,31 +2850,26 @@ class H01_OCS {
 	 * @return string xml/json
 	 */
 	private  function contentdelete($format,$contentid) {
-
-		$user=$this->checkpassword();
+		
+		$user=$this->checkpassword(true);
 		$this->checktrafficlimit($user);
 		$content=addslashes($contentid);
-
+		
 		// fetch data
-		$con=H01_CONTENT::getdetail($content);
-		if(isset($con['user'])) {
-
-			if((($con['user']==$user) and ($con['userdb']==CONFIG_USERDB) and H01_AUTH::checkuser(PERM_Content_Edit,$user,CONFIG_USERDB) ) or (H01_AUTH::checkuser(PERM_Content_Admin,$user,CONFIG_USERDB))) {
-				H01_CONTENTEDIT::delete($content,$user);
-				H01_CACHEADMIN::cleancache('apilist',array($_SESSION['website'],$_SESSION['lang'],$format,$user));
-				H01_CACHEADMIN::cleancache('apiget',array($_SESSION['website'],$_SESSION['lang'],$content));
-				$txt=$this->generatexml($format,'ok',100,'');
-			}else{
-				$txt=$this->generatexml($format,'failed',101,'no permission to change content');
-			}
-		}else{
+		$con = new OCSContent();
+		if(!$con->load($content)){
 			$txt=$this->generatexml($format,'failed',101,'no permission to change content');
+		} else {
+			if(!$con->is_owned($this->main->user->id())){
+				$txt=$this->generatexml($format,'failed',101,'no permission to change content');
+			} else {
+				$con->delete();
+				$txt=$this->generatexml($format,'ok',100,'');
+			}
 		}
-
+		
 		echo($txt);
-
 	}
-
 
 
 	//KNOWLEDGEBASE API #############################################

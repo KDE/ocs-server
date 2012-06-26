@@ -9,7 +9,6 @@ WIP:
 			list
 			get
 			edit
-			delete
 			upload download file
 			delete download file
 			upload preview image
@@ -32,3 +31,4 @@ DONE:
 			add
 			vote
 			download
+			delete

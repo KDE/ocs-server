@@ -8,8 +8,8 @@ echo
 "<html>
 <body>
 
-<form action=\"http://snizzo:pec@localhost/v1/content/vote/2\" method=\"post\">
-<input type=\"hidden\" name=\"vote\" value=\"87\"><br>
+<form action=\"http://snizzo:poc@localhost/v1/content/delete/3\" method=\"post\">
+<input type=\"hidden\" name=\"id\" value=\"2\"><br>
 <input type=\"submit\">
 </form>
 

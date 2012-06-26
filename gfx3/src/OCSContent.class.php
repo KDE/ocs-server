@@ -90,6 +90,17 @@ class OCSContent{
 	}
 	
 	/*
+	 * Checks if the current loaded content is owned by $id
+	 */
+	public function is_owned($id){
+		if($this->owner == $id){
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	/*
 	 * Return the number of people who has performed a vote action on this object.
 	 */
 	public function votes(){
@@ -114,6 +125,10 @@ class OCSContent{
 		//updating new id, got from database
 		$r = $this->main->db->q("SELECT id FROM ocs_content where name='".$this->name."' and owner=".$this->owner." LIMIT 1");
 		$this->id = $r[0]["id"];
+	}
+	
+	public function delete(){
+		$this->main->db->q("DELETE FROM ocs_content WHERE id=".$this->id." LIMIT 1");
 	}
 	
 	/*
