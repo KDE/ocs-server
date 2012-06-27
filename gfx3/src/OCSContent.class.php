@@ -57,8 +57,8 @@ class OCSContent{
 			$this->summary = $r[0]["summary"];
 			$this->version = $r[0]["version"];
 			$this->changelog = $r[0]["changelog"];
-			$this->downloadname1 = $r[0]["downloadname"];
-			$this->downloadlink1 = $r[0]["downloadlink"];
+			$this->downloadname1 = $r[0]["downloadname1"];
+			$this->downloadlink1 = $r[0]["downloadlink1"];
 			$this->votes = $r[0]["votes"];
 			$this->score = $r[0]["score"];
 			return true;
@@ -121,10 +121,17 @@ class OCSContent{
 		//TODO: implement unique name.
 		
 		//saving
-		$this->main->db->q("INSERT INTO ocs_content (name,type,owner,downloadname,downloadlink,description,summary,version,changelog) VALUES ('".$this->name."',".$this->type.",".$this->owner.",'".$this->downloadname1."','".$this->downloadlink1."','".$this->description."','".$this->summary."','".$this->version."','".$this->changelog."')");
+		$this->main->db->q("INSERT INTO ocs_content (name,type,owner,downloadname1,downloadlink1,description,summary,version,changelog) VALUES ('".$this->name."',".$this->type.",".$this->owner.",'".$this->downloadname1."','".$this->downloadlink1."','".$this->description."','".$this->summary."','".$this->version."','".$this->changelog."')");
 		//updating new id, got from database
 		$r = $this->main->db->q("SELECT id FROM ocs_content where name='".$this->name."' and owner=".$this->owner." LIMIT 1");
 		$this->id = $r[0]["id"];
+	}
+	
+	/*
+	 * Automatic update of ocs_table.
+	 */
+	public function update(){
+		$this->ocs_content->update("id=".$this->id);
 	}
 	
 	public function delete(){
@@ -145,8 +152,8 @@ class OCSContent{
 		// assuring those are not evil data to be used as SQL injections
 		$this->main->db->safe($data);
 		//data validations
-		if(!isset($data['type'])){ $this->main->elog->error("OCSContent: type not defined. Mandatory field"); } else { $this->type = $data['type']; }
-		if(!isset($data['name'])){ $this->main->elog->error("OCSContent: name not defined. Mandatory field"); } else { $this->name = $data['name']; }
+		if(!isset($data['type'])){ $this->main->elog->error("OCSContent: type not defined. Mandatory field."); } else { $this->type = $data['type']; }
+		if(!isset($data['name'])){ $this->main->elog->error("OCSContent: name not defined. Mandatory field."); } else { $this->name = $data['name']; }
 		if(!isset($data['downloadname1'])){ $this->downloadname1 = ""; } else { $this->downloadname1 = $data['downloadname1']; }
 		if(!isset($data['downloadlink1'])){ $this->downloadlink1 = ""; } else { $this->downloadlink1 = $data['downloadlink1']; }
 		if(!isset($data['description'])){ $this->description = ""; } else { $this->description = $data['description']; }

@@ -2637,199 +2637,34 @@ class H01_OCS {
 	 */
 	private  function contentedit($format,$contentid) {
 
-		$user=$this->checkpassword();
+		$user=$this->checkpassword(true);
 		$this->checktrafficlimit($user);
 		$content=addslashes($contentid);
-
+		
 		// fetch data
-		$con=H01_CONTENT::getdetail($content);
-		if(isset($con['user'])) {
+		$con = new OCSContent();
+		if($con->load($content) and $this->main->user->is_logged() and $this->main->user->id() == $con->owner) {
 
-			if((($con['user']==$user) and ($con['userdb']==CONFIG_USERDB) and H01_AUTH::checkuser(PERM_Content_Edit,$user,CONFIG_USERDB) ) or (H01_AUTH::checkuser(PERM_Content_Admin,$user,CONFIG_USERDB))) {
-
-				$data=array();
-				$data['name']=$this->readdata('name','text');
-				$data['type']=$this->readdata('type','int');
-				if($this->readdata('depend','int')<>0)	 $data['depend']=$this->readdata('depend','int');
+			$data=array();
+			if($this->readdata('name','text')<>'')		$data['name'] = $this->readdata('name','text');
+			if($this->readdata('type','text')<>'')		$data['type'] = $this->readdata('type','text'); else $data['type'] = $con->type;
+			
+			if($this->readdata('downloadname1','text')<>$con->downloadname1)		$data['downloadname1'] = $this->readdata('downloadname1','text');
+			if($this->readdata('downloadlink1','text')<>$con->downloadlink1)		$data['downloadlink1'] = $this->readdata('downloadlink1','text');
+			if($this->readdata('description','text')<>$con->description)		$data['description'] = $this->readdata('description','text');
+			if($this->readdata('summary','text')<>$con->summary)			$data['summary'] = $this->readdata('summary','text');
+			if($this->readdata('version','text')<>$con->version)			$data['version'] = $this->readdata('version','text');
+			if($this->readdata('changelog','text')<>$con->changelog)			$data['changelog'] = $this->readdata('changelog','text');
+			
+			
+			if(($data['name']<>'') and ($data['type']<>0)) {
+				$con->set_data($data);
+				$con->update();
 				
-				if(isset($_POST['downloadtyp1']))												$data['downloadtyp1']			 =$this->readdata('downloadtyp1','int');
-				if($this->readdata('downloadname1','text')<>'')			 $data['downloadname1']			=$this->readdata('downloadname1','text');
-				if($this->readdata('downloadlink1','text')<>'')			 $data['downloadlink1']			=$this->readdata('downloadlink1','text');
-				if(isset($_POST['downloaddistributiontype1']))					 $data['downloadfiletype1']	=$this->readdata('downloaddistributiontype1','int');
-				if(isset($_POST['downloadbuy1']))												$data['downloadbuy1']			 =$this->readdata('downloadbuy1','int');
-				if($this->readdata('downloadbuyreason1','text')<>'')	$data['downloadbuyreason1'] =$this->readdata('downloadbuyreason1','text');
-				if(isset($_POST['downloadbuyprice1']))									 $data['downloadbuyprice1']	=$this->readdata('downloadbuyprice1','float');
-				if(isset($_POST['downloadpackagename1']))								$data['downloadpackagename1']	=$this->readdata('downloadpackagename1','text');
-				if(isset($_POST['downloadrepository1']))								 $data['downloadrepository1']	=$this->readdata('downloadrepository1','text');
-				if($this->readdata('downloadgpgfingerprint1','text')<>'')	$data['downloadgpgfingerprint1'] =$this->readdata('downloadgpgfingerprint1','text');
-				if($this->readdata('downloadgpgsignature1','text')<>'')		$data['downloadgpgsignature1'] =$this->readdata('downloadgpgsignature1','text');
-
-				if($this->readdata('downloadname2','text')<>'')			 $data['downloadname2']			=$this->readdata('downloadname2','text');
-				if($this->readdata('downloadlink2','text')<>'')			 $data['downloadlink2']			=$this->readdata('downloadlink2','text');
-				if(isset($_POST['downloaddistributiontype2']))					 $data['downloadfiletype2']	=$this->readdata('downloaddistributiontype2','int');
-				if(isset($_POST['downloadbuy2']))												$data['downloadbuy2']			 =$this->readdata('downloadbuy2','int');
-				if($this->readdata('downloadbuyreason2','text')<>'')	$data['downloadbuyreason2'] =$this->readdata('downloadbuyreason2','text');
-				if(isset($_POST['downloadbuyprice2']))									 $data['downloadbuyprice2']	=$this->readdata('downloadbuyprice2','float');
-				if(isset($_POST['downloadpackagename2']))								$data['downloadpackagename2']	=$this->readdata('downloadpackagename2','text');
-				if(isset($_POST['downloadrepository2']))								 $data['downloadrepository2']	=$this->readdata('downloadrepository2','text');
-				if($this->readdata('downloadgpgfingerprint2','text')<>'')	$data['downloadgpgfingerprint2'] =$this->readdata('downloadgpgfingerprint2','text');
-				if($this->readdata('downloadgpgsignature2','text')<>'')		$data['downloadgpgsignature2'] =$this->readdata('downloadgpgsignature2','text');
-
-				if($this->readdata('downloadname3','text')<>'')			 $data['downloadname3']			=$this->readdata('downloadname3','text');
-				if($this->readdata('downloadlink3','text')<>'')			 $data['downloadlink3']			=$this->readdata('downloadlink3','text');
-				if(isset($_POST['downloaddistributiontype3']))					 $data['downloadfiletype3']	=$this->readdata('downloaddistributiontype3','int');
-				if(isset($_POST['downloadbuy3']))												$data['downloadbuy3']			 =$this->readdata('downloadbuy3','int');
-				if($this->readdata('downloadbuyreason3','text')<>'')	$data['downloadbuyreason3'] =$this->readdata('downloadbuyreason3','text');
-				if(isset($_POST['downloadbuyprice3']))									 $data['downloadbuyprice3']	=$this->readdata('downloadbuyprice3','float');
-				if(isset($_POST['downloadpackagename3']))								$data['downloadpackagename3']	=$this->readdata('downloadpackagename3','text');
-				if(isset($_POST['downloadrepository3']))								 $data['downloadrepository3']	=$this->readdata('downloadrepository3','text');
-				if($this->readdata('downloadgpgfingerprint3','text')<>'')	$data['downloadgpgfingerprint3'] =$this->readdata('downloadgpgfingerprint3','text');
-				if($this->readdata('downloadgpgsignature3','text')<>'')		$data['downloadgpgsignature3'] =$this->readdata('downloadgpgsignature3','text');
-
-				if($this->readdata('downloadname4','text')<>'')			 $data['downloadname4']			=$this->readdata('downloadname4','text');
-				if($this->readdata('downloadlink4','text')<>'')			 $data['downloadlink4']			=$this->readdata('downloadlink4','text');
-				if(isset($_POST['downloaddistributiontype4']))					 $data['downloadfiletype4']	=$this->readdata('downloaddistributiontype4','int');
-				if(isset($_POST['downloadbuy4']))												$data['downloadbuy4']			 =$this->readdata('downloadbuy4','int');
-				if($this->readdata('downloadbuyreason4','text')<>'')	$data['downloadbuyreason4'] =$this->readdata('downloadbuyreason4','text');
-				if(isset($_POST['downloadbuyprice4']))									 $data['downloadbuyprice4']	=$this->readdata('downloadbuyprice4','float');
-				if(isset($_POST['downloadpackagename4']))								$data['downloadpackagename4']	=$this->readdata('downloadpackagename4','text');
-				if(isset($_POST['downloadrepository4']))								 $data['downloadrepository4']	=$this->readdata('downloadrepository4','text');
-				if($this->readdata('downloadgpgfingerprint4','text')<>'')	$data['downloadgpgfingerprint4'] =$this->readdata('downloadgpgfingerprint4','text');
-				if($this->readdata('downloadgpgsignature4','text')<>'')		$data['downloadgpgsignature4'] =$this->readdata('downloadgpgsignature4','text');
-
-				if($this->readdata('downloadname5','text')<>'')			 $data['downloadname5']			=$this->readdata('downloadname5','text');
-				if($this->readdata('downloadlink5','text')<>'')			 $data['downloadlink5']			=$this->readdata('downloadlink5','text');
-				if(isset($_POST['downloaddistributiontype5']))					 $data['downloadfiletype5']	=$this->readdata('downloaddistributiontype5','int');
-				if(isset($_POST['downloadbuy5']))												$data['downloadbuy5']			 =$this->readdata('downloadbuy5','int');
-				if($this->readdata('downloadbuyreason5','text')<>'')	$data['downloadbuyreason5'] =$this->readdata('downloadbuyreason5','text');
-				if(isset($_POST['downloadbuyprice5']))									 $data['downloadbuyprice5']	=$this->readdata('downloadbuyprice5','float');
-				if(isset($_POST['downloadpackagename5']))								$data['downloadpackagename5']	=$this->readdata('downloadpackagename5','text');
-				if(isset($_POST['downloadrepository5']))								 $data['downloadrepository5']	=$this->readdata('downloadrepository5','text');
-				if($this->readdata('downloadgpgfingerprint5','text')<>'')	$data['downloadgpgfingerprint5'] =$this->readdata('downloadgpgfingerprint5','text');
-				if($this->readdata('downloadgpgsignature5','text')<>'')		$data['downloadgpgsignature5'] =$this->readdata('downloadgpgsignature5','text');
-
-				if($this->readdata('downloadname6','text')<>'')			 $data['downloadname6']			=$this->readdata('downloadname6','text');
-				if($this->readdata('downloadlink6','text')<>'')			 $data['downloadlink6']			=$this->readdata('downloadlink6','text');
-				if(isset($_POST['downloaddistributiontype6']))					 $data['downloadfiletype6']	=$this->readdata('downloaddistributiontype6','int');
-				if(isset($_POST['downloadbuy6']))												$data['downloadbuy6']			 =$this->readdata('downloadbuy6','int');
-				if($this->readdata('downloadbuyreason6','text')<>'')	$data['downloadbuyreason6'] =$this->readdata('downloadbuyreason6','text');
-				if(isset($_POST['downloadbuyprice6']))									 $data['downloadbuyprice6']	=$this->readdata('downloadbuyprice6','float');
-				if(isset($_POST['downloadpackagename6']))								$data['downloadpackagename6']	=$this->readdata('downloadpackagename6','text');
-				if(isset($_POST['downloadrepository6']))								 $data['downloadrepository6']	=$this->readdata('downloadrepository6','text');
-				if($this->readdata('downloadgpgfingerprint6','text')<>'')	$data['downloadgpgfingerprint6'] =$this->readdata('downloadgpgfingerprint6','text');
-				if($this->readdata('downloadgpgsignature6','text')<>'')		$data['downloadgpgsignature6'] =$this->readdata('downloadgpgsignature6','text');
-
-				if($this->readdata('downloadname7','text')<>'')			 $data['downloadname7']			=$this->readdata('downloadname7','text');
-				if($this->readdata('downloadlink7','text')<>'')			 $data['downloadlink7']			=$this->readdata('downloadlink7','text');
-				if(isset($_POST['downloaddistributiontype7']))					 $data['downloadfiletype7']	=$this->readdata('downloaddistributiontype7','int');
-				if(isset($_POST['downloadbuy7']))												$data['downloadbuy7']			 =$this->readdata('downloadbuy7','int');
-				if($this->readdata('downloadbuyreason7','text')<>'')	$data['downloadbuyreason7'] =$this->readdata('downloadbuyreason7','text');
-				if(isset($_POST['downloadbuyprice7']))									 $data['downloadbuyprice7']	=$this->readdata('downloadbuyprice7','float');
-				if(isset($_POST['downloadpackagename7']))								$data['downloadpackagename7']	=$this->readdata('downloadpackagename7','text');
-				if(isset($_POST['downloadrepository7']))								 $data['downloadrepository7']	=$this->readdata('downloadrepository7','text');
-				if($this->readdata('downloadgpgfingerprint7','text')<>'')	$data['downloadgpgfingerprint7'] =$this->readdata('downloadgpgfingerprint7','text');
-				if($this->readdata('downloadgpgsignature7','text')<>'')		$data['downloadgpgsignature7'] =$this->readdata('downloadgpgsignature7','text');
-
-				if($this->readdata('downloadname8','text')<>'')			 $data['downloadname8']			=$this->readdata('downloadname8','text');
-				if($this->readdata('downloadlink8','text')<>'')			 $data['downloadlink8']			=$this->readdata('downloadlink8','text');
-				if(isset($_POST['downloaddistributiontype8']))					 $data['downloadfiletype8']	=$this->readdata('downloaddistributiontype8','int');
-				if(isset($_POST['downloadbuy8']))												$data['downloadbuy8']			 =$this->readdata('downloadbuy8','int');
-				if($this->readdata('downloadbuyreason8','text')<>'')	$data['downloadbuyreason8'] =$this->readdata('downloadbuyreason8','text');
-				if(isset($_POST['downloadbuyprice8']))									 $data['downloadbuyprice8']	=$this->readdata('downloadbuyprice8','float');
-				if($this->readdata('downloadgpgfingerprint8','text')<>'')	$data['downloadgpgfingerprint8'] =$this->readdata('downloadgpgfingerprint8','text');
-				if($this->readdata('downloadgpgsignature8','text')<>'')		$data['downloadgpgsignature8'] =$this->readdata('downloadgpgsignature8','text');
-
-				if($this->readdata('downloadname9','text')<>'')			 $data['downloadname9']			=$this->readdata('downloadname9','text');
-				if($this->readdata('downloadlink9','text')<>'')			 $data['downloadlink9']			=$this->readdata('downloadlink9','text');
-				if(isset($_POST['downloaddistributiontype9']))					 $data['downloadfiletype9']	=$this->readdata('downloaddistributiontype9','int');
-				if(isset($_POST['downloadbuy9']))												$data['downloadbuy9']			 =$this->readdata('downloadbuy9','int');
-				if($this->readdata('downloadbuyreason9','text')<>'')	$data['downloadbuyreason9'] =$this->readdata('downloadbuyreason9','text');
-				if(isset($_POST['downloadbuyprice9']))									 $data['downloadbuyprice9']	=$this->readdata('downloadbuyprice9','float');
-				if(isset($_POST['downloadpackagename9']))								$data['downloadpackagename9']	=$this->readdata('downloadpackagename9','text');
-				if(isset($_POST['downloadrepository9']))								 $data['downloadrepository9']	=$this->readdata('downloadrepository9','text');
-				if($this->readdata('downloadgpgfingerprint9','text')<>'')	$data['downloadgpgfingerprint9'] =$this->readdata('downloadgpgfingerprint9','text');
-				if($this->readdata('downloadgpgsignature9','text')<>'')		$data['downloadgpgsignature9'] =$this->readdata('downloadgpgsignature9','text');
-
-				if($this->readdata('downloadname10','text')<>'')			 $data['downloadname10']			=$this->readdata('downloadname10','text');
-				if($this->readdata('downloadlink10','text')<>'')			 $data['downloadlink10']			=$this->readdata('downloadlink10','text');
-				if(isset($_POST['downloaddistributiontype10']))					 $data['downloadfiletype10']	=$this->readdata('downloaddistributiontype10','int');
-				if(isset($_POST['downloadbuy10']))												$data['downloadbuy10']			 =$this->readdata('downloadbuy10','int');
-				if($this->readdata('downloadbuyreason10','text')<>'')	$data['downloadbuyreason10'] =$this->readdata('downloadbuyreason10','text');
-				if(isset($_POST['downloadbuyprice10']))									 $data['downloadbuyprice10']	=$this->readdata('downloadbuyprice10','float');
-				if(isset($_POST['downloadpackagename10']))								$data['downloadpackagename10']	=$this->readdata('downloadpackagename10','text');
-				if(isset($_POST['downloadrepository10']))								 $data['downloadrepository10']	=$this->readdata('downloadrepository10','text');
-				if($this->readdata('downloadgpgfingerprint10','text')<>'')	$data['downloadgpgfingerprint10'] =$this->readdata('downloadgpgfingerprint10','text');
-				if($this->readdata('downloadgpgsignature10','text')<>'')		$data['downloadgpgsignature10'] =$this->readdata('downloadgpgsignature10','text');
-
-				if($this->readdata('downloadname11','text')<>'')			 $data['downloadname11']			=$this->readdata('downloadname11','text');
-				if($this->readdata('downloadlink11','text')<>'')			 $data['downloadlink11']			=$this->readdata('downloadlink11','text');
-				if(isset($_POST['downloaddistributiontype11']))					 $data['downloadfiletype11']	=$this->readdata('downloaddistributiontype11','int');
-				if(isset($_POST['downloadbuy11']))												$data['downloadbuy11']			 =$this->readdata('downloadbuy11','int');
-				if($this->readdata('downloadbuyreason11','text')<>'')	$data['downloadbuyreason11'] =$this->readdata('downloadbuyreason11','text');
-				if(isset($_POST['downloadbuyprice11']))									 $data['downloadbuyprice11']	=$this->readdata('downloadbuyprice11','float');
-				if(isset($_POST['downloadpackagename11']))								$data['downloadpackagename11']	=$this->readdata('downloadpackagename11','text');
-				if(isset($_POST['downloadrepository11']))								 $data['downloadrepository11']	=$this->readdata('downloadrepository11','text');
-				if($this->readdata('downloadgpgfingerprint11','text')<>'')	$data['downloadgpgfingerprint11'] =$this->readdata('downloadgpgfingerprint11','text');
-				if($this->readdata('downloadgpgsignature11','text')<>'')		$data['downloadgpgsignature11'] =$this->readdata('downloadgpgsignature11','text');
-
-				if($this->readdata('downloadname12','text')<>'')			 $data['downloadname12']			=$this->readdata('downloadname12','text');
-				if($this->readdata('downloadlink12','text')<>'')			 $data['downloadlink12']			=$this->readdata('downloadlink12','text');
-				if(isset($_POST['downloaddistributiontype12']))					 $data['downloadfiletype12']	=$this->readdata('downloaddistributiontype12','int');
-				if(isset($_POST['downloadbuy12']))												$data['downloadbuy12']			 =$this->readdata('downloadbuy12','int');
-				if($this->readdata('downloadbuyreason12','text')<>'')	$data['downloadbuyreason12'] =$this->readdata('downloadbuyreason12','text');
-				if(isset($_POST['downloadbuyprice12']))									 $data['downloadbuyprice12']	=$this->readdata('downloadbuyprice12','float');
-				if(isset($_POST['downloadpackagename12']))								$data['downloadpackagename12']	=$this->readdata('downloadpackagename12','text');
-				if(isset($_POST['downloadrepository12']))								 $data['downloadrepository12']	=$this->readdata('downloadrepository12','text');
-				if($this->readdata('downloadgpgfingerprint12','text')<>'')	$data['downloadgpgfingerprint12'] =$this->readdata('downloadgpgfingerprint12','text');
-				if($this->readdata('downloadgpgsignature12','text')<>'')		$data['downloadgpgsignature12'] =$this->readdata('downloadgpgsignature12','text');
-
-				if($this->readdata('description','text')<>'')					$data['description']=$this->readdata('description','text');
-				if($this->readdata('summary','text')<>'')							$data['summary']=$this->readdata('summary','text');
-				if($this->readdata('feedbackurl','text')<>'')					$data['feedbackurl']=$this->readdata('feedbackurl','text');
-				if(isset($_POST['licensetype']))													$data['licensetype']=$this->readdata('licensetype','int');
-				if($this->readdata('license','text')<>'')							$data['license']=$this->readdata('license','text');
-
-//				if($this->readdata('homepage','text')<>'')						 $data['homepage']=$this->readdata('homepage','text');
-
-				if($this->readdata('homepage','text')<>'')						 $data['homepage1']=$this->readdata('homepage','text');
-				if($this->readdata('homepagetype','int')<>0)					 $data['homepagetype1']=$this->readdata('homepagetype','int');
-				if($this->readdata('homepage2','text')<>'')						$data['homepage2']=$this->readdata('homepage2','text');
-				if($this->readdata('homepagetype2','int')<>0)					$data['homepagetype2']=$this->readdata('homepagetype2','int');
-				if($this->readdata('homepage3','text')<>'')						$data['homepage3']=$this->readdata('homepage3','text');
-				if($this->readdata('homepagetype3','int')<>0)					$data['homepagetype3']=$this->readdata('homepagetype3','int');
-				if($this->readdata('homepage4','text')<>'')						$data['homepage4']=$this->readdata('homepage4','text');
-				if($this->readdata('homepagetype4','int')<>0)					$data['homepagetype4']=$this->readdata('homepagetype4','int');
-				if($this->readdata('homepage5','text')<>'')						$data['homepage5']=$this->readdata('homepage5','text');
-				if($this->readdata('homepagetype5','int')<>0)					$data['homepagetype5']=$this->readdata('homepagetype5','int');
-				if($this->readdata('homepage6','text')<>'')						$data['homepage6']=$this->readdata('homepage6','text');
-				if($this->readdata('homepagetype6','int')<>0)					$data['homepagetype6']=$this->readdata('homepagetype6','int');
-				if($this->readdata('homepage7','text')<>'')						$data['homepage7']=$this->readdata('homepage7','text');
-				if($this->readdata('homepagetype7','int')<>0)					$data['homepagetype7']=$this->readdata('homepagetype7','int');
-				if($this->readdata('homepage8','text')<>'')						$data['homepage8']=$this->readdata('homepage8','text');
-				if($this->readdata('homepagetype8','int')<>0)					$data['homepagetype8']=$this->readdata('homepagetype8','int');
-				if($this->readdata('homepage9','text')<>'')						$data['homepage9']=$this->readdata('homepage9','text');
-				if($this->readdata('homepagetype9','int')<>0)					$data['homepagetype9']=$this->readdata('homepagetype9','int');
-				if($this->readdata('homepage10','text')<>'')					 $data['homepage10']=$this->readdata('homepage10','text');
-				if($this->readdata('homepagetype10','int')<>0)				 $data['homepagetype10']=$this->readdata('homepagetype10','int');
-
-				if($this->readdata('version','text')<>'')							$data['version']=$this->readdata('version','text');
-				if($this->readdata('changelog','text')<>'')						$data['changelog']=$this->readdata('changelog','text');
-				if(isset($_POST['donation']))														 $data['donation']=$this->readdata('donation','text');
-				if($this->readdata('osbsproject','text')<>'')					$data['osbsproject']=$this->readdata('osbsproject','text');
-				if($this->readdata('osbspackage','text')<>'')					$data['osbspackage']=$this->readdata('osbspackage','text');
-				if($this->readdata('donationreason','text')<>'')			 $data['donationreason']=$this->readdata('donationreason','text');
-				if(isset($_POST['announceupdate']))											 $data['announceupdate']=$this->readdata('announceupdate','int'); else $data['announceupdate']=1;
-	
-				if(($data['name']<>'') and ($data['type']<>0)) {
-					H01_CONTENTEDIT::edit($contentid,$user,$data);
-					H01_CACHEADMIN::cleancache('apilist',array($_SESSION['website'],$_SESSION['lang'],$format,$user));
-					H01_CACHEADMIN::cleancache('apiget',array($_SESSION['website'],$_SESSION['lang'],$contentid));
-					$txt=$this->generatexml($format,'ok',100,'');
-				}else{
-					$txt=$this->generatexml($format,'failed',101,'please specify all mandatory fields');
-				}
+				$xml = array();
+				$txt = $this->generatexml($format,'ok',100,'',$xml,'content'); 
 			}else{
-				$txt=$this->generatexml($format,'failed',102,'no permission to change content');
+				$txt = $this->generatexml($format,'failed',101,'please specify all mandatory fields');
 			}
 		}else{
 			$txt=$this->generatexml($format,'failed',102,'no permission to change content');
