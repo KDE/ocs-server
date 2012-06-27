@@ -2012,162 +2012,160 @@ class H01_OCS {
 	 * @param string $content
 	 * @return string xml/json
 	 */
-	private  function contentget($format,$content) {
-		global $WEBSITECONTENT;
-		global $DEPENDTYPES;
-		global $DISTRIBUTIONSTYPES;
-		global $contentlicense;
+	private function contentget($format,$content) {
 
 		$user=$this->checkpassword(false);
 		$this->checktrafficlimit($user);
 
 		$content=addslashes($content);
+		
+		// fetch data
+		$con = new OCSContent();
 
-		$cache = new H01_CACHE('apiget',array($_SESSION['website'],$_SESSION['lang'],$content,$format));
-		if ($cache->exist()) {
-			$cache->get();
-			unset($cache);
+		// check data
+		if (!$con->load($content)) {
+			$txt=$this->generatexml($format,'failed',101,'content not found');
 		} else {
 
-			// fetch data
-			$con=H01_CONTENT::getdetail($content);
+			$xml['id']=$con->id;
+			$xml['name']=$con->name;
+			$xml['version']=$con->version;
+			//$xml['typeid']=$con['type'];
+			//$xml['typename']=$WEBSITECONTENT[$con['type']];
+			//$xml['language']=H01_CONTENT::$LANGUAGES[$con['language']];
+			$xml['personid']=$con->owner;
+			//$xml['profilepage']='http://opendesktop.org/usermanager/search.php?username='.urlencode($con['user']);
+			//$xml['created']=date('c',$con['created']);
+			//$xml['changed']=date('c',$con['changed']);
+			//$xml['downloads']=$con['downloads'];
+			$xml['score'] = $con->score;
+			$xml['description'] = $con->description;
+			$xml['summary'] = $con->summary;
+			//$xml['feedbackurl'] = $con['feedbackurl'];
+			$xml['changelog'] = $con->changelog;
+			/*$xml['homepage'] = $con['homepage1'];
+			if($con['homepagetype1']<>0) $xml['homepagetype']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype1']]; else $xml['homepagetype']='';
+			$xml['homepage2']=$con['homepage2'];
+			if($con['homepagetype2']<>0) $xml['homepagetype2']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype2']]; else $xml['homepagetype2']='';
+			$xml['homepage3']=$con['homepage3'];
+			if($con['homepagetype3']<>0) $xml['homepagetype3']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype3']]; else $xml['homepagetype3']='';
+			$xml['homepage4']=$con['homepage4'];
+			if($con['homepagetype4']<>0) $xml['homepagetype4']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype4']]; else $xml['homepagetype4']='';
+			$xml['homepage5']=$con['homepage5'];
+			if($con['homepagetype5']<>0) $xml['homepagetype5']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype5']]; else $xml['homepagetype5']='';
+			$xml['homepage6']=$con['homepage6'];
+			if($con['homepagetype6']<>0) $xml['homepagetype6']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype6']]; else $xml['homepagetype6']='';
+			$xml['homepage7']=$con['homepage7'];
+			if($con['homepagetype7']<>0) $xml['homepagetype7']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype7']]; else $xml['homepagetype7']='';
+			$xml['homepage8']=$con['homepage8'];
+			if($con['homepagetype8']<>0) $xml['homepagetype8']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype8']]; else $xml['homepagetype8']='';
+			$xml['homepage9']=$con['homepage9'];
+			if($con['homepagetype9']<>0) $xml['homepagetype9']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype9']]; else $xml['homepagetype9']='';
+			$xml['homepage10']=$con['homepage10'];
+			if($con['homepagetype10']<>0) $xml['homepagetype10']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype10']]; else $xml['homepagetype10']='';
+			*/
 
-			// check data
-			if ((count($con) == 0) or (!isset($con['type'])) or (!isset($WEBSITECONTENT[$con['type']])) ) {
-				$txt=$this->generatexml($format,'failed',101,'content not found');
+			//$xml['licensetype']=$con->license;
+			/*if (($con['licensetype']<>0) and ($con['licensetype']<>1000)) {
+				if(isset($contentlicense[$con['licensetype']])) $xml['license']=$contentlicense[$con['licensetype']];
 			} else {
-
-				$xml['id']=$con['id'];
-				$xml['name']=$con['name'];
-				$xml['version']=$con['version'];
-				$xml['typeid']=$con['type'];
-				$xml['typename']=$WEBSITECONTENT[$con['type']];
-				$xml['language']=H01_CONTENT::$LANGUAGES[$con['language']];
-				$xml['personid']=$con['user'];
-				$xml['profilepage']='http://opendesktop.org/usermanager/search.php?username='.urlencode($con['user']);
-				$xml['created']=date('c',$con['created']);
-				$xml['changed']=date('c',$con['changed']);
-				$xml['downloads']=$con['downloads'];
-				$xml['score']=$con['scoresum'];
-				$xml['description']=$con['description'];
-				$xml['summary']=$con['summary'];
-				$xml['feedbackurl']=$con['feedbackurl'];
-				$xml['changelog']=$con['changelog'];
-				$xml['homepage']=$con['homepage1'];
-				if($con['homepagetype1']<>0) $xml['homepagetype']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype1']]; else $xml['homepagetype']='';
-				$xml['homepage2']=$con['homepage2'];
-				if($con['homepagetype2']<>0) $xml['homepagetype2']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype2']]; else $xml['homepagetype2']='';
-				$xml['homepage3']=$con['homepage3'];
-				if($con['homepagetype3']<>0) $xml['homepagetype3']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype3']]; else $xml['homepagetype3']='';
-				$xml['homepage4']=$con['homepage4'];
-				if($con['homepagetype4']<>0) $xml['homepagetype4']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype4']]; else $xml['homepagetype4']='';
-				$xml['homepage5']=$con['homepage5'];
-				if($con['homepagetype5']<>0) $xml['homepagetype5']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype5']]; else $xml['homepagetype5']='';
-				$xml['homepage6']=$con['homepage6'];
-				if($con['homepagetype6']<>0) $xml['homepagetype6']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype6']]; else $xml['homepagetype6']='';
-				$xml['homepage7']=$con['homepage7'];
-				if($con['homepagetype7']<>0) $xml['homepagetype7']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype7']]; else $xml['homepagetype7']='';
-				$xml['homepage8']=$con['homepage8'];
-				if($con['homepagetype8']<>0) $xml['homepagetype8']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype8']]; else $xml['homepagetype8']='';
-				$xml['homepage9']=$con['homepage9'];
-				if($con['homepagetype9']<>0) $xml['homepagetype9']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype9']]; else $xml['homepagetype9']='';
-				$xml['homepage10']=$con['homepage10'];
-				if($con['homepagetype10']<>0) $xml['homepagetype10']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype10']]; else $xml['homepagetype10']='';
-
-				$xml['licensetype']=$con['licensetype'];
-				if (($con['licensetype']<>0) and ($con['licensetype']<>1000)) {
-					if(isset($contentlicense[$con['licensetype']])) $xml['license']=$contentlicense[$con['licensetype']];
+				if (!empty($con['license'])) $xml['license']=nl2br(htmlspecialchars($con['license']));
+			}
+			$xml['license'] = $con->license;
+			
+			if(!empty($con['donation'])) $xml['donationpage']='http://'.CONFIG_WEBSITEHOST.'/content/donate.php?content='.$con['id']; else $xml['donationpage']='';
+			$xml['comments']=$con['commentscount'];
+			$xml['commentspage']='http://'.CONFIG_WEBSITEHOST.'/content/show.php?content='.$con['id'];
+			$xml['fans']=$con['fancount'];
+			$xml['fanspage']='http://'.CONFIG_WEBSITEHOST.'/content/show.php?action=fan&content='.$con['id'];
+			$xml['knowledgebaseentries']=$con['knowledgebasecount'];
+			$xml['knowledgebasepage']='http://'.CONFIG_WEBSITEHOST.'/content/show.php?action=knowledgebase&content='.$con['id'];
+			
+			if ($con['depend']<>0) $xml['depend']=$DEPENDTYPES[$con['depend']]; else $xml['depend']='';
+			
+			// preview
+			if (!empty($con['preview1'])) $pic1=$con['id'].'-1.'.$con['preview1']; else $pic1='';
+			if (!empty($con['preview2'])) $pic2=$con['id'].'-2.'.$con['preview2']; else $pic2='';
+			if (!empty($con['preview3'])) $pic3=$con['id'].'-3.'.$con['preview3']; else $pic3='';
+			if (!empty($con['preview1'])) $picsmall1='m'.$con['id'].'-1.png'; else $picsmall1='';
+			if (!empty($con['preview2'])) $picsmall2='m'.$con['id'].'-2.png'; else $picsmall2='';
+			if (!empty($con['preview3'])) $picsmall3='m'.$con['id'].'-3.png'; else $picsmall3='';
+			
+			
+			if(!empty($pic1)) $xml['preview1']='http://'.CONFIG_WEBSITEHOST.'/content/preview.php?preview=1&id='.$con['id'].'&file1='.$pic1.'&file2='.$pic2.'&file3='.$pic3.'&name='.urlencode($con['name']); else $xml['preview1']='';
+			if(!empty($pic2)) $xml['preview2']='http://'.CONFIG_WEBSITEHOST.'/content/preview.php?preview=2&id='.$con['id'].'&file1='.$pic1.'&file2='.$pic2.'&file3='.$pic3.'&name='.urlencode($con['name']); else $xml['preview2']='';
+			if(!empty($pic3)) $xml['preview3']='http://'.CONFIG_WEBSITEHOST.'/content/preview.php?preview=3&id='.$con['id'].'&file1='.$pic1.'&file2='.$pic2.'&file3='.$pic3.'&name='.urlencode($con['name']); else $xml['preview3']='';
+			if(!empty($pic1)) $xml['previewpic1']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-pre1/'.$pic1; else $xml['previewpic1']='';
+			if(!empty($pic2)) $xml['previewpic2']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-pre2/'.$pic2; else $xml['previewpic2']='';
+			if(!empty($pic3)) $xml['previewpic3']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-pre3/'.$pic3; else $xml['previewpic3']='';
+			if(!empty($picsmall1)) $xml['smallpreviewpic1']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-m1/'.$picsmall1; else $xml['picsmall1']='';
+			if(!empty($picsmall2)) $xml['smallpreviewpic2']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-m2/'.$picsmall2; else $xml['picsmall2']='';
+			if(!empty($picsmall3)) $xml['smallpreviewpic3']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-m3/'.$picsmall3; else $xml['picsmall3']='';
+			$xml['detailpage']='http://'.CONFIG_WEBSITEHOST.'/content/show.php?content='.$con['id'];
+			*/
+			// download
+			if (!empty($con->downloadname1) or !empty($con->downloadlink1)) {
+				/*
+				if($con['downloadfiletype1']<>0) {
+					$typetmp=$DISTRIBUTIONSTYPES[$con['downloadfiletype1']].' ';
 				} else {
-					if (!empty($con['license'])) $xml['license']=nl2br(htmlspecialchars($con['license']));
+					$typetmp='';
 				}
-
-				if(!empty($con['donation'])) $xml['donationpage']='http://'.CONFIG_WEBSITEHOST.'/content/donate.php?content='.$con['id']; else $xml['donationpage']='';
-				$xml['comments']=$con['commentscount'];
-				$xml['commentspage']='http://'.CONFIG_WEBSITEHOST.'/content/show.php?content='.$con['id'];
-				$xml['fans']=$con['fancount'];
-				$xml['fanspage']='http://'.CONFIG_WEBSITEHOST.'/content/show.php?action=fan&content='.$con['id'];
-				$xml['knowledgebaseentries']=$con['knowledgebasecount'];
-				$xml['knowledgebasepage']='http://'.CONFIG_WEBSITEHOST.'/content/show.php?action=knowledgebase&content='.$con['id'];
-
-				if ($con['depend']<>0) $xml['depend']=$DEPENDTYPES[$con['depend']]; else $xml['depend']='';
-
-				// preview
-				if (!empty($con['preview1'])) $pic1=$con['id'].'-1.'.$con['preview1']; else $pic1='';
-				if (!empty($con['preview2'])) $pic2=$con['id'].'-2.'.$con['preview2']; else $pic2='';
-				if (!empty($con['preview3'])) $pic3=$con['id'].'-3.'.$con['preview3']; else $pic3='';
-				if (!empty($con['preview1'])) $picsmall1='m'.$con['id'].'-1.png'; else $picsmall1='';
-				if (!empty($con['preview2'])) $picsmall2='m'.$con['id'].'-2.png'; else $picsmall2='';
-				if (!empty($con['preview3'])) $picsmall3='m'.$con['id'].'-3.png'; else $picsmall3='';
-
-
-				if(!empty($pic1)) $xml['preview1']='http://'.CONFIG_WEBSITEHOST.'/content/preview.php?preview=1&id='.$con['id'].'&file1='.$pic1.'&file2='.$pic2.'&file3='.$pic3.'&name='.urlencode($con['name']); else $xml['preview1']='';
-				if(!empty($pic2)) $xml['preview2']='http://'.CONFIG_WEBSITEHOST.'/content/preview.php?preview=2&id='.$con['id'].'&file1='.$pic1.'&file2='.$pic2.'&file3='.$pic3.'&name='.urlencode($con['name']); else $xml['preview2']='';
-				if(!empty($pic3)) $xml['preview3']='http://'.CONFIG_WEBSITEHOST.'/content/preview.php?preview=3&id='.$con['id'].'&file1='.$pic1.'&file2='.$pic2.'&file3='.$pic3.'&name='.urlencode($con['name']); else $xml['preview3']='';
-				if(!empty($pic1)) $xml['previewpic1']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-pre1/'.$pic1; else $xml['previewpic1']='';
-				if(!empty($pic2)) $xml['previewpic2']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-pre2/'.$pic2; else $xml['previewpic2']='';
-				if(!empty($pic3)) $xml['previewpic3']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-pre3/'.$pic3; else $xml['previewpic3']='';
-				if(!empty($picsmall1)) $xml['smallpreviewpic1']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-m1/'.$picsmall1; else $xml['picsmall1']='';
-				if(!empty($picsmall2)) $xml['smallpreviewpic2']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-m2/'.$picsmall2; else $xml['picsmall2']='';
-				if(!empty($picsmall3)) $xml['smallpreviewpic3']='http://'.CONFIG_WEBSITEHOST.'/CONTENT/content-m3/'.$picsmall3; else $xml['picsmall3']='';
-				$xml['detailpage']='http://'.CONFIG_WEBSITEHOST.'/content/show.php?content='.$con['id'];
-
-				// download
-				if (!empty($con['download1']) or !empty($con['downloadlink1']) or ($con['downloadtyp1']==2)) {
-					if($con['downloadfiletype1']<>0) {
-						$typetmp=$DISTRIBUTIONSTYPES[$con['downloadfiletype1']].' ';
+				$xml['downloadtype1']=$typetmp;
+				if($con['downloadbuy1']==1) {
+					$xml['downloadprice1']=$con['downloadbuyprice1'];
+					$xml['downloadlink1']='http://'.CONFIG_WEBSITEHOST.'/content/buy.php?content='.$con['id'].'&id=1';
+				}else{
+					$xml['downloadprice1']='0';
+					$xml['downloadlink1']='http://'.CONFIG_WEBSITEHOST.'/content/download.php?content='.$con['id'].'&id=1';
+				}
+				*/
+				$xml['downloadname1'] = $con->downloadname1;
+				$xml['downloadlink1'] = $con->downloadlink1;
+				/*
+				if(!empty($con['downloadgpgfingerprint1'])) $xml['downloadgpgfingerprint1']=$con['downloadgpgfingerprint1']; else $xml['downloadgpgfingerprint1']='';
+				if(!empty($con['downloadgpgsignature1']))	 $xml['downloadgpgsignature1']=$con['downloadgpgsignature1'];		 else $xml['downloadgpgsignature1']='';
+				if(!empty($con['downloadpackagename1'])) $xml['downloadpackagename1']=$con['downloadpackagename1']; else $xml['downloadpackagename1']='';
+				if(!empty($con['downloadrepository1'])) $xml['downloadrepository1']=$con['downloadrepository1']; else $xml['downloadrepository1']='';
+				
+				if(($con['downloadtyp1']=='0') and (!empty($con['download1']))) $xml['downloadsize1']=ceil(@filesize(CONFIG_DOCUMENT_ROOT.'/CONTENT/content-files/'.$con['download1'])/1024); else $xml['downloadsize1']='';
+				*/
+			} else {
+				$xml['downloadname1']='';
+				$xml['downloadlink1']='';
+			}
+			
+			/*
+			for ($i=2; $i <= 12;$i++) {
+				if (!empty($con['downloadname'.$i]) and !empty($con['downloadlink'.$i]) ) {
+					if($con['downloadfiletype'.$i]<>0) {
+						$typetmp=$DISTRIBUTIONSTYPES[$con['downloadfiletype'.$i]].' ';
 					} else {
 						$typetmp='';
 					}
-					$xml['downloadtype1']=$typetmp;
-					if($con['downloadbuy1']==1) {
-						$xml['downloadprice1']=$con['downloadbuyprice1'];
-						$xml['downloadlink1']='http://'.CONFIG_WEBSITEHOST.'/content/buy.php?content='.$con['id'].'&id=1';
+					$xml['downloadtype'.$i]=$typetmp;
+
+					if($con['downloadbuy'.$i]==1) {
+						$xml['downloadprice'.$i]=$con['downloadbuyprice'.$i];
+						$xml['downloadlink'.$i]='http://'.CONFIG_WEBSITEHOST.'/content/buy.php?content='.$con['id'].'&id='.$i;
 					}else{
-						$xml['downloadprice1']='0';
-						$xml['downloadlink1']='http://'.CONFIG_WEBSITEHOST.'/content/download.php?content='.$con['id'].'&id=1';
+						$xml['downloadprice'.$i]='0';
+						$xml['downloadlink'.$i]='http://'.CONFIG_WEBSITEHOST.'/content/download.php?content='.$con['id'].'&id='.$i;
 					}
-					if(!empty($con['downloadname1'])) $xml['downloadname1']=$con['downloadname1']; else $xml['downloadname1']='';
-					if(!empty($con['downloadgpgfingerprint1'])) $xml['downloadgpgfingerprint1']=$con['downloadgpgfingerprint1']; else $xml['downloadgpgfingerprint1']='';
-					if(!empty($con['downloadgpgsignature1']))	 $xml['downloadgpgsignature1']=$con['downloadgpgsignature1'];		 else $xml['downloadgpgsignature1']='';
-					if(!empty($con['downloadpackagename1'])) $xml['downloadpackagename1']=$con['downloadpackagename1']; else $xml['downloadpackagename1']='';
-					if(!empty($con['downloadrepository1'])) $xml['downloadrepository1']=$con['downloadrepository1']; else $xml['downloadrepository1']='';
-
-					if(($con['downloadtyp1']=='0') and (!empty($con['download1']))) $xml['downloadsize1']=ceil(@filesize(CONFIG_DOCUMENT_ROOT.'/CONTENT/content-files/'.$con['download1'])/1024); else $xml['downloadsize1']='';
-
+					if(!empty($con['downloadname'.$i])) $xml['downloadname'.$i]=$con['downloadname'.$i]; else $xml['downloadname'.$i]='';
+					if(!empty($con['downloadgpgfingerprint'.$i])) $xml['downloadgpgfingerprint'.$i]=$con['downloadgpgfingerprint'.$i]; else $xml['downloadgpgfingerprint'.$i]='';
+					if(!empty($con['downloadgpgsignature'.$i])) $xml['downloadgpgsignature'.$i]=$con['downloadgpgsignature'.$i]; else $xml['downloadgpgsignature'.$i]='';
+					if(!empty($con['downloadpackagename'.$i])) $xml['downloadpackagename'.$i]=$con['downloadpackagename'.$i]; else $xml['downloadpackagename'.$i]='';
+					if(!empty($con['downloadrepository'.$i])) $xml['downloadrepository'.$i]=$con['downloadrepository'.$i]; else $xml['downloadrepository'.$i]='';
 				}
-
-				for ($i=2; $i <= 12;$i++) {
-					if (!empty($con['downloadname'.$i]) and !empty($con['downloadlink'.$i]) ) {
-						if($con['downloadfiletype'.$i]<>0) {
-							$typetmp=$DISTRIBUTIONSTYPES[$con['downloadfiletype'.$i]].' ';
-						} else {
-							$typetmp='';
-						}
-						$xml['downloadtype'.$i]=$typetmp;
-
-						if($con['downloadbuy'.$i]==1) {
-							$xml['downloadprice'.$i]=$con['downloadbuyprice'.$i];
-							$xml['downloadlink'.$i]='http://'.CONFIG_WEBSITEHOST.'/content/buy.php?content='.$con['id'].'&id='.$i;
-						}else{
-							$xml['downloadprice'.$i]='0';
-							$xml['downloadlink'.$i]='http://'.CONFIG_WEBSITEHOST.'/content/download.php?content='.$con['id'].'&id='.$i;
-						}
-						if(!empty($con['downloadname'.$i])) $xml['downloadname'.$i]=$con['downloadname'.$i]; else $xml['downloadname'.$i]='';
-						if(!empty($con['downloadgpgfingerprint'.$i])) $xml['downloadgpgfingerprint'.$i]=$con['downloadgpgfingerprint'.$i]; else $xml['downloadgpgfingerprint'.$i]='';
-						if(!empty($con['downloadgpgsignature'.$i])) $xml['downloadgpgsignature'.$i]=$con['downloadgpgsignature'.$i]; else $xml['downloadgpgsignature'.$i]='';
-						if(!empty($con['downloadpackagename'.$i])) $xml['downloadpackagename'.$i]=$con['downloadpackagename'.$i]; else $xml['downloadpackagename'.$i]='';
-						if(!empty($con['downloadrepository'.$i])) $xml['downloadrepository'.$i]=$con['downloadrepository'.$i]; else $xml['downloadrepository'.$i]='';
-					}
-				}
-				$xml2[0]=$xml;
-				$txt=$this->generatexml($format,'ok',100,'',$xml2,'content','full',2);
-
 			}
-
-			$cache->put($txt);
-			unset($cache);
+			*/
+			$xml2[0]=$xml;
+			$txt=$this->generatexml($format,'ok',100,'',$xml2,'content','full',2);
 			echo($txt);
+
 		}
+
 	}
 
 
