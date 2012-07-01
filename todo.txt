@@ -7,15 +7,19 @@ SOCS TODO:
 WIP:
 		CONTENT
 			list
-			edit
 			upload download file
 			delete download file
 			upload preview image
 			delete preview image
 		FAN
-			-all (every request callable)
+			get
+			isfan
+			add
+			remove
 		COMMENTS
-			-all (every request callable)
+			get
+			add
+			vote
 
 
 DONE:
@@ -32,3 +36,4 @@ DONE:
 			download
 			delete
 			get
+			edit

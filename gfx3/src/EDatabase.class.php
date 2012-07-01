@@ -120,6 +120,15 @@ class EDatabase {
 		}
 	}
 	
+	public function table_exists($table){
+		$r = $this->q("SHOW TABLES LIKE '$table'");
+		$row = mysql_fetch_row($r);
+		if(empty($row)){
+			return false;
+		} else {
+			return true;
+		}
+	}
 	
 	public function num_rows($result){
 		return mysql_num_rows($result);

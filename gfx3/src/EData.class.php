@@ -35,7 +35,12 @@ class EData {
 		$this->main = $main;
 		
 		$this->table = $tbl;
-		$this->tableInfo();
+		if($this->main->db->table_exists($this->table)){
+			$this->tableInfo();
+		} else {
+			$this->main->log->error("$tbl does not exists on database.");
+		}
+		
 		$this->dbg = false;
 	}
 	
@@ -58,6 +63,13 @@ class EData {
 	 */
 	public function setNoQuery($b){
 		$this->noquery = $b;
+	}
+	
+	/*
+	 * Rewrite debug rule.
+	 */
+	public function set_debug($b){
+		$this->dbg = $b;
 	}
 	
 	/*
@@ -150,9 +162,10 @@ class EData {
 			echo "EXECUTING: SELECT $what FROM ".$this->table." $where <br>";
 		}
 		$r = $this->main->db->q("SELECT $what FROM ".$this->table." $where");
-		while($row=mysql_fetch_array($r)){
-			$result[] = $row;
+		while($arr = mysql_fetch_assoc($r)){
+			$result[] = $arr;
 		}
+		
 		if(isset($result)){
 			return $result;
 		} else {
@@ -234,7 +247,7 @@ class EData {
 	
 	/*
 	 * Automatic update method. Works basically like insert method.
-	 * Remember to specifies where when used!
+	 * Remember to specifies $where when used!
 	 */
 	public function update($where="", $entries=array()) {
 		//recupero le informazioni di where

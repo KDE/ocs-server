@@ -2235,28 +2235,24 @@ class H01_OCS {
 	 * @return string xml/json
 	 */
 	private  function contentlist($format,$contents,$searchstr,$searchuser,$external,$distribution,$license,$sortmode,$page,$pagesize) {
-
+		//category -> ignore
+		//sortmode -> 
+		//page     ->
+		//pagesize ->
 		$user=$this->checkpassword(false);
 		$this->checktrafficlimit($user);
-
-
-		$cache = new H01_CACHE('apilist',array($_SESSION['website'],$_SESSION['lang'],$format,$searchuser,$contents.$searchstr.$external.$distribution.$license.$sortmode.$page.$pagesize));
-		if ($cache->exist()) {
-			$cache->get();
-			unset($cache);
-		} else {
-
-			$xml=H01_CONTENT::search($user,$contents,$searchstr,$searchuser,$external,$distribution,$license,$sortmode,$page,$pagesize);
-			$totalitems=$xml['totalitems'];
-			unset($xml['totalitems']);
-
-			$txt=$this->generatexml($format,'ok',100,'',$xml,'content','summary',2,$totalitems,$pagesize);
-
-			$cache->put($txt);
-			unset($cache);
-			echo($txt);
-		}
-
+		
+		$conl = new OCSLister("ocs_content");
+		$xml = $conl->ocs_content_list($searchstr,$sortmode,$page,$pagesize);
+		$totalitems = count($xml);
+		/*
+		 * test page: http://localhost/v1/content/data?search=lolol
+		 */
+		
+		$txt=$this->generatexml($format,'ok',100,'',$xml,'content','summary',2,$totalitems,$pagesize);
+		
+		echo($txt);
+		
 	}
 
 
