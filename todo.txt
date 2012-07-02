@@ -6,7 +6,6 @@ SOCS TODO:
 
 WIP:
 		CONTENT
-			list
 			upload download file
 			delete download file
 			upload preview image
@@ -37,3 +36,4 @@ DONE:
 			delete
 			get
 			edit
+			list
