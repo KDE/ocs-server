@@ -104,12 +104,12 @@ class OCSContent{
 		$path = "content/".$this->id."/";
 		//if upload file failed print error. Else add link to content object.
 		
-		if(!EFileSystem::get_uploaded_file($path)){
+		if(!EFileSystem::move_uploaded_file_in($path)){
 			$this->main->log->error("<b>get_uploaded_file</b> failed! Path: ($path) ");
 			return false;
 		} else {
 			$this->downloadlink1 = EPageProperties::get_current_website_url(); //retrieve website running server
-			$this->downloadlink1."/content/".
+			$this->downloadlink1 .= "/content/".$this->id."/".EFileSystem::get_uploaded_file_name();
 			$this->main->db->q("UPDATE ocs_content SET downloadlink1='".$this->downloadlink1."' WHERE id=".$this->id." LIMIT 1");
 			return true;
 		}

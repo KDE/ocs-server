@@ -47,7 +47,7 @@ class EFileSystem{
 	/*
 	 * Get an uploaded file and moves it to $path with $newname
 	 */
-	public static function get_uploaded_file($path,$newname=false){
+	public static function move_uploaded_file_in($path,$newname=false){
 		$nfile = $_FILES['localfile']['name'];
 		$ext = EFileSystem::get_file_extension($nfile);
 		if(move_uploaded_file($_FILES['localfile']['tmp_name'], getcwd()."/".$path.$nfile)){
@@ -57,6 +57,15 @@ class EFileSystem{
 			return true;
 		} else {
 			return false;
+		}
+	}
+	
+	/*
+	 * Get an uploaded file and moves it to $path with $newname
+	 */
+	public static function get_uploaded_file_name(){
+		if(isset($_FILES['localfile']['name'])){
+			return $_FILES['localfile']['name'];
 		}
 	}
 	
