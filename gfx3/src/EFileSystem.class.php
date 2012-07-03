@@ -36,8 +36,24 @@ class EFileSystem{
 	 * Function that renames a file, mantaining the correct extension
 	 */
 	public static function rename_file($from,$to){
-		$ext = $this->get_file_extension($from);
+		$ext = EFileSystem::get_file_extension($from);
 		if(rename($from,$to.".".$ext)){
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	/*
+	 * Get an uploaded file and moves it to $path with $newname
+	 */
+	public static function get_uploaded_file($path,$newname=false){
+		$nfile = $_FILES['localfile']['name'];
+		$ext = EFileSystem::get_file_extension($nfile);
+		if(move_uploaded_file($_FILES['localfile']['tmp_name'], getcwd()."/".$path.$nfile)){
+			if($newname){
+				EFileSystem::rename_file($path.$nfile,$newname);
+			}
 			return true;
 		} else {
 			return false;

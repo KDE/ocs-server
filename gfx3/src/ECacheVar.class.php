@@ -26,6 +26,7 @@ class ECacheVar {
 	
 	private $main;
 	private $file = false;
+	private $debug = false;
 	
 	public function __construct($file=false){
 		global $main;
@@ -38,7 +39,7 @@ class ECacheVar {
 			fclose($stream);
 		}
 	}
-	
+	/* TODO: inspect.
 	public function exists($file){
 		if(file_exists($this->file)){
 			return true;
@@ -46,7 +47,7 @@ class ECacheVar {
 			return false;
 		}
 	}
-	
+	*/
 	public function get($var){
 		if($this->file){
 			$content = file($this->file);
@@ -56,8 +57,8 @@ class ECacheVar {
 					return rtrim($line[1], "\n");
 				}
 			}
-		} elseif($this->main->edbg){
-			$elog->warning("trying to get cache data from non existent cache var file!");
+		} elseif($this->debug){
+			$this->main->log->warning("trying to get cache data from non existent cache var file!");
 		}
 	}
 	
@@ -89,8 +90,8 @@ class ECacheVar {
 				}
 				fclose($stream);
 			}
-		} elseif($this->main->edbg){
-			$elog->warning("trying to set cache data from non existent cache var file!");
+		} elseif($this->debug){
+			$this->main->log->warning("trying to set cache data from non existent cache var file!");
 		}
 	}
 	
@@ -116,8 +117,8 @@ class ECacheVar {
 				}
 				fclose($stream);
 			}
-		} elseif($this->main->edbg){
-			$elog->warning("trying to del cache data from non existent cache var file!");
+		} elseif($this->debug){
+			$this->main->log->warning("trying to del cache data from non existent cache var file!");
 		}
 	}
 	

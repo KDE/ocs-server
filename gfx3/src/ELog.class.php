@@ -49,8 +49,9 @@ class ELog {
 	public function error($r){
 		switch ($this->mode){
 			case 0:
-				echo "GFX ERROR: $r<br> BACKTRACE: ";
+				echo "GFX ERROR: $r<br><pre> BACKTRACE: ";
 				debug_print_backtrace();
+				echo "</pre>";
 				die();
 			case 1:
 				die("<div style=\"border:3px red solid;-moz-border-radius:10px;background-color:#CECECE;padding:7px;margin:auto;margin-top:7px;margin-bottom:7px;font-size:100%; width:300px;\">

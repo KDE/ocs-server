@@ -4,7 +4,7 @@
  *   TRT GFX 3.0.1 (beta build) BackToSlash
  * 
  *   support:	happy.snizzo@gmail.com
- *   website:	http://trt-gfx.googlecode.com
+ *   website:	http://www.gfx3.org
  *   credits:	Claudio Desideri
  *   
  *   This software is released under the MIT License.

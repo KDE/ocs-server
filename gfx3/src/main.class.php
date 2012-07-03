@@ -25,7 +25,7 @@ class EIncluder{
 		foreach(glob("*.class.php") as $filename){
 			include_once($filename);
 		}
-		chdir("..");
+		chdir("../..");
 	}
 	
 }
@@ -62,7 +62,7 @@ class EMain {
 		//standard global objects
 		$GLOBALS['main'] = $this;
 		$this->dbg = true;
-		$this->log = new Elog(); //plain text, don't preserve as default
+		$this->log = new ELog(); //plain text, don't preserve as default
 		$this->db = new EDatabase(); //config in config.php
 		$this->user = new OCSUser(); //user compatible with the OCS protocol
 		

@@ -79,8 +79,8 @@ class EData {
 	 */
 	private function tableInfo(){
 		//if already cached load from cache else load with a describe AND cache
-		if(file_exists("cache/".$this->table.".table.txt")){
-			$cache = file("cache/".$this->table.".table.txt");
+		if(file_exists("gfx3/cache/".$this->table.".table.txt")){
+			$cache = file("gfx3/cache/".$this->table.".table.txt");
 			for($i=0; $i<count($cache); $i++){
 				$pattern = explode("|", $cache[$i]);
 				$this->fields[$i]["field"] = $pattern[0];
@@ -89,7 +89,7 @@ class EData {
 		} else {
 			$tbldata = $this->main->db->q("DESCRIBE ".$this->table);
 			$fieldsIndex = 0;
-			$stream = fopen("cache/".$this->table.".table.txt",'a+');
+			$stream = fopen("gfx3/cache/".$this->table.".table.txt",'a+');
 			while($row=mysql_fetch_array($tbldata)){
 				$type = "null";
 				if(stristr($row['Type'], "varchar")){ $type = "varchar"; }

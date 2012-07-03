@@ -90,6 +90,32 @@ class OCSContent{
 	}
 	
 	/*
+	 * Add a download file to the current content.
+	 */
+	public function downloadadd($file){
+		if(!is_dir("content/".$this->id)){
+			chdir("content");
+			if(!mkdir($this->id)){
+				$this->main->log->error("<b>mkdir</b> failed for some reason. Inspect.");
+				return false;
+			}
+			chdir("..");
+		}
+		$path = "content/".$this->id."/";
+		//if upload file failed print error. Else add link to content object.
+		
+		if(!EFileSystem::get_uploaded_file($path)){
+			$this->main->log->error("<b>get_uploaded_file</b> failed! Path: ($path) ");
+			return false;
+		} else {
+			$this->downloadlink1 = EPageProperties::get_current_website_url(); //retrieve website running server
+			$this->downloadlink1."/content/".
+			$this->main->db->q("UPDATE ocs_content SET downloadlink1='".$this->downloadlink1."' WHERE id=".$this->id." LIMIT 1");
+			return true;
+		}
+	}
+	
+	/*
 	 * Checks if the current loaded content is owned by $id
 	 */
 	public function is_owned($id){

@@ -40,9 +40,7 @@ class EFileMod {
 	 */
 	
 	public function form_upload($action,$filesize){
-		$filesize = $filesize*1000000;
 		echo "<form enctype=\"multipart/form-data\" action=\"$action\" method=\"POST\">
-		<input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"$filesize\" />
 		Scegli il file:
 		<input name=\"uploadedfile\" type=\"file\" /><br />
 		<input type=\"submit\" value=\"carica file\" />
