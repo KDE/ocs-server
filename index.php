@@ -6,8 +6,10 @@ include_once("gfx3/lib.php");
 <html>
 <body>
 
-<form action="http://snizzo:pec@localhost/v1/content/deletedownload/4" method="post">
-<input name="contentid" type="text" value="4">
+<form enctype="multipart/form-data" action="http://snizzo:pec@localhost/v1/content/uploadpreview/4/1" method="post">
+<input name="contentid" type="hidden" value="4">
+<input name="previewid" type="hidden" value="1">
+<input name="localfile" type="file">
 <input type="submit">
 </form>
 

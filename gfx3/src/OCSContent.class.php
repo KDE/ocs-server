@@ -26,6 +26,9 @@ class OCSContent{
 	public $downloadlink1;
 	public $votes;
 	public $score;
+	public $preview1;
+	public $preview2;
+	public $preview3;
 	
 	private $ocs_content;
 	private $data;
@@ -61,6 +64,9 @@ class OCSContent{
 			$this->downloadlink1 = $r[0]["downloadlink1"];
 			$this->votes = $r[0]["votes"];
 			$this->score = $r[0]["score"];
+			$this->preview1 = $r[0]["preview1"];
+			$this->preview2 = $r[0]["preview2"];
+			$this->preview3 = $r[0]["preview3"];
 			return true;
 		} else {
 			return false;
@@ -116,6 +122,33 @@ class OCSContent{
 	}
 	
 	/*
+	 * Add a download file to the current content.
+	 */
+	public function previewadd($content,$localfile,$preview){
+		if(!is_dir("content/".$this->id)){
+			chdir("content");
+			if(!mkdir($this->id)){
+				$this->main->log->error("<b>mkdir</b> failed for some reason. Inspect.");
+				return false;
+			}
+			chdir("..");
+		}
+		$path = "content/".$this->id."/"; 
+		
+		//if upload file failed print error. Else add link to content object.
+		//if(!EFileSystem::move_uploaded_file_in($path,$preview)){
+		if(!EFileSystem::move_uploaded_file_in($path,$preview)){
+			$this->main->log->error("<b>get_uploaded_file</b> failed! Path: ($path) ");
+			return false;
+		} else {
+			$this->preview1 = EPageProperties::get_current_website_url(); //retrieve website running server
+			$this->preview1 .= "/content/".$this->id."/".$preview.".".EFileSystem::get_file_extension(EFileSystem::get_uploaded_file_name());
+			$this->main->db->q("UPDATE ocs_content SET preview".$preview."='".$this->preview1."' WHERE id=".$this->id." LIMIT 1");
+			return true;
+		}
+	}
+	
+	/*
 	 * Delete currently download file, if setted.
 	 */
 	public function downloaddelete(){
@@ -163,7 +196,7 @@ class OCSContent{
 		//TODO: implement unique name.
 		
 		//saving
-		$this->main->db->q("INSERT INTO ocs_content (name,type,owner,downloadname1,downloadlink1,description,summary,version,changelog) VALUES ('".$this->name."',".$this->type.",".$this->owner.",'".$this->downloadname1."','".$this->downloadlink1."','".$this->description."','".$this->summary."','".$this->version."','".$this->changelog."')");
+		$this->main->db->q("INSERT INTO ocs_content (name,type,owner,downloadname1,downloadlink1,description,summary,version,changelog,preview1,preview2,preview3) VALUES ('".$this->name."',".$this->type.",".$this->owner.",'".$this->downloadname1."','".$this->downloadlink1."','".$this->description."','".$this->summary."','".$this->version."','".$this->changelog."','".$this->preview1."','".$this->preview2."','".$this->preview3."')");
 		//updating new id, got from database
 		$r = $this->main->db->q("SELECT id FROM ocs_content where name='".$this->name."' and owner=".$this->owner." LIMIT 1");
 		$this->id = $r[0]["id"];
@@ -194,14 +227,17 @@ class OCSContent{
 		// assuring those are not evil data to be used as SQL injections
 		$this->main->db->safe($data);
 		//data validations
-		if(!isset($data['type'])){ $this->main->elog->error("OCSContent: type not defined. Mandatory field."); } else { $this->type = $data['type']; }
-		if(!isset($data['name'])){ $this->main->elog->error("OCSContent: name not defined. Mandatory field."); } else { $this->name = $data['name']; }
+		if(!isset($data['type'])){ $this->main->log->error("OCSContent: type not defined. Mandatory field."); } else { $this->type = $data['type']; }
+		if(!isset($data['name'])){ $this->main->log->error("OCSContent: name not defined. Mandatory field."); } else { $this->name = $data['name']; }
 		if(!isset($data['downloadname1'])){ $this->downloadname1 = ""; } else { $this->downloadname1 = $data['downloadname1']; }
 		if(!isset($data['downloadlink1'])){ $this->downloadlink1 = ""; } else { $this->downloadlink1 = $data['downloadlink1']; }
 		if(!isset($data['description'])){ $this->description = ""; } else { $this->description = $data['description']; }
 		if(!isset($data['summary'])){ $this->summary = ""; } else { $this->summary = $data['summary']; }
 		if(!isset($data['version'])){ $this->version = ""; } else { $this->version = $data['version']; }
 		if(!isset($data['changelog'])){ $this->changelog = ""; } else { $this->changelog = $data['changelog']; }
+		if(!isset($data['preview1'])){ $this->preview1 = ""; } else { $this->preview1 = $data['preview1']; }
+		if(!isset($data['preview2'])){ $this->preview2 = ""; } else { $this->preview2 = $data['preview2']; }
+		if(!isset($data['preview3'])){ $this->preview3 = ""; } else { $this->preview3 = $data['preview3']; }
 	}
 	
 	/*

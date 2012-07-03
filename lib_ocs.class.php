@@ -2483,23 +2483,24 @@ class H01_OCS {
 	 * @return string xml/json
 	 */
 	private  function contentpreviewupload($format,$contentid,$previewid) {
-		$user=$this->checkpassword();
+		$user=$this->checkpassword(true);
 		$this->checktrafficlimit($user);
 		$content=addslashes($contentid);
 		$preview=addslashes($previewid);
 
 		// fetch data
-		$con=H01_CONTENT::getdetail($content);
+		$con = new OCSContent();
 
 		if(($preview==1) or ($preview==2) or ($preview==3)) {
 
-			if((($con['user']==$user) and ($con['userdb']==CONFIG_USERDB) and H01_AUTH::checkuser(PERM_Content_Edit,$user,CONFIG_USERDB) ) or (H01_AUTH::checkuser(PERM_Content_Admin,$user,CONFIG_USERDB))) {
+			if($con->load($content) and $con->is_owned($this->main->user->id())) {
 
 				if(isset($_FILES['localfile']['name']) and isset($_FILES['localfile']['name']) and ($_FILES['localfile']['name']<>'' and $_FILES['localfile']['name']<>'none' and $_FILES['localfile']['tmp_name']<>'' and $_FILES['localfile']['tmp_name']<>'none')) {
-					H01_CONTENTEDIT::previewadd($content,'localfile',$preview);
-					H01_CACHEADMIN::cleancache('apilist',array($_SESSION['website'],$_SESSION['lang'],$format,$user));
-					H01_CACHEADMIN::cleancache('apiget',array($_SESSION['website'],$_SESSION['lang'],$content));
-					$txt=$this->generatexml($format,'ok',100,'');
+					if($con->previewadd($content,'localfile',$preview)){
+						$txt=$this->generatexml($format,'ok',100,'');
+					} else {
+						$this->main->log->error("previewadd crashed lol!");
+					}
 				} else {
 					$txt=$this->generatexml($format,'failed',101,'localfile not found');
 				}
@@ -2507,7 +2508,7 @@ class H01_OCS {
 				$txt=$this->generatexml($format,'failed',102,'no permission to change content');
 			}
 		} else {
-			$txt=$this->generatexml($format,'failed',103,'preview most be 1, 2 or 3');
+			$txt=$this->generatexml($format,'failed',103,'preview must be 1, 2 or 3');
 		}
 		echo($txt);
 	}
