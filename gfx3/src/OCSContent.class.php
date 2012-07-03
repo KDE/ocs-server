@@ -122,7 +122,7 @@ class OCSContent{
 	}
 	
 	/*
-	 * Add a download file to the current content.
+	 * Add a preview file to the current content.
 	 */
 	public function previewadd($content,$localfile,$preview){
 		if(!is_dir("content/".$this->id)){
@@ -141,15 +141,30 @@ class OCSContent{
 			$this->main->log->error("<b>get_uploaded_file</b> failed! Path: ($path) ");
 			return false;
 		} else {
-			$this->preview1 = EPageProperties::get_current_website_url(); //retrieve website running server
-			$this->preview1 .= "/content/".$this->id."/".$preview.".".EFileSystem::get_file_extension(EFileSystem::get_uploaded_file_name());
-			$this->main->db->q("UPDATE ocs_content SET preview".$preview."='".$this->preview1."' WHERE id=".$this->id." LIMIT 1");
+			switch($preview){
+				case 1:
+					$this->preview1 = EPageProperties::get_current_website_url(); //retrieve website running server
+					$this->preview1 .= "/content/".$this->id."/".$preview.".".EFileSystem::get_file_extension(EFileSystem::get_uploaded_file_name());
+					$previewlink = $this->preview1;
+					break;
+				case 2:
+					$this->preview2 = EPageProperties::get_current_website_url(); //retrieve website running server
+					$this->preview2 .= "/content/".$this->id."/".$preview.".".EFileSystem::get_file_extension(EFileSystem::get_uploaded_file_name());
+					$previewlink = $this->preview2;
+					break;
+				case 3:
+					$this->preview3 = EPageProperties::get_current_website_url(); //retrieve website running server
+					$this->preview3 .= "/content/".$this->id."/".$preview.".".EFileSystem::get_file_extension(EFileSystem::get_uploaded_file_name());
+					$previewlink = $this->preview3;
+					break;
+			}
+			$this->main->db->q("UPDATE ocs_content SET preview".$preview."='".$previewlink."' WHERE id=".$this->id." LIMIT 1");
 			return true;
 		}
 	}
 	
 	/*
-	 * Delete currently download file, if setted.
+	 * Delete current download file, if setted.
 	 */
 	public function downloaddelete(){
 		$filename = explode("/", $this->downloadlink1);
@@ -161,6 +176,49 @@ class OCSContent{
 			unlink($path);
 			$this->downloadlink1 = "";
 			$this->main->db->q("UPDATE ocs_content SET downloadlink1='' WHERE id=".$this->id." LIMIT 1");
+		}
+	}
+	
+	/*
+	 * Delete current preview file, if setted.
+	 */
+	public function previewdelete($content,$preview){
+		switch($preview){
+			case 1:
+				$this->prelink = $this->preview1;
+				$this->preview1 = "";
+				break;
+			case 2:
+				$this->prelink = $this->preview2;
+				$this->preview2 = "";
+				break;
+			case 3:
+				$this->prelink = $this->preview3;
+				$this->preview3 = "";
+				break; 
+		}
+		$filename = explode("/", $this->prelink);
+		$filename = $filename[count($filename)-1]; 
+		
+		$path = "content/".$this->id."/".$filename;
+		//if upload file failed print error. Else add link to content object.
+		if(file_exists($path)){
+			unlink($path);
+			$this->main->db->q("UPDATE ocs_content SET preview$preview='' WHERE id=".$this->id." LIMIT 1");
+		}
+	}
+	
+	/*
+	 * Returns a boolean if $preview is currently available or not.
+	 */
+	public function is_preview_available($preview){
+		switch($preview){
+			case 1:
+				if(empty($this->preview1)){ return false; } else { return true; }
+			case 2:
+				if(empty($this->preview2)){ return false; } else { return true; }
+			case 3:
+				if(empty($this->preview3)){ return false; } else { return true; }
 		}
 	}
 	

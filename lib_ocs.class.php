@@ -2451,26 +2451,27 @@ class H01_OCS {
 	 * @return string xml/json
 	 */
 	private  function contentpreviewdelete($format,$contentid,$previewid) {
-		$user=$this->checkpassword();
+		$user=$this->checkpassword(true);
 		$this->checktrafficlimit($user);
 		$content=addslashes($contentid);
 		$preview=addslashes($previewid);
 
 		// fetch data
-		$con=H01_CONTENT::getdetail($content);
-		if(isset($con['preview'.$preview]) and $con['preview'.$preview]<>'') {
+		$con = new OCSContent();
 
-			if((($con['user']==$user) and ($con['userdb']==CONFIG_USERDB) and H01_AUTH::checkuser(PERM_Content_Edit,$user,CONFIG_USERDB) ) or (H01_AUTH::checkuser(PERM_Content_Admin,$user,CONFIG_USERDB))) {
-
-				H01_CONTENTEDIT::previewdelete($content,$con['preview'.$preview],$preview);
-				H01_CACHEADMIN::cleancache('apilist',array($_SESSION['website'],$_SESSION['lang'],$format,$user));
-				H01_CACHEADMIN::cleancache('apiget',array($_SESSION['website'],$_SESSION['lang'],$content));
-				$txt=$this->generatexml($format,'ok',100,'');
+		if($con->load($content)){
+			if($con->is_preview_available($previewid)){
+				if($con->is_owned($this->main->user->id())) {
+					
+					$con->previewdelete($content,$preview);
+					
+					$txt=$this->generatexml($format,'ok',100,'');
+				} else {
+					$txt=$this->generatexml($format,'failed',101,'no permission to change content');
+				}
 			} else {
-				$txt=$this->generatexml($format,'failed',101,'no permission to change content');
+				$txt=$this->generatexml($format,'failed',102,'preview not found');
 			}
-		} else {
-			$txt=$this->generatexml($format,'failed',102,'preview not found');
 		}
 		echo($txt);
 	}
