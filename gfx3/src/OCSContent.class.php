@@ -92,7 +92,7 @@ class OCSContent{
 	/*
 	 * Add a download file to the current content.
 	 */
-	public function downloadadd($file){
+	public function downloadadd(){
 		if(!is_dir("content/".$this->id)){
 			chdir("content");
 			if(!mkdir($this->id)){
@@ -112,6 +112,22 @@ class OCSContent{
 			$this->downloadlink1 .= "/content/".$this->id."/".EFileSystem::get_uploaded_file_name();
 			$this->main->db->q("UPDATE ocs_content SET downloadlink1='".$this->downloadlink1."' WHERE id=".$this->id." LIMIT 1");
 			return true;
+		}
+	}
+	
+	/*
+	 * Delete currently download file, if setted.
+	 */
+	public function downloaddelete(){
+		$filename = explode("/", $this->downloadlink1);
+		$filename = $filename[count($filename)-1];
+		
+		$path = "content/".$this->id."/".$filename;
+		//if upload file failed print error. Else add link to content object.
+		if(file_exists($path)){
+			unlink($path);
+			$this->downloadlink1 = "";
+			$this->main->db->q("UPDATE ocs_content SET downloadlink1='' WHERE id=".$this->id." LIMIT 1");
 		}
 	}
 	
