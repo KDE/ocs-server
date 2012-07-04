@@ -612,7 +612,7 @@ class H01_OCS {
 		// commentvote - GET - COMMENTS/vote	 
 		}elseif((($method=='post') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='comments') and (strtolower($ex[3])=='vote') and (count($ex)==6)){
 			$id = addslashes($ex[4]);
-			$score = $this->readdata('score','int');
+			$score = $this->readdata('vote','int');
 			$format=$this->readdata('format','text');
 			$this->commentvote($format,$id,$score);
 
@@ -3152,12 +3152,18 @@ class H01_OCS {
 	 * @return string xml/json
 	 */
 	private  function commentvote($format,$id,$score) {
-		$user=$this->checkpassword();
+		$user=$this->checkpassword(true);
 		$this->checktrafficlimit($user);
-
-		H01_COMMENTS::vote($user,CONFIG_USERDB,$id,$score,'');
-		$txt=$this->generatexml($format,'ok',100,'');
-		echo($txt);
+		
+		$comment = new OCSComment();
+		if($comment->load($id)){
+			
+			$comment->set_score($score);
+			$txt=$this->generatexml($format,'ok',100,'');
+			echo($txt);
+		} else {
+			$txt=$this->generatexml($format,'failed',101,'comment not found');
+		}
 	}
 
 
