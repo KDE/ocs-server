@@ -103,7 +103,7 @@ class EDatabase {
 		}
 	}
 	
-	/*TODO:	What's is this method supposed to do?
+	/*TODO:	What is this method supposed to do?
 	 *		Inspect.
 	 */
 	public function sq($q){
@@ -116,7 +116,7 @@ class EDatabase {
 			return $number;
 		} else {
 			$error = " Query not executed due to mysql session not opened. Try to open one using open method. ";
-			$elog->error($error);
+			$this->main->log->error($error);
 		}
 	}
 	
@@ -145,6 +145,11 @@ class EDatabase {
 	//function not related to databases but useful when needed to test if the object exists
 	public function is_alive(){
 		return true;
+	}
+	
+	public function last_insert_id(){
+		$r = $this->sq("SELECT LAST_INSERT_ID()");
+		return $r;
 	}
 	
 	public function all_queries(){

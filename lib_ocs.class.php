@@ -3064,31 +3064,32 @@ class H01_OCS {
 	 * @param string $message
 	 * @return string xml/json
 	 */
-	private  function commentsadd($format,$type,$content,$content2,$parent,$subject,$message) {
-		$user=$this->checkpassword();
+	private function commentsadd($format,$type,$content,$content2,$parent,$subject,$message) {
+		$user = $this->checkpassword(true);
 		$this->checktrafficlimit($user);
-		$parent = strip_tags(addslashes($parent));
-		$subject = strip_tags(addslashes($subject));
-		$message = strip_tags(addslashes($message));
-		$content = strip_tags(addslashes($content));
-		$content2= strip_tags(addslashes($content2));
-		$type=		 strip_tags(addslashes($type));
+		$data['parent'] = strip_tags(addslashes($parent));
+		$data['subject'] = strip_tags(addslashes($subject));
+		$data['message'] = strip_tags(addslashes($message));
+		$data['content'] = strip_tags(addslashes($content));
+		$data['content2'] = strip_tags(addslashes($content2));
+		$data['type'] = strip_tags(addslashes($type));
+		$data['owner'] = $this->main->user->id();
 
 	 //types
+	 // just 1 is accepted
 	 // 1 - content
-	 // 4 - forum
-	 // 7 - knowledgebase
-	 // 8 - event
-
-		if(!in_array($type,array(1,4,7,8))) $type=1;
-
+		
+		//setting content type as default
+		if(!in_array($data['type'],array(1,4,7,8))) $data['type']=1;
+		
 		if($user<>'') {
-			if($message<>'' and $subject<>'') {
-				if($content<>0) {
-					$notify='';
-					$pictodata='0';
-					H01_COMMENTS::add($user,$type,$content,$content2,$parent,$pictodata,$notify,$subject,$message,'');
-					$xml[0]['id']=H01_COMMENTS::getlastid();
+			if($data['message']<>'' and $data['subject']<>'') {
+				if($data['content']<>0) {
+					$comment = new OCSComment(); //creating new object
+					$comment->set_data($data); //loading new data for comment
+					$comment->save_to_db();
+					$id = $comment->id();
+					$xml[0]['id'] = $id;
 					echo($this->generatexml($format,'ok',100,'',$xml,'comment','',2));
 				} else {
 					echo($this->generatexml($format,'failed',101,'content must not be empty'));

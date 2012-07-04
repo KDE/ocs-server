@@ -5,11 +5,6 @@
 SOCS TODO:
 
 WIP:
-		CONTENT
-			upload download file
-			delete download file
-			upload preview image
-			delete preview image
 		FAN
 			get
 			isfan
@@ -37,3 +32,7 @@ DONE:
 			get
 			edit
 			list
+			upload download file
+			delete download file
+			upload preview image
+			delete preview image

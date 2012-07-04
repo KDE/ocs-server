@@ -52,8 +52,6 @@ class OCSContent{
 			$r = $this->ocs_content->find("*", "where id=$id LIMIT 1");
 			$this->id = $id;
 			$this->owner = $r[0]["owner"];
-			$this->votes = $r[0]["votes"];
-			$this->score = $r[0]["score"];
 			$this->name = $r[0]["name"];
 			$this->type = $r[0]["type"];
 			$this->description = $r[0]["description"];
