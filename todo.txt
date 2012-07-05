@@ -5,15 +5,13 @@
 SOCS TODO:
 
 WIP:
-		FAN
+	FAN
 			get
 			isfan
 			add
 			remove
-		COMMENTS
+	COMMENTS
 			get
-			add
-			vote
 
 
 DONE:
@@ -36,3 +34,6 @@ DONE:
 			delete download file
 			upload preview image
 			delete preview image
+	COMMENTS
+			add
+			vote

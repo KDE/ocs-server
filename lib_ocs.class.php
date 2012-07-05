@@ -587,7 +587,7 @@ class H01_OCS {
 
 		// COMMENTS
 
-		// commentsget - GET - COMMENTS/ADD	 
+		// commentsget - GET - COMMENTS/GET
 		}elseif((($method=='get') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='comments') and (strtolower($ex[3])=='data') and (count($ex)==8)){
 			$type= addslashes($ex[4]);
 			$content= addslashes($ex[5]);
