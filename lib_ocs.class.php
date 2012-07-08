@@ -1476,10 +1476,10 @@ class H01_OCS {
 	 */
 	private  function isfan($format,$content) {
 		$contentid = intval($content);
-		$user=$this->checkpassword();
+		$user=$this->checkpassword(true);
 		$this->checktrafficlimit($user);
-		$fan=H01_FAN::isfan($contentid,$user,CONFIG_USERDB);
-		if($fan){
+		$fan = new OCSFan;
+		if($fan->isfan($contentid)){
 			$xml['status']='fan';
 			$txt=$this->generatexml($format,'ok',100,'',$xml,'','',1); 
 		}else{
