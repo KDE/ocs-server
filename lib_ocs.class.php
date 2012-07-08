@@ -3126,10 +3126,9 @@ class H01_OCS {
 
 		if(!in_array($type,array(1,4,7,8))) $type=1;
 		
-		
-		$comments=H01_COMMENTS::fetchcomments($type,$content,$content2,0,0,0,$page,$pagesize);
-		$totalitems=$comments['totalitems'];
-		unset($comments['totalitems']);
+		$coml = new OCSCommentLister();
+		$comments = $coml->ocs_comment_list($type,$content,$content2,$page,$pagesize);
+		$totalitems = count($comments);
 //			$txt=$this->generatexml($format,'ok',100,'',$xml,'event','detail',2,$totalitems,$pagesize);
 
 		$txt=$this->generatexml($format,'ok',100,'',$comments,'comment','','dynamic',$totalitems,$pagesize);

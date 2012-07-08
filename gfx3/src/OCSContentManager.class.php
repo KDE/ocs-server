@@ -59,7 +59,7 @@ class OCSContentLister extends OCSLister {
 	public $main;
 	
 	//inheriting constructor
-	public function __construct($data=""){
+	public function __construct($data="ocs_content"){
 		//setting initial value for table
 		if(!empty($data)){
 			$this->table = $data;
@@ -107,7 +107,7 @@ class OCSContentLister extends OCSLister {
 	}
 }
 
-class OCSCommentsLister extends OCSLister {
+class OCSCommentLister extends OCSLister {
 	
 	//variables
 	private $table;
@@ -116,7 +116,7 @@ class OCSCommentsLister extends OCSLister {
 	public $main;
 	
 	//inheriting constructor
-	public function __construct($data=""){
+	public function __construct($data="ocs_comment"){
 		//setting initial value for table
 		if(!empty($data)){
 			$this->table = $data;
@@ -129,38 +129,30 @@ class OCSCommentsLister extends OCSLister {
 		$this->main = $main;
 	}
 	
-	public function ocs_comment_list($searchstr,$sortmode="new",$page=1,$pagesize=10,$user=""){
+	public function ocs_comment_list($type,$content,$content2,$page=1,$pagesize=10){
 		
 		if(empty($page)){ $page=1; }
+		
 		//setting dynamic page size
 		$page = ($page-1)*($pagesize);
-		switch($sortmode){
-			case "new":
-				$where = "ORDER BY id DESC LIMIT $page,$pagesize";
-				break;
-			case "alpha":
-				$where = "ORDER BY name ASC LIMIT $page,$pagesize";
-				break;
-			case "high":
-				$where = "ORDER BY score DESC LIMIT $page,$pagesize";
-				break;
-			case "down":
-				$where = "ORDER BY downloads DESC LIMIT $page,$pagesize";
-				break;
-			default:
-				$where = "ORDER BY id DESC LIMIT $page,$pagesize";
-				break;
+		$where = "ORDER BY c.id ASC LIMIT $page,$pagesize";
+		
+		$q = "SELECT * FROM ocs_comment AS c JOIN ocs_person AS p on c.owner = p.id WHERE c.content = $content $where";
+		$r = $this->main->db->q($q);
+		
+		$result = array();
+		while($row=mysql_fetch_assoc($r)){
+			$result[]["id"] = $row["id"];
+			$result[]["subject"] = $row["subject"];
+			$result[]["text"] = $row["message"];
+			$result[]["childcount"] = 0;
+			$result[]["user"] = $row["login"];
+			$result[]["date"] = $row["date"];
+			$result[]["score"] = $row["score"];
 		}
 		
-		if(!empty($user)){
-			$whereuser = " AND user = '$user' ";
-		} else {
-			$whereuser = "";
-		}
+		return $result;
 		
-		
-		$r = $this->datatable->find("id,owner,votes,score,name,type,downloadname1,downloadlink1,version,summary","WHERE name LIKE '%$searchstr%' $whereuser $where");
-		return $r;
 	}
 }
 

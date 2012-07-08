@@ -56,6 +56,7 @@ class OCSComment{
 			$this->score = $r[0]["score"];
 			$this->subject = $r[0]["subject"];
 			$this->message = $r[0]["message"];
+			$this->date = $r[0]["date"];
 			return true;
 		} else {
 			return false;
@@ -129,6 +130,7 @@ class OCSComment{
 		if(!isset($data['score'])){ $this->score = ""; } else { $this->score = $data['score']; }
 		if(!isset($data['subject'])){ $this->subject = ""; } else { $this->subject = $data['subject']; }
 		if(!isset($data['message'])){ $this->message = ""; } else { $this->message = $data['message']; }
+		if(!isset($data['data'])){ $this->data = date(" j/n/Y H:i:s "); }
 	}
 	
 	/*
