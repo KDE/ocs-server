@@ -156,4 +156,48 @@ class OCSCommentLister extends OCSLister {
 	}
 }
 
+class OCSFanLister extends OCSLister {
+	
+	//variables
+	private $table;
+	private $datatable;
+	//global instance
+	public $main;
+	
+	//inheriting constructor
+	public function __construct($data="ocs_fan"){
+		//setting initial value for table
+		if(!empty($data)){
+			$this->table = $data;
+			$this->datatable = new EData($this->table);
+		} else {
+			$this->set_table_search($this->table);
+		}
+		//setting main to global
+		global $main;
+		$this->main = $main;
+	}
+	
+	public function ocs_fan_list($content,$page=1,$pagesize=10){
+		
+		if(empty($page)){ $page=1; }
+		
+		//setting dynamic page size
+		$page = ($page-1)*($pagesize);
+		
+		$person = $this->main->user->id();
+		
+		$q = "SELECT * FROM ocs_fan AS f JOIN ocs_person AS p on f.person = p.id WHERE f.person=$person LIMIT $page,$pagesize";
+		$r = $this->main->db->q($q);
+		
+		$result = array();
+		while($row=mysql_fetch_assoc($r)){
+			$result[]["personid"] = $row["login"];
+		}
+		
+		return $result;
+		
+	}
+}
+
 ?>

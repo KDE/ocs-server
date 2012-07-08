@@ -1403,33 +1403,17 @@ class H01_OCS {
 	 * @return string xml/json
 	 */
 	private  function fanget($format,$content,$page,$pagesize) {
-		$user=$this->checkpassword();
+		$user=$this->checkpassword(true);
 		$this->checktrafficlimit($user);
 		$content=strip_tags(addslashes($content));
 		$page = intval($page);
-		$start=$pagesize*$page;
-
-		$cache = new H01_CACHE('apifan',array($content,CONFIG_USERDB,$page,$pagesize,$format));
-		if ($cache->exist()) {
-			$cache->get();
-			unset($cache);
-		} else {
-
-			$fancount=H01_FAN::countfansofcontent($content,CONFIG_USERDB);
-			$fans=H01_FAN::getfansofcontent($content,CONFIG_USERDB,$page,$pagesize);
-			$itemscount=count($fans);
-			$xml=array();
-			for ($i=0; $i < $itemscount;$i++) {
-				$xml[$i]['personid']=$fans[$i]['user'];
-				$xml[$i]['timestamp']=date('c',$fans[$i]['timestamp']);
-			}
-			$txt=$this->generatexml($format,'ok',100,'',$xml,'person','fans',2,$fancount,$pagesize);
-
-			$cache->put($txt);
-			unset($cache);
-			echo($txt);
-		}
-
+		
+		$fan = new OCSFanLister;
+		$xml = $fan->ocs_fan_list($content,$page,$pagesize);
+		$fancount = count($xml);
+		$txt=$this->generatexml($format,'ok',100,'',$xml,'person','fans',2,$fancount,$pagesize);
+		
+		echo $txt;
 	}
 
 

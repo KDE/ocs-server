@@ -37,14 +37,9 @@ class OCSFan {
 		$r = $fant->find("*", "where person=$person and content=$content");
 		if(!empty($r)){
 			return true;
-			var_dump($r);
 		} else {
 			return false;
 		}
-	}
-	
-	public function get($content){
-		//
 	}
 	
 }
