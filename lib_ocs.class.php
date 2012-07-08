@@ -2242,14 +2242,18 @@ class H01_OCS {
 		$user=$this->checkpassword(false);
 		$this->checktrafficlimit($user);
 		
-		$conl = new OCSLister("ocs_content");
+		$conl = new OCSContentLister("ocs_content");
 		$xml = $conl->ocs_content_list($searchstr,$sortmode,$page,$pagesize);
 		$totalitems = count($xml);
 		/*
 		 * test page: http://localhost/v1/content/data?search=lolol
 		 */
 		
-		$txt=$this->generatexml($format,'ok',100,'',$xml,'content','summary',2,$totalitems,$pagesize);
+		if(empty($xml)){
+			$txt=$this->generatexml($format,'ok',100,'');
+		} else {
+			$txt=$this->generatexml($format,'ok',100,'',$xml,'content','summary',2,$totalitems,$pagesize);
+		}
 		
 		echo($txt);
 		
@@ -3121,24 +3125,15 @@ class H01_OCS {
 	 // 8 - event
 
 		if(!in_array($type,array(1,4,7,8))) $type=1;
-
-		$cache = new H01_CACHE('forum',array($_SESSION['website'],$_SESSION['lang'],$type,$content,$content2,$page,$pagesize));
-
-		if ($cache->exist()) {
-			$cache->get();
-			unset($cache);
-		} else {
-
-			$comments=H01_COMMENTS::fetchcomments($type,$content,$content2,0,0,0,$page,$pagesize);
-			$totalitems=$comments['totalitems'];
-			unset($comments['totalitems']);
+		
+		
+		$comments=H01_COMMENTS::fetchcomments($type,$content,$content2,0,0,0,$page,$pagesize);
+		$totalitems=$comments['totalitems'];
+		unset($comments['totalitems']);
 //			$txt=$this->generatexml($format,'ok',100,'',$xml,'event','detail',2,$totalitems,$pagesize);
 
-			$txt=$this->generatexml($format,'ok',100,'',$comments,'comment','','dynamic',$totalitems,$pagesize);
-			$cache->put($txt);
-			unset($cache);
-			echo($txt);
-		}
+		$txt=$this->generatexml($format,'ok',100,'',$comments,'comment','','dynamic',$totalitems,$pagesize);
+		echo($txt);
 
 
 	}
