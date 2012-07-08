@@ -1441,9 +1441,12 @@ class H01_OCS {
 	 */
 	private  function addfan($format,$content) {
 		$contentid = intval($content);
-		$user=$this->checkpassword();
+		$user=$this->checkpassword(true);
 		$this->checktrafficlimit($user);
-		H01_FAN::addfan($contentid,$user,CONFIG_USERDB);
+		
+		$fan = new OCSFan;
+		$fan->add($contentid);
+		
 		$txt=$this->generatexml($format,'ok',100,'');
 		echo($txt);
 	}
