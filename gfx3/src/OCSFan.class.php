@@ -26,7 +26,8 @@ class OCSFan {
 	}
 	
 	public function remove($content){
-		//
+		$person = $this->main->user->id();
+		$this->main->db->q("DELETE FROM ocs_fan WHERE person=$person and content=$content");
 	}
 	
 	public function isfan($content){

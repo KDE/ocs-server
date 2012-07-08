@@ -1445,7 +1445,9 @@ class H01_OCS {
 		$this->checktrafficlimit($user);
 		
 		$fan = new OCSFan;
-		$fan->add($contentid);
+		if(!$fan->isfan($content)){
+			$fan->add($contentid);
+		}
 		
 		$txt=$this->generatexml($format,'ok',100,'');
 		echo($txt);
@@ -1460,9 +1462,14 @@ class H01_OCS {
 	 */
 	private  function removefan($format,$content) {
 		$contentid = intval($content);
-		$user=$this->checkpassword();
+		$user=$this->checkpassword(true);
 		$this->checktrafficlimit($user);
-		H01_FAN::removefan($contentid,$user,CONFIG_USERDB);
+		
+		$fan = new OCSFan;
+		if($fan->isfan($content)){
+			$fan->remove($contentid);
+		}
+		
 		$txt=$this->generatexml($format,'ok',100,'');
 		echo($txt);
 	}
