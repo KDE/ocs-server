@@ -5,13 +5,7 @@
 SOCS TODO:
 
 WIP:
-	FAN
-			get
-			isfan
-			add
-			remove
-	COMMENTS
-			get
+	[fixes]
 
 
 DONE:
@@ -37,3 +31,9 @@ DONE:
 	COMMENTS
 			add
 			vote
+			get
+	FAN
+			get
+			isfan
+			add
+			remove
