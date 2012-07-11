@@ -18,19 +18,35 @@
 
 class EIncluder{
 	
-	public static $gfx_path = "gfx3/src";
+	public static $prev_path;
+	public static $abs_path;
+	public static $lib_path = "gfx3/src";
 	
+	//look for gfx3 installation path
+	public static function getLibInstallPath(){
+		if(is_dir("gfx3")){
+			return getcwd()."/".EIncluder::$lib_path;
+		} else {
+			chdir("..");
+			return EIncluder::getLibInstallPath();
+		}
+	}
+	
+	//load all modules dynamically
 	public static function loadAllModules(){
-		chdir(EIncluder::$gfx_path);
+		
+		EIncluder::$prev_path = getcwd();
+		EIncluder::$abs_path = EIncluder::getLibInstallPath();
+		chdir(EIncluder::$abs_path);
 		foreach(glob("*.class.php") as $filename){
 			include_once($filename);
 		}
-		chdir("../..");
+		chdir(EIncluder::$prev_path);
 	}
 	
 }
 
-//including all modules automatically
+//including all modules
 EIncluder::loadAllModules();
 
 /*
@@ -63,8 +79,7 @@ class EMain {
 		$GLOBALS['main'] = $this;
 		$this->dbg = true;
 		$this->log = new ELog(1); //plain text, don't preserve as default
-		$this->db = new EDatabase(); //config in config.php
-		$this->user = new OCSUser(); //user compatible with the OCS protocol
+		$this->db = new EDatabase(); //config in config.php TODO:fix
 		
 	}
 	

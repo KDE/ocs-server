@@ -162,12 +162,13 @@ class EDatabase {
 	
 	public function __destruct(){
 		if($this->opened==true){
-			mysql_close();
+			// TODO: strange behaviour under root. Inspect.
+			// mysql_close($this->db_link);
 			$this->db_link = 0;
 			$this->opened = false;
 		} else {
 			if($this->debug==false){
-				$elog->error("TRT GFX ISSUE: unable to close mysql session because no one was already opened.");
+				$this->main->log->error("TRT GFX ISSUE: unable to close mysql session because no one was already opened.");
 			}
 		}
 	}

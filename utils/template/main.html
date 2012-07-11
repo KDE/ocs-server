@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>GFXConsole</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!--^--bootstrapHeader--^-->
+	
+  </head>
+
+  <body>
+
+    <!--^--bootstrapNavbar--^-->
+    
+    <div class="container">
+
+      <form class="form-horizontal">
+		  <fieldset>
+			<legend>Debug</legend>
+			<div class="control-group">
+			  <label class="control-label" for="input01">Type here your test code:</label>
+			  <div class="controls">
+				<textarea id="gfx3_code" name="gfx3_code" class="input-xlarge" id="input01" style="width:600px;height:300px;font-family:monospace"></textarea>
+				<p class="help-block"><input type="button" class="btn" value="execute" id="gfx3_execute">&nbsp;&nbsp;<a href="http://gfx3.org/manual">http://gfx3.org/manual</a></p>
+			  </div>
+			</div>
+		  </fieldset>
+		</form>
+
+    </div> <!-- /container -->
+	
+	<div class="container">
+
+      <div class="form-horizontal">
+		  <fieldset>
+			<legend>Results</legend>
+			<div class="control-group" id="gfx3_generatedcode"></div>
+		  </fieldset>
+		</div>
+
+    </div> <!-- /container -->
+	
+	<!--^--bootstrapFooter--^-->
+	<script language="JavaScript" src="main.js"></script>
+
+  </body>
+</html>
