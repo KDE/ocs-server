@@ -1114,10 +1114,10 @@ class H01_OCS {
 		$this->checktrafficlimit($user);
 
 		$xml['version']='1.6';
-		$xml['website']='openDesktop.org';
-		$xml['host']='api.openDesktop.org';
-		$xml['contact']='frank@openDesktop.org';
-		$xml['ssl']='true';
+		$xml['website']='gfx3.org';
+		$xml['host']='gfx3.org';
+		$xml['contact']='happy.snizzo@gmail.com';
+		$xml['ssl']='false';
 		echo($this->generatexml($format,'ok',100,'',$xml,'config','',1));
 	}
 

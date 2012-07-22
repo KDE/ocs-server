@@ -52,7 +52,7 @@ class EFileSystem{
 		$ext = EFileSystem::get_file_extension($nfile);
 		if(move_uploaded_file($_FILES['localfile']['tmp_name'], getcwd()."/".$path.$nfile)){
 			if($newname){
-				EFileSystem::rename_file($path.$nfile,$path.$newname); 
+				EFileSystem::rename_file($path.$nfile,$path.$newname);
 			}
 			return true;
 		} else {

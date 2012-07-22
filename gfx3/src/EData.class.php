@@ -31,14 +31,13 @@ class EData {
 	private $main;
 	
 	public function __construct($tbl){
-		global $main;
-		$this->main = $main;
+		$this->main = EMain::getRef();
 		
 		$this->table = $tbl;
 		if($this->main->db->table_exists($this->table)){
-			$this->tableInfo();
+			$this->get_table_info();
 		} else {
-			$this->main->log->error("$tbl does not exists on database.");
+			ELog::error("$tbl does not exists on database.");
 		}
 		
 		$this->dbg = false;
@@ -49,7 +48,7 @@ class EData {
 	/*
 	 * Prints debug informations about a database table.
 	 */
-	public function debugInfo(){
+	public function print_debug_info(){
 		echo "tcount: ".$this->tcount."<br>";
 		echo "table: ".$this->table."<br>";
 		echo "fields: <br><pre>";
@@ -61,7 +60,7 @@ class EData {
 	 * Set this to true in order to make EData just simulate modifications
 	 * and echo the query. Use only for debug purposes.
 	 */
-	public function setNoQuery($b){
+	public function set_simulate($b){
 		$this->noquery = $b;
 	}
 	
@@ -77,33 +76,31 @@ class EData {
 	 * Results are also cached.
 	 * TODO: move cache to new ECacheVar.
 	 */
-	private function tableInfo(){
+	private function get_table_info(){
 		//if already cached load from cache else load with a describe AND cache
-		if(file_exists("gfx3/cache/".$this->table.".table.txt")){
-			$cache = file("gfx3/cache/".$this->table.".table.txt");
-			for($i=0; $i<count($cache); $i++){
-				$pattern = explode("|", $cache[$i]);
-				$this->fields[$i]["field"] = $pattern[0];
-				$this->fields[$i]["type"] = rtrim($pattern[1], "\n");
+		$cache_name = $this->table.".table";
+		if(ECacheVar::exists($cache_name)){
+			$cache = new ECacheVar($cache_name);
+			$data = $cache->get_array_assoc(); 
+			foreach($cache as $key => $value){
+				$fields[] = array("field" => $key,"type" => $value);
 			}
+			
 		} else {
-			$tbldata = $this->main->db->q("DESCRIBE ".$this->table);
-			$fieldsIndex = 0;
-			$stream = fopen("gfx3/cache/".$this->table.".table.txt",'a+');
-			while($row=mysql_fetch_array($tbldata)){
+			$cache = new ECacheVar($cache_name);
+			
+			$describe = $this->main->db->q("DESCRIBE ".$this->table);
+			
+			while($row=mysql_fetch_array($describe)){
 				$type = "null";
 				if(stristr($row['Type'], "varchar")){ $type = "varchar"; }
 				if(stristr($row['Type'], "int")){ $type = "int"; }
 				if(stristr($row['Type'], "text")){ $type = "text"; }
 				
-				$this->fields[$fieldsIndex]["field"] = $row['Field'];
-				$this->fields[$fieldsIndex]["type"] = $type;
-				$fieldsIndex += 1;
+				$this->fields[] = array("field" => $row['Field'],"type" => $type);
 				
-				fwrite($stream, $row['Field']."|".$type."\n");
-				
+				$cache->set($row['Field'],$type);
 			}
-			fclose($stream);
 		}
 	}
 	
@@ -117,35 +114,45 @@ class EData {
 	/*
 	 * Perform an automatic insert using data passed through GET/POST.
 	 * To use only if user has every access to the database table.
+	 * 
+	 * Note that is $allowed_arrays is empty, every field is considered valid.
+	 * TODO: fix this retrocompatibility crap ^^^
 	 */
-	public function insert($entries=array()) {
-		if(empty($entries)){
-			$index = 0;
+	public function insert($allowed_fields=array()) {
+		
+		//accepting eventual data as valid
+		if(!empty($allowed_fields)){
 			foreach($this->fields as $field){
-				if(isset($_REQUEST[$field['field']])){
-					$entries[$index] = array("field" => $field['field'], "value" => mysql_real_escape_string($_REQUEST[$field['field']]), "type" => $field['type']);
+				if($this->main->data->exists_post($field['field']) and in_array($field['field'],$allowed_fields)){
+					$entries[] = array("field" => $field['field'], "value" => $this->main->data->db_post($field['field']), "type" => $field['type']);
 				}
-				$index += 1;
+			}
+		} else {
+			foreach($this->fields as $field){
+				if($this->main->data->exists_post($field['field']) ){
+					$entries[] = array("field" => $field['field'], "value" => $this->main->data->db_post($field['field']), "type" => $field['type']);
+				}
 			}
 		}
+		
 		if(!empty($entries)){
-			$sql = "INSERT INTO ".$this->table." (";
-			foreach($entries as $entry){ $sql = $sql.$entry['field'].","; }
-			//fix this, delete comma at the end of $sql, complete query writing go on on other
+			$sql = "INSERT INTO ".$this->table." ("; //starting query
+			foreach($entries as $entry){ $sql = $sql.$entry['field'].","; } //insert in queries all the fields we're going to accept
 			$sql = rtrim($sql,",").") VALUES (";
-			foreach($entries as $entry){ 
+			foreach($entries as $entry){
+				//type check against type field found with describe
 				if($field['type']=="varchar" or $field['type']=="text"){
 					$sql = $sql."'".$entry['value']."',";
 				} else if($field['type']=="int") {
 					if(preg_match("/[^0-9]/", $entry['value'])){
-						//TODO: rewrite using ELog class
-						echo "<span style=\"font-family:Arial,sans-serif\">Warning! GFX3 <span style=\"color:red\">EData Object Error</span>: wrong data passed for <i><big>`".$field['field']."`</big></i> with type `INT`! freezing...</span><br>";
-						die();
+						ELog::error("EData Object Error: wrong data passed for <i><big>`".$field['field']."`</big></i> with type `INT`! freezing...");
 					}
 					$sql = $sql.$entry['value'].",";
 				}
 			}
-			$sql = rtrim($sql,",").")";
+			$sql = rtrim($sql,",").")"; // cleaning and ending query
+			
+			//outputting or executing
 			if($this->noquery==false){
 				$this->main->db->q($sql);
 			} else {
@@ -158,24 +165,26 @@ class EData {
 	 * Extrapolates data and map it into an associative array
 	 */
 	public function find($what=" * ", $where="") {
-		if($this->dbg==true){
-			echo "EXECUTING: SELECT $what FROM ".$this->table." $where <br>";
-		}
-		$r = $this->main->db->q("SELECT $what FROM ".$this->table." $where");
+		$q = "SELECT $what FROM ".$this->table." $where";
+		$r = $this->main->db->q($q);
 		while($arr = mysql_fetch_assoc($r)){
 			$result[] = $arr;
 		}
 		
-		if(isset($result)){
-			return $result;
+		if($this->noquery==false){
+			if(isset($result)){
+				return $result;
+			} else {
+				return false;
+			}
 		} else {
-			return false;
+			echo $q;
 		}
-		
 	}
 	
 	/*
 	 * Return result from a single query.
+	 * Example: COUNT(....) returns 56. This method returns 56.
 	 */
 	public function take($what=" * ", $where="") {
 		if(!empty($where)){ $where = " WHERE ".$where." "; }
@@ -204,6 +213,7 @@ class EData {
 	
 	/*
 	 * Performs counts on selected table.
+	 * TODO: maybe a little refactor using db->sq()?
 	 */
 	public function count($field="id", $where=""){
 		//optimized... only one query in a page!
@@ -249,24 +259,24 @@ class EData {
 	 * Automatic update method. Works basically like insert method.
 	 * Remember to specifies $where when used!
 	 */
-	public function update($where="", $entries=array()) {
+	public function update($where="", $allowed_fields=array()) {
 		//recupero le informazioni di where
 		if(!empty($where)){ $where = " WHERE ".$where." "; }
 		
 		//recupero le informazioni automaticamente
-		if(empty($entries)){
-			$index = 0;
+		if(empty($allowed_fields)){
 			foreach($this->fields as $field){
-				//skippo id perchè non si modificano mai
 				if($field['field']!="id"){
-					//se è settato via post o get un valore con il nome del campo
-					if(isset($_REQUEST[$field['field']])){
-						$entries[$index] = array("field" => $field['field'], "value" => mysql_real_escape_string($_REQUEST[$field['field']]), "type" => $field['type']);
+					if($this->main->data->exists_post($field['field']) and in_array($field['field'],$allowed_fields)){
+						$entries[] = array("field" => $field['field'], "value" => $this->main->data->db_post($field['field']), "type" => $field['type']);
 					}
-					$index += 1;
-				} else {
-					if($this->dbg==true){
-						echo "UPDATE di SKIPPING...<br>";
+				}
+			}
+		} else {
+			foreach($this->fields as $field){
+				if($field['field']!="id"){
+					if($this->main->data->exists_post($field['field']) ){
+						$entries[] = array("field" => $field['field'], "value" => $this->main->data->db_post($field['field']), "type" => $field['type']);
 					}
 				}
 			}
@@ -288,7 +298,12 @@ class EData {
 				}
 			}
 			$sql = rtrim($sql,",")." $where";
-			$this->main->db->q($sql);
+			
+			if($this->noquery==false){
+				$this->main->db->q($sql);
+			} else {
+				echo $sql;
+			}
 		}
 	}
 	

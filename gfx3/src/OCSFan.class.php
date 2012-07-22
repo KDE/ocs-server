@@ -16,8 +16,7 @@ class OCSFan {
 	private $main;
 	
 	public function __construct(){
-		global $main;
-		$this->main = $main;
+		$this->main = EMain::getRef();
 	}
 	
 	public function add($content){

@@ -39,8 +39,7 @@ class OCSContent{
 	 * Enabling main to be on a global context.
 	 */
 	public function __construct(){
-		global $main;
-		$this->main = $main;
+		$this->main = EMain::getRef();
 		$this->ocs_content = new EData("ocs_content");
 	}
 	
@@ -100,7 +99,7 @@ class OCSContent{
 		if(!is_dir("content/".$this->id)){
 			chdir("content");
 			if(!mkdir($this->id)){
-				$this->main->log->error("<b>mkdir</b> failed for some reason. Inspect.");
+				ELog::error("<b>mkdir</b> failed for some reason. Inspect.");
 				return false;
 			}
 			chdir("..");
@@ -109,7 +108,7 @@ class OCSContent{
 		//if upload file failed print error. Else add link to content object.
 		
 		if(!EFileSystem::move_uploaded_file_in($path)){
-			$this->main->log->error("<b>get_uploaded_file</b> failed! Path: ($path) ");
+			ELog::error("<b>get_uploaded_file</b> failed! Path: ($path) ");
 			return false;
 		} else {
 			$this->downloadlink1 = EPageProperties::get_current_website_url(); //retrieve website running server
@@ -126,7 +125,7 @@ class OCSContent{
 		if(!is_dir("content/".$this->id)){
 			chdir("content");
 			if(!mkdir($this->id)){
-				$this->main->log->error("<b>mkdir</b> failed for some reason. Inspect.");
+				ELog::error("<b>mkdir</b> failed for some reason. Inspect.");
 				return false;
 			}
 			chdir("..");
@@ -136,7 +135,7 @@ class OCSContent{
 		//if upload file failed print error. Else add link to content object.
 		//if(!EFileSystem::move_uploaded_file_in($path,$preview)){
 		if(!EFileSystem::move_uploaded_file_in($path,$preview)){
-			$this->main->log->error("<b>get_uploaded_file</b> failed! Path: ($path) ");
+			ELog::error("<b>get_uploaded_file</b> failed! Path: ($path) ");
 			return false;
 		} else {
 			switch($preview){
@@ -283,8 +282,8 @@ class OCSContent{
 		// assuring those are not evil data to be used as SQL injections
 		$this->main->db->safe($data);
 		//data validations
-		if(!isset($data['type'])){ $this->main->log->error("OCSContent: type not defined. Mandatory field."); } else { $this->type = $data['type']; }
-		if(!isset($data['name'])){ $this->main->log->error("OCSContent: name not defined. Mandatory field."); } else { $this->name = $data['name']; }
+		if(!isset($data['type'])){ ELog::error("OCSContent: type not defined. Mandatory field."); } else { $this->type = $data['type']; }
+		if(!isset($data['name'])){ ELog::error("OCSContent: name not defined. Mandatory field."); } else { $this->name = $data['name']; }
 		if(!isset($data['downloadname1'])){ $this->downloadname1 = ""; } else { $this->downloadname1 = $data['downloadname1']; }
 		if(!isset($data['downloadlink1'])){ $this->downloadlink1 = ""; } else { $this->downloadlink1 = $data['downloadlink1']; }
 		if(!isset($data['description'])){ $this->description = ""; } else { $this->description = $data['description']; }

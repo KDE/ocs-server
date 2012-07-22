@@ -13,19 +13,21 @@
 
 class EUser{
 	
+	public $debug = true;
+	
 	private $logged = false;
 	private $group = "anonymous";
 	private $pass;
 	private $nick;
 	private $mail;
 	private $id;
-	private $m;
-	private $db;
+	private $main;
 	
 	private $status;
 	
 	public function __construct(){
-		$this->m = &$GLOBALS['main'];
+		$this->main = EMain::getRef();
+		
 		session_start();
 		if(isset($_SESSION['nick'])){
 			$this->logged = true;
@@ -36,10 +38,9 @@ class EUser{
 			$this->pass = $_SESSION['pass'];
 		} else {
 			if(isset($_COOKIE['nick']) and isset($_COOKIE['pass'])){
-				$userdb = new EDatabase();
-				$r = $userdb->q("SELECT * FROM utenti WHERE nick='".$_COOKIE['nick']."' AND pass='".$_COOKIE['pass']."' LIMIT 1");
+				$r = $this->main->db->q("SELECT * FROM users WHERE nick='".$_COOKIE['nick']."' AND pass='".$_COOKIE['pass']."' LIMIT 1");
 				//error management in case user is not installed
-				if(!$r or $userdb->status()!=0){
+				if(!$r or $this->main->db->status()!=0){
 					//catching an error, setting status and doing nothing
 					$this->status = 1;
 				} else {
@@ -53,7 +54,6 @@ class EUser{
 						$this->mail = $_SESSION['mail'] = $row['mail'];
 						$this->pass = $_SESSION['pass'] = $row['pass'];
 					}
-					unset($userdb);
 				}
 			} else {
 				$this->logged = false;
@@ -63,14 +63,14 @@ class EUser{
 	
 	//get current userclass installation status
 	public function getStatus(){
-		$userdb = new EDatabase();
-		$r = $userdb->q("SELECT * FROM utenti LIMIT 1");
-		if(!$r or $userdb->status()!=0){
+		$r = $this->main->db->q("SELECT * FROM users LIMIT 1");
+		if(!$r or $this->main->db->status()!=0){
 			//catching an error, setting status
 			$this->status = 1;
+			ELog::warning("EUser is not logged!");
 		}
 	}
-		
+	
 	
 	public function status(){
 		return $this->status;
@@ -93,7 +93,7 @@ class EUser{
 	}
 	
 	public function login($nick, $pass){
-		$r = $this->m->db->q("SELECT * FROM utenti WHERE nick='$nick' AND pass='$pass' LIMIT 1");
+		$r = $this->m->db->q("SELECT * FROM users WHERE nick='$nick' AND pass='$pass' LIMIT 1");
 		while($row = mysql_fetch_array($r)){
 			setcookie("nick",$nick, time()+2419200);
 			setcookie("pass",$pass, time()+2419200);
@@ -117,7 +117,7 @@ class EUser{
 	public function gdeny($g){
 		$groups = explode("|", $this->group);
 		foreach($groups as $thGroup){
-			if($th==$g){
+			if($thGroup==$g){
 				$error = " <div style=\"border:1px black solid; margin:10px; padding:10px;\">
 				<h2>Qualcosa mi dice che non dovresti essere qui...</h2>
 				Non hai i permessi per vedere la pagina.<br>
@@ -133,7 +133,7 @@ class EUser{
 	}
 	
 	public function refresh(){
-		$r = $this->m->db->q("SELECT * FROM utenti WHERE nick='".$this->nick."' AND pass='".$this->pass."' LIMIT 1");
+		$r = $this->m->db->q("SELECT * FROM users WHERE nick='".$this->nick."' AND pass='".$this->pass."' LIMIT 1");
 		while($row = mysql_fetch_array($r)){
 			$this->nick = $_SESSION['nick'] = $row['nick'];
 			$this->id = $_SESSION['id'] = $row['id'];
@@ -163,7 +163,7 @@ class EUser{
 		return false;
 	}
 	
-	public function is_group($g){
+	public function belongs_to_group($g){
 		$groups = explode("|", $this->group);
 		foreach($groups as $thGroup){
 			if($thGroup==$g){
@@ -179,7 +179,7 @@ class EUser{
 	}
 	
 	public function register($nick, $pass, $group){
-		$this->m->db->q("INSERT INTO utenti (nick, pass, tgroup) VALUES ('$nick', '$pass', '$group')");
+		$this->m->db->q("INSERT INTO users (nick, pass, tgroup) VALUES ('$nick', '$pass', '$group')");
 	}
 	
 }

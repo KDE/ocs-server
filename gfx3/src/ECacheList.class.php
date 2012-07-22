@@ -21,63 +21,35 @@
  * data3
  * 
  */
+/*
+ * Just see if this can go to ECacheVar
+ */
 class ECacheList {
 	
 	private $main;
-	private $file = false;
+	private $prefix = "ecachelist_";
 	
 	public function __construct($file=false){
-		global $main;
-		$this->main = $main;
-		
-		$this->file = "gfx3/cache/$file.chl";
-		
-		if(!file_exists($this->file)){
-			$stream = fopen($this->file,'a+');
-			fclose($stream);
-		}
+		$this->main = EMain::getRef();
 	}
 	
-	public function exists($file){
-		if(file_exists("gfx3/cache/$file.chl")){
-			return true;
-		} else {
-			return false;
-		}
+	public function exists($key){
+		apc_exists($this->prefix.$key);
 	}
 	
-	public function get(){
-		if($this->file){
-			$content = file($this->file);
-			$return = array();
-			foreach($content as $line){
-					$return[] = rtrim($line, "\n");
-			}
-			return $return;
-		} elseif($this->main->dbg) {
-			$this->main->log->warning("trying to get cache data from non existent cache list!");
-		}
+	// get the value of a variable
+	public function get($var){
+		apc_fetch($foo);
 	}
 	
-	public function add($value){
-		if($this->file){
-			$content = file($this->file);
-			$stream = fopen($this->file,'a+');
-			fwrite($stream,$value."\n");
-			fclose($stream);
-		} elseif($this->main->dbg) {
-			$this->main->log->warning("trying to add cache data from non existent cache list!");
-		}
+	//set the value of a variable
+	public function set($var, $value){
+		apc_store($this->prefix.$var,$value);
 	}
 	
-	public function clear(){
-		if($this->file){
-			unlink($this->file);
-		} elseif($edbg->main->dgb) {
-			$elog->warning("trying to clear cache data from non existent cache list!");
-		}
+	public function del($var){
+		apc_delete($this->prefix.$var);
 	}
-	
 }
 
 ?>

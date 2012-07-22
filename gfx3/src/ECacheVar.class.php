@@ -12,114 +12,100 @@
  */ 
 
 /*
- * This class stores elements of a list in a text file for caching.
+ * This class stores elements of a list in an APC cache.
  * 
  * example:
  * 
- * var1=data1
- * var2=data2
- * var3=data3
+ * var1|data1
+ * var2|data2
+ * var3|data3
  * 
  */
 
 class ECacheVar {
 	
-	private $main;
-	private $file = false;
-	private $debug = false;
+	private $name = false;
 	
-	public function __construct($file=false){
-		global $main;
-		$this->main = $main;
+	private $main;
+	private $debug = true;
+	
+	public function __construct($name=false){
+		$this->main = EMain::getRef();
 		
-		$this->file = "gfx3/cache/$file.chv";
-		
-		if(!file_exists($this->file)){
-			$stream = fopen($this->file,'a+');
-			fclose($stream);
-		}
+		$this->name = "gfx3varcache_$name";
 	}
-	/* TODO: inspect.
-	public function exists($file){
-		if(file_exists($this->file)){
-			return true;
-		} else {
-			return false;
-		}
+	
+	public static function exists($name){
+		return apc_exists($name);
 	}
-	*/
+	
+	//returns the value associate to $var
 	public function get($var){
-		if($this->file){
-			$content = file($this->file);
-			foreach($content as $line){
-				$line = explode("=", $line);
-				if($line[0]==$var){
-					return rtrim($line[1], "\n");
-				}
+		$content = apc_fetch($this->name);
+		$content = explode("\n", $content);
+		foreach($content as $line){
+			$line = explode("|", $line);
+			if($line[0]==$var){
+				return rtrim($line[1], "\n");
 			}
-		} elseif($this->debug){
-			$this->main->log->warning("trying to get cache data from non existent cache var file!");
 		}
 	}
 	
 	public function set($var, $value){
-		if($this->file){
-			$content = file($this->file);
-			
-			foreach($content as $pos => $line){
-				$line = explode("=", $line);
-				if($line[0]==$var){
-					$at = $pos;
-				}
+		$content = apc_fetch($this->name);
+		$content = explode("\n", $content);
+		
+		$has_been_inserted = false;
+		$l = count($content);
+		for($i=0;$i<$l;$i++){
+			$line = explode("|", $content[$i]);
+			if($line[0]==$var){
+				$content[$i] = $var."|".$value;
+				$has_been_inserted = true;
 			}
-			
-			if(!isset($at)){
-				$stream = fopen($this->file, 'a+');
-				fwrite($stream, $var."=".$value."\n");
-				fclose($stream);
-			} else {
-				$lenght = count($content);
-				unlink($this->file);
-				$stream = fopen($this->file, 'a+');
-				for($i=0; $i<$lenght;$i++){
-					if($i==$at){
-						fwrite($stream, $var."=".$value."\n");
-					} else {
-						fwrite($stream, $content[$i]);
-					}
-				}
-				fclose($stream);
-			}
-		} elseif($this->debug){
-			$this->main->log->warning("trying to set cache data from non existent cache var file!");
 		}
+		
+		if(!$has_been_inserted){
+			$content[] = $var."|".$value;
+		}
+		
+		$str = implode("\n", $content);
+		apc_store($this->name, $str);
+	}
+	
+	public function get_array_assoc(){
+		$content = apc_fetch($this->name);
+		$content = explode("\n", $content);
+		
+		$assoc = array();
+		$l = count($content);
+		for($i=0;$i<$l;$i++){
+			if(!empty($content[$i])){
+				$line = explode("|", $content[$i]);
+				$assoc[$line[0]] = rtrim($line[1], "\n");
+			}
+		}
+		return $assoc;
 	}
 	
 	public function del($var){
-		if($this->file){
-			$content = file($this->file);
-			
-			foreach($content as $pos => $line){
-				$line = explode("=", $line);
-				if($line[0]==$var){
-					$at = $pos;
-				}
+		$content = apc_fetch($this->name);
+		$content = explode("\n", $content);
+		
+		$l = count($content);
+		for($i=0;$i<$l;$i++){
+			$line = explode("|", $content[$i]);
+			if($line[0]==$var){
+				unset($content[$i]);
 			}
-			
-			if(isset($at)){
-				$lenght = count($content);
-				unlink($this->file);
-				$stream = fopen($this->file, 'a+');
-				for($i=0; $i<$lenght;$i++){
-					if($i!=$at){
-						fwrite($stream, $content[$i]);
-					}
-				}
-				fclose($stream);
-			}
-		} elseif($this->debug){
-			$this->main->log->warning("trying to del cache data from non existent cache var file!");
 		}
+		
+		$str = implode("\n", $content);
+		apc_store($this->name, $str);
+	}
+	
+	public function print_raw_cache(){
+		echo apc_fetch($this->name);
 	}
 	
 }

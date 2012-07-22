@@ -41,8 +41,7 @@ class EDatabase {
 	 */
 	
 	public function __construct(){
-		global $main;
-		$this->main = $main;
+		$this->main = EMain::getRef();
 		//opening session
 		$db = mysql_connect($this->db_host, $this->db_user, $this->db_pass) or $this->status = 2;
 		$db_select = mysql_select_db($this->db_name, $db) or $this->status = 1;
@@ -93,12 +92,12 @@ class EDatabase {
 			if(empty($error)){ 
 				$ret = $ret;
 			} else {
-				$this->main->log->error($error."<br>Query string: ".$q);
+				ELog::error($error."<br>Query string: ".$q);
 			}
 			return $ret;
 		} else {
 			if($this->debug==false){
-				$this->main->log->error("sql session not already opened!");
+				ELog::error("sql session not already opened!");
 			}
 		}
 	}
@@ -116,7 +115,7 @@ class EDatabase {
 			return $number;
 		} else {
 			$error = " Query not executed due to mysql session not opened. Try to open one using open method. ";
-			$this->main->log->error($error);
+			ELog::error($error);
 		}
 	}
 	
@@ -168,7 +167,7 @@ class EDatabase {
 			$this->opened = false;
 		} else {
 			if($this->debug==false){
-				$this->main->log->error("TRT GFX ISSUE: unable to close mysql session because no one was already opened.");
+				ELog::error("TRT GFX ISSUE: unable to close mysql session because no one was already opened.");
 			}
 		}
 	}
