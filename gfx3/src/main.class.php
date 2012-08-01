@@ -16,103 +16,59 @@
  * Small module includer. Used to include php modules automatically.
  */
 
-class EIncluder{
+class ELoader{
 	
 	public static $prev_path;
 	public static $abs_path;
 	public static $source_path = "gfx3/src";
 	public static $cache_path = "gfx3/cache";
+	public static $config_path = "gfx3/config";
 	
 	//look for gfx3 installation path
 	public static function getLibInstallPath(){
 		if(is_dir("gfx3")){
-			EIncluder::$cache_path = getcwd()."/".EIncluder::$cache_path;
-			return getcwd()."/".EIncluder::$source_path;
+			ELoader::$cache_path = getcwd()."/".ELoader::$cache_path;
+			ELoader::$config_path = getcwd()."/".ELoader::$config_path;
+			return getcwd()."/".ELoader::$source_path;
 		} else {
 			chdir("..");
-			return EIncluder::getLibInstallPath();
+			return ELoader::getLibInstallPath();
 		}
 	}
 	
 	//load all modules dynamically
 	public static function loadAllModules(){
 		
-		EIncluder::$prev_path = getcwd();
-		EIncluder::$abs_path = EIncluder::getLibInstallPath();
-		chdir(EIncluder::$abs_path);
+		ELoader::$prev_path = getcwd();
+		ELoader::$abs_path = ELoader::getLibInstallPath();
+		chdir(ELoader::$abs_path);
 		foreach(glob("*.class.php") as $filename){
 			include_once($filename);
 		}
-		chdir(EIncluder::$prev_path);
+		chdir(ELoader::$prev_path);
 	}
-	
 }
+
+class EUnloader{
+	public function __destruct(){
+		EDatabase::unload();
+	}
+}
+
+$unloader = new EUnloader();
 
 //including all modules
-EIncluder::loadAllModules();
+ELoader::loadAllModules();
 
-/*
- * Main class used to handle all the other classes.
- * It automatically instantiates the needed objects
- * to run all the modes.
- */
+//loading current website configuration
+EConfig::load();
 
-class EMain {
-	
-	//time bench related var
-	private $time_start;
-	private $time_end;
-	public static $ref;
-	
-	//singletons
-	
-	/*
-	 * various settings to be chosen between database, user and template management.
-	 * it always starts microtime to do some debug on performance
-	 */
-	public function __construct($mode="standard", $template="main") {
-		//debug info only
-		$this->time_start = microtime(true);
-		
-		//standard global objects
-		EMain::$ref = $this;
-		
-		$this->dbg = true;
-		$this->db = new EDatabase(); //config in config.php TODO:fix
-		$this->data = new EHeaderDataParser();
-		
-	}
-	
-	public static function getRef(){
-		return EMain::$ref;
-	}
-	
-	/*
-	 * show the actual time needed to generate the page and do some benchmark
-	 */
-	public function extime(){
-		$time_end = microtime(true);
-		$time = $time_end - $this->time_start;
-		return $time;
-	}
-	
-	/*
-	 * ping function used to know if the object is really present in memory or not
-	 */
-	public function ping(){
-		echo "DEBUG: EMain() is alive!";
-		return true;
-	}
-	
-	/*
-	 * destructor
-	 */
-	public function __destruct(){
-		// actually unsetting the objects will cause the page to be generated
-		//
-		// nothing to be done here yet...
-	}
-	
-}
+//rewrite url if needed
+ERewriter::load();
 
+//loading get/post
+EHeaderDataParser::load();
+
+//loading database
+EDatabase::load();
 ?>

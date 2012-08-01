@@ -10,28 +10,19 @@
  *   http://opensource.org/licenses/mit-license.php
  */ 
 
-
-/*
- * This class stores elements of a list in a text file for caching.
- * 
- * example:
- * 
- * data1
- * data2
- * data3
- * 
- */
-/*
- * Just see if this can go to ECacheVar
- */
-class ECacheList {
+class ECacheFile {
 	
 	private $var;
-	private $prefix = "ecachelist_";
+	private $prefix = "ecachefile_";
 	
 	public function __construct($file=false){
-		if($this->exists($file)){
+		//if cache doesn't exists, load cache from text file
+		if(!$this->exists($this->prefix.$file)){
 			$this->var = $file;
+			if(file_exists($file)){
+				$content = file_get_contents($file);
+				$this->set($content);
+			}
 		}
 	}
 	
@@ -41,7 +32,7 @@ class ECacheList {
 	
 	// get the value of a variable
 	public function get(){
-		apc_fetch($this->prefix.$this->var);
+		return apc_fetch($this->prefix.$this->var);
 	}
 	
 	//set the value of a variable
@@ -53,5 +44,3 @@ class ECacheList {
 		apc_delete($this->prefix.$this->var);
 	}
 }
-
-?>

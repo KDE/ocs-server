@@ -71,16 +71,12 @@ class H01_OCS {
 	public $maxrequests; // per 15min from one IP
 	public $maxrequestsauthenticated;
 	
-	public $main;
-	
 	public function __construct(){
 		$this->whitelist = array('127.0.0.2');
 		$this->maxpersonsearchpage = 200;
 		$this->maxrequests = 1000; // per 15min from one IP
 		$this->maxrequestsauthenticated = 2000;
-		
-		//GFX
-		$this->main = new EMain();
+		OCSUser::load();
 	}
 	
 	/**
@@ -896,7 +892,7 @@ class H01_OCS {
 				$user=H01_USER::finduserbyapikey($authuser,CONFIG_USERDB);
 				if($user==false) {
 				*/
-					$user=$this->main->user->checklogin($authuser,$authpw);
+					$user=OCSUser::checklogin($authuser,$authpw);
 					if($user==false) {
 						if($forceuser){
 							header('WWW-Authenticate: Basic realm="your valid user account or api key"');
@@ -923,7 +919,7 @@ class H01_OCS {
 	 * this function should be call by a cronjob every 15 minutes
 	 */
 	public  function cleanuptrafficlimit() {
-		$this->main->db->q('truncate apitraffic');
+		EDatabase::q('truncate apitraffic');
 	}
 
 
@@ -935,11 +931,11 @@ class H01_OCS {
 	private  function checktrafficlimit($user) {
 		// BACKUP:
 		// $result = $db->insert('apitraffic','into apitraffic (ip,count) values ('.ip2long($_SERVER['REMOTE_ADDR']).',1) on duplicate key update count=count+1');
-		$this->main->db->q('insert into apitraffic (ip,count) values ('.ip2long($_SERVER['REMOTE_ADDR']).',1) on duplicate key update count=count+1');
+		EDatabase::q('insert into apitraffic (ip,count) values ('.ip2long($_SERVER['REMOTE_ADDR']).',1) on duplicate key update count=count+1');
 
-		$result = $this->main->db->q('select * from apitraffic where ip="'.ip2long($_SERVER['REMOTE_ADDR']).'"');
-		$numrows = $this->main->db->num_rows($result);
-		$DBcount = $this->main->db->fetch_assoc($result);
+		$result = EDatabase::q('select * from apitraffic where ip="'.ip2long($_SERVER['REMOTE_ADDR']).'"');
+		$numrows = EDatabase::num_rows($result);
+		$DBcount = EDatabase::fetch_assoc($result);
 
 		if($numrows==0) return(true);
 		if($user=='') $max=$this->maxrequests; else $max=$this->maxrequestsauthenticated;
@@ -1215,12 +1211,12 @@ class H01_OCS {
 		$this->checktrafficlimit($user);
 
 		if($login<>'' and $passwd<>'' and $firstname<>'' and $lastname<>'' and $email<>''){
-			if($this->main->user->isvalidpassword($passwd)){
-				if($this->main->user->isloginname($login)){
-					if(!$this->main->user->exists($login)){
-						if($this->main->user->countusersbyemail($email)==0) {
-							if($this->main->user->isvalidemail($email)) {
-								$this->main->user->register($login,$passwd,$firstname,$lastname,$email);
+			if(OCSUser::isvalidpassword($passwd)){
+				if(OCSUser::isloginname($login)){
+					if(!OCSUser::exists($login)){
+						if(OCSUser::countusersbyemail($email)==0) {
+							if(OCSUser::isvalidemail($email)) {
+								OCSUser::register($login,$passwd,$firstname,$lastname,$email);
 								echo($this->generatexml($format,'ok',100,''));
 							}else{
 								echo($this->generatexml($format,'failed',106,'email already taken'));
@@ -1256,7 +1252,7 @@ class H01_OCS {
 
 
 		if($login<>''){
-			$reallogin=$this->main->user->checklogin($login,$passwd); // $login,CONFIG_USERDB,$passwd,PERM_Login
+			$reallogin=OCSUser::checklogin($login,$passwd); // $login,CONFIG_USERDB,$passwd,PERM_Login
 			if($reallogin<>false){
 				$xml['person']['personid']=$reallogin;
 				echo($this->generatexml($format,'ok',100,'',$xml,'person','check',2)); 
@@ -1297,7 +1293,7 @@ class H01_OCS {
 		$this->checktrafficlimit($user);
 		if(empty($username)) $username=$user;
 
-		$DBuser=$this->main->user->get_user_info($username);
+		$DBuser=OCSUser::get_user_info($username);
 
 		if(is_null($DBuser)){
 			$txt=$this->generatexml($format,'failed',101,'person not found');
@@ -2459,7 +2455,7 @@ class H01_OCS {
 
 		if($con->load($content)){
 			if($con->is_preview_available($previewid)){
-				if($con->is_owned($this->main->user->id())) {
+				if($con->is_owned(OCSUser::id())) {
 					
 					$con->previewdelete($content,$preview);
 					
@@ -2492,13 +2488,13 @@ class H01_OCS {
 
 		if(($preview==1) or ($preview==2) or ($preview==3)) {
 
-			if($con->load($content) and $con->is_owned($this->main->user->id())) {
+			if($con->load($content) and $con->is_owned(OCSUser::id())) {
 
 				if(isset($_FILES['localfile']['name']) and isset($_FILES['localfile']['name']) and ($_FILES['localfile']['name']<>'' and $_FILES['localfile']['name']<>'none' and $_FILES['localfile']['tmp_name']<>'' and $_FILES['localfile']['tmp_name']<>'none')) {
 					if($con->previewadd($content,'localfile',$preview)){
 						$txt=$this->generatexml($format,'ok',100,'');
 					} else {
-						$this->main->log->error("previewadd crashed lol!");
+						ELog::error("previewadd crashed lol!");
 					}
 				} else {
 					$txt=$this->generatexml($format,'failed',101,'localfile not found');
@@ -2528,7 +2524,7 @@ class H01_OCS {
 		// fetch data
 		$con = new OCSContent();
 
-		if($con->load($content) and $con->is_owned($this->main->user->id())) {
+		if($con->load($content) and $con->is_owned(OCSUser::id())) {
 
 			$con->downloaddelete();
 			$txt=$this->generatexml($format,'ok',100,'');
@@ -2554,7 +2550,7 @@ class H01_OCS {
 		// fetch data
 		$con = new OCSContent();
 
-		if($con->load($content) and $con->is_owned($this->main->user->id())) {
+		if($con->load($content) and $con->is_owned(OCSUser::id())) {
 		
 			if(isset($_FILES['localfile']['name']) and isset($_FILES['localfile']['name']) and ($_FILES['localfile']['name']<>'' and $_FILES['localfile']['name']<>'none' and $_FILES['localfile']['tmp_name']<>'' and $_FILES['localfile']['tmp_name']<>'none')) {
 				if($con->downloadadd($content,'localfile')){
@@ -2585,7 +2581,7 @@ class H01_OCS {
 		$user=$this->checkpassword();
 		$this->checktrafficlimit($user);
 
-		if($this->main->user->is_logged()) {
+		if(OCSUser::is_logged()) {
 
 			$data=array();
 			$data['name']=$this->readdata('name','text');
@@ -2600,7 +2596,7 @@ class H01_OCS {
 			
 			if(($data['name']<>'') and ($data['type']<>0)) {
 				$content = new OCSContent();
-				$content->set_owner($this->main->user->id());
+				$content->set_owner(OCSUser::id());
 				$content->set_data($data);
 				$content->save();
 				
@@ -2634,7 +2630,7 @@ class H01_OCS {
 		
 		// fetch data
 		$con = new OCSContent();
-		if($con->load($content) and $this->main->user->is_logged() and $this->main->user->id() == $con->owner) {
+		if($con->load($content) and OCSUser::is_logged() and OCSUser::id() == $con->owner) {
 
 			$data=array();
 			if($this->readdata('name','text')<>'')		$data['name'] = $this->readdata('name','text');
@@ -2684,7 +2680,7 @@ class H01_OCS {
 		if(!$con->load($content)){
 			$txt=$this->generatexml($format,'failed',101,'no permission to change content');
 		} else {
-			if(!$con->is_owned($this->main->user->id())){
+			if(!$con->is_owned(OCSUser::id())){
 				$txt=$this->generatexml($format,'failed',101,'no permission to change content');
 			} else {
 				$con->delete();
@@ -3071,7 +3067,7 @@ class H01_OCS {
 		$data['content'] = strip_tags(addslashes($content));
 		$data['content2'] = strip_tags(addslashes($content2));
 		$data['type'] = strip_tags(addslashes($type));
-		$data['owner'] = $this->main->user->id();
+		$data['owner'] = OCSUser::id();
 
 	 //types
 	 // just 1 is accepted

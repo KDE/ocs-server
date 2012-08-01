@@ -17,19 +17,18 @@ include_once("EData.class.php");
 class EDatabase {
 	
     //server config
-	private $db_name = "prova";
-	private $db_host = "localhost";
-	private $db_user = "root";
-	private $db_pass = "asd";
+	private static $db_name;
+	private static $db_host;
+	private static $db_user;
+	private static $db_pass;
 	
-	private $db_link = 0;
-	private $main;
+	private static $db_link = 0;
 	
-	private $opened = false;
-	private $debug = true;
+	private static $opened = false;
+	private static $debug = true;
 	
-	private $queries = 0;
-	private $status = 0;
+	private static $queries = 0;
+	private static $status = 0;
 	
 	/**
 	 * set temporary database information for the database class
@@ -40,34 +39,41 @@ class EDatabase {
 	 * @return null
 	 */
 	
-	public function __construct(){
-		$this->main = EMain::getRef();
+	public static function load(){
+		
+		//loading vars from config file
+		EDatabase::$db_name = EConfig::$data["database"]["name"];
+		EDatabase::$db_host = EConfig::$data["database"]["host"];
+		EDatabase::$db_user = EConfig::$data["database"]["user"];
+		EDatabase::$db_pass = EConfig::$data["database"]["password"];
+		
 		//opening session
-		$db = mysql_connect($this->db_host, $this->db_user, $this->db_pass) or $this->status = 2;
-		$db_select = mysql_select_db($this->db_name, $db) or $this->status = 1;
-		$this->db_link = $db;
-		if($this->status==0){
-			$this->opened = true;
+		$db = mysql_connect(EDatabase::$db_host, EDatabase::$db_user, EDatabase::$db_pass) or EDatabase::$status = 2;
+		$db_select = mysql_select_db(EDatabase::$db_name, $db) or EDatabase::$status = 1;
+		EDatabase::$db_link = $db;
+		if(EDatabase::$status==0){
+			EDatabase::$opened = true;
 		}
+		
 	}
 	
-	public function set_db_info($name,$host,$user,$pass){
-		$this->db_name = $name;
-		$this->db_host = $host;
-		$this->db_user = $user;
-		$this->db_pass = $pass;
+	public static function set_db_info($name,$host,$user,$pass){
+		EDatabase::$db_name = $name;
+		EDatabase::$db_host = $host;
+		EDatabase::$db_user = $user;
+		EDatabase::$db_pass = $pass;
 	}
 	
-	public function get_db_name(){ return $this->db_name; }
-	public function get_db_host(){ return $this->db_host; }
-	public function get_db_user(){ return $this->db_user; }
-	public function get_db_pass(){ return $this->db_pass; }
+	public static function get_db_name(){ return EDatabase::$db_name; }
+	public static function get_db_host(){ return EDatabase::$db_host; }
+	public static function get_db_user(){ return EDatabase::$db_user; }
+	public static function get_db_pass(){ return EDatabase::$db_pass; }
 	
 	/*
 	 * This function is to assure that string or string array 
 	 * are safe to be executed as parts of SQL queries
 	 */
-	public function safe($s){
+	public static function safe($s){
 		if(is_array($s)){
 			foreach($s as $key => $value){
 				$s[$key] = mysql_real_escape_string($s[$key]);
@@ -84,10 +90,10 @@ class EDatabase {
 	 * @param string $q
 	 * @return null
 	 */
-	public function q($q){
-		if($this->opened==true){
-			$this->queries += 1;
-			$ret = mysql_query($q, $this->db_link);
+	public static function q($q){
+		if(EDatabase::$opened==true){
+			EDatabase::$queries += 1;
+			$ret = mysql_query($q, EDatabase::$db_link);
 			$error = mysql_error();
 			if(empty($error)){ 
 				$ret = $ret;
@@ -96,7 +102,7 @@ class EDatabase {
 			}
 			return $ret;
 		} else {
-			if($this->debug==false){
+			if(EDatabase::$debug==false){
 				ELog::error("sql session not already opened!");
 			}
 		}
@@ -105,10 +111,10 @@ class EDatabase {
 	/*TODO:	What is this method supposed to do?
 	 *		Inspect.
 	 */
-	public function sq($q){
-		if($this->opened==true){
-			$this->queries += 1;
-			$ret = mysql_query($q, $this->db_link); //FIXME: error management
+	public static function sq($q){
+		if(EDatabase::$opened==true){
+			EDatabase::$queries += 1;
+			$ret = mysql_query($q, EDatabase::$db_link); //FIXME: error management
 			while($row=mysql_fetch_array($ret)){
 				$number = $row[0];
 			}
@@ -119,8 +125,8 @@ class EDatabase {
 		}
 	}
 	
-	public function table_exists($table){
-		$r = $this->q("SHOW TABLES LIKE '$table'");
+	public static function table_exists($table){
+		$r = EDatabase::q("SHOW TABLES LIKE '$table'");
 		$row = mysql_fetch_row($r);
 		if(empty($row)){
 			return false;
@@ -129,44 +135,39 @@ class EDatabase {
 		}
 	}
 	
-	public function num_rows($result){
+	public static function num_rows($result){
 		return mysql_num_rows($result);
 	}
 	
-	public function fetch_assoc($result){
+	public static function fetch_assoc($result){
 		return mysql_fetch_assoc($result);
 	}
 	
-	public function status(){
-		return $this->status;
+	public static function status(){
+		return EDatabase::$status;
 	}
 	
-	//function not related to databases but useful when needed to test if the object exists
-	public function is_alive(){
-		return true;
-	}
-	
-	public function last_insert_id(){
-		$r = $this->sq("SELECT LAST_INSERT_ID()");
+	public static function last_insert_id(){
+		$r = EDatabase::sq("SELECT LAST_INSERT_ID()");
 		return $r;
 	}
 	
-	public function all_queries(){
-		return $this->queries;
+	public static function all_queries(){
+		return EDatabase::$queries;
 	}
 	
-	public function ping(){
+	public static function ping(){
 		echo "EDatabase::ping() called!";
 	}
 	
-	public function __destruct(){
-		if($this->opened==true){
+	public static function unload(){
+		if(EDatabase::$opened==true){
 			// TODO: strange behaviour under root. Inspect.
-			// mysql_close($this->db_link);
-			$this->db_link = 0;
-			$this->opened = false;
+			// mysql_close(EDatabase::db_link);
+			EDatabase::$db_link = 0;
+			EDatabase::$opened = false;
 		} else {
-			if($this->debug==false){
+			if(EDatabase::$debug==false){
 				ELog::error("TRT GFX ISSUE: unable to close mysql session because no one was already opened.");
 			}
 		}

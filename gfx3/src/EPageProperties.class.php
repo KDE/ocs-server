@@ -20,6 +20,11 @@ class EPageProperties {
 	 * Returns the exact website in which is running this system.
 	 * For example: http://www.gfx3.org
 	 */
+	
+	public static function get_page_name(){
+		return substr($_SERVER["SCRIPT_NAME"],strrpos($_SERVER["SCRIPT_NAME"],"/")+1);
+	}
+	
 	public static function get_current_website_url(){
 		$pageURL = 'http';
 		//TODO: implements https?

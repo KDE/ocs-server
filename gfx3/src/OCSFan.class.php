@@ -13,26 +13,24 @@
 
 class OCSFan {
 	
-	private $main;
-	
 	public function __construct(){
-		$this->main = EMain::getRef();
+		//
 	}
 	
 	public function add($content){
-		$person = $this->main->user->id();
+		$person = OCSUser::id();
 		$this->main->db->q("INSERT INTO ocs_fan (person,content) VALUES ($person,$content)");
 	}
 	
 	public function remove($content){
-		$person = $this->main->user->id();
+		$person = OCSUser::id();
 		$this->main->db->q("DELETE FROM ocs_fan WHERE person=$person and content=$content");
 	}
 	
 	public function isfan($content){
 		$fant = new EData("ocs_fan");
 		
-		$person = $this->main->user->id();
+		$person = OCSUser::id();
 		$r = $fant->find("*", "where person=$person and content=$content");
 		if(!empty($r)){
 			return true;

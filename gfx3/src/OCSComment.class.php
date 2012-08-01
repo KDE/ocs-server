@@ -28,14 +28,12 @@ class OCSComment{
 	
 	private $ocs_comment;
 	private $data;
-	private $main;
 	
 	
 	/*
 	 * Enabling main to be on a global context.
 	 */
 	public function __construct(){
-		$this->main = EMain::getRef();
 		$this->ocs_comment = new EData("ocs_comment");
 	}
 	
@@ -101,8 +99,8 @@ class OCSComment{
 		//TODO: implement unique name.
 		
 		//saving
-		$this->main->db->q("INSERT INTO ocs_comment (type,owner,content,content2,parent,votes,score,subject,message) VALUES ('".$this->type."',".$this->owner.",".$this->content.",'".$this->content2."','".$this->parent."','".$this->votes."','".$this->score."','".$this->subject."','".$this->message."')");
-		$this->id = $id = $this->main->db->last_insert_id();
+		EDatabase::q("INSERT INTO ocs_comment (type,owner,content,content2,parent,votes,score,subject,message) VALUES ('".$this->type."',".$this->owner.",".$this->content.",'".$this->content2."','".$this->parent."','".$this->votes."','".$this->score."','".$this->subject."','".$this->message."')");
+		$this->id = $id = EDatabase::last_insert_id();
 		return $id;
 	}
 	
@@ -118,7 +116,7 @@ class OCSComment{
 	 */
 	public function set_data($data){
 		// assuring those are not evil data to be used as SQL injections
-		$this->main->db->safe($data);
+		EDatabase::safe($data);
 		//data validations
 		if(!isset($data['type'])){ $this->type = 1; } else { $this->type = $data['type']; }
 		if(!isset($data['owner'])){ $this->owner = 0; /* anonymous */ } else { $this->owner = $data['owner']; }
@@ -150,7 +148,7 @@ class OCSComment{
 		$this->votes = $newvotes;
 		
 		//updating db
-		$this->main->db->q("UPDATE ocs_comment SET score=".$this->score.", votes=".$this->votes." WHERE id=".$this->id." LIMIT 1");
+		EDatabase::q("UPDATE ocs_comment SET score=".$this->score.", votes=".$this->votes." WHERE id=".$this->id." LIMIT 1");
 		
 	}
 	

@@ -33,6 +33,22 @@ class EFileSystem{
 	}
 	
 	/*
+	 * Function that return file name in string format if exists,
+	 * return false in the opposite case.
+	 * 
+	 * It actually erases every extension found.
+	 * filename.inc.conf --> filename
+	 */
+	public static function get_file_name($nome){
+		$chunks = explode(".", $nome);
+		if (isset($chunks[0]) == FALSE){
+			return false;
+		} else {
+			return $chunks[0];
+		}
+	}
+	
+	/*
 	 * Function that renames a file, mantaining the correct extension
 	 */
 	public static function rename_file($from,$to){

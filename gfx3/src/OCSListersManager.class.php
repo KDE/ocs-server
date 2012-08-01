@@ -16,8 +16,6 @@ class OCSLister{
 	//variables
 	private $table;
 	private $datatable;
-	//global instance
-	public $main;
 	
 	
 	public function __construct($data=""){
@@ -28,8 +26,6 @@ class OCSLister{
 		} else {
 			$this->set_table_search($this->table);
 		}
-		//setting main to global
-		$this->main = EMain::getRef();
 	}
 	
 	/*
@@ -37,9 +33,9 @@ class OCSLister{
 	 */
 	public function set_table_search($tbl){
 		//assuring $data is safe to be executed on a db query
-		$this->main->db->safe($data);
+		EDatabase::safe($data);
 		//setting internal attribute
-		if($this->main->db->table_exists($tbl)){
+		if(EDatabase::table_exists($tbl)){
 			$this->table = $tbl;
 			$this->datatable = new EData($this->table);
 		} else {
@@ -54,8 +50,6 @@ class OCSContentLister extends OCSLister {
 	//variables
 	private $table;
 	private $datatable;
-	//global instance
-	public $main;
 	
 	//inheriting constructor
 	public function __construct($data="ocs_content"){
@@ -66,9 +60,6 @@ class OCSContentLister extends OCSLister {
 		} else {
 			$this->set_table_search($this->table);
 		}
-		//setting main to global
-		global $main;
-		$this->main = $main;
 	}
 	
 	public function ocs_content_list($searchstr,$sortmode="new",$page=1,$pagesize=10,$user=""){
@@ -111,8 +102,6 @@ class OCSCommentLister extends OCSLister {
 	//variables
 	private $table;
 	private $datatable;
-	//global instance
-	public $main;
 	
 	//inheriting constructor
 	public function __construct($data="ocs_comment"){
@@ -123,9 +112,6 @@ class OCSCommentLister extends OCSLister {
 		} else {
 			$this->set_table_search($this->table);
 		}
-		//setting main to global
-		global $main;
-		$this->main = $main;
 	}
 	
 	public function ocs_comment_list($type,$content,$content2,$page=1,$pagesize=10){
@@ -137,7 +123,7 @@ class OCSCommentLister extends OCSLister {
 		$where = "ORDER BY c.id ASC LIMIT $page,$pagesize";
 		
 		$q = "SELECT * FROM ocs_comment AS c JOIN ocs_person AS p on c.owner = p.id WHERE c.content = $content $where";
-		$r = $this->main->db->q($q);
+		$r = EDatabase::q($q);
 		
 		$result = array();
 		while($row=mysql_fetch_assoc($r)){
@@ -172,9 +158,6 @@ class OCSFanLister extends OCSLister {
 		} else {
 			$this->set_table_search($this->table);
 		}
-		//setting main to global
-		global $main;
-		$this->main = $main;
 	}
 	
 	public function ocs_fan_list($content,$page=1,$pagesize=10){
@@ -187,7 +170,7 @@ class OCSFanLister extends OCSLister {
 		$person = $this->main->user->id();
 		
 		$q = "SELECT * FROM ocs_fan AS f JOIN ocs_person AS p on f.person = p.id WHERE f.person=$person LIMIT $page,$pagesize";
-		$r = $this->main->db->q($q);
+		$r = EDatabase::q($q);
 		
 		$result = array();
 		while($row=mysql_fetch_assoc($r)){

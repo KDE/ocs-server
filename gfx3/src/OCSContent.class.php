@@ -32,14 +32,12 @@ class OCSContent{
 	
 	private $ocs_content;
 	private $data;
-	private $main;
 	
 	
 	/*
 	 * Enabling main to be on a global context.
 	 */
 	public function __construct(){
-		$this->main = EMain::getRef();
 		$this->ocs_content = new EData("ocs_content");
 	}
 	
@@ -88,7 +86,7 @@ class OCSContent{
 		$this->votes = $newvotes;
 		
 		//updating db
-		$this->main->db->q("UPDATE ocs_content SET score=".$this->score.", votes=".$this->votes." WHERE id=".$this->id." LIMIT 1");
+		EDatabase::q("UPDATE ocs_content SET score=".$this->score.", votes=".$this->votes." WHERE id=".$this->id." LIMIT 1");
 		
 	}
 	
@@ -113,7 +111,7 @@ class OCSContent{
 		} else {
 			$this->downloadlink1 = EPageProperties::get_current_website_url(); //retrieve website running server
 			$this->downloadlink1 .= "/content/".$this->id."/".EFileSystem::get_uploaded_file_name();
-			$this->main->db->q("UPDATE ocs_content SET downloadlink1='".$this->downloadlink1."' WHERE id=".$this->id." LIMIT 1");
+			EDatabase::q("UPDATE ocs_content SET downloadlink1='".$this->downloadlink1."' WHERE id=".$this->id." LIMIT 1");
 			return true;
 		}
 	}
@@ -155,7 +153,7 @@ class OCSContent{
 					$previewlink = $this->preview3;
 					break;
 			}
-			$this->main->db->q("UPDATE ocs_content SET preview".$preview."='".$previewlink."' WHERE id=".$this->id." LIMIT 1");
+			EDatabase::q("UPDATE ocs_content SET preview".$preview."='".$previewlink."' WHERE id=".$this->id." LIMIT 1");
 			return true;
 		}
 	}
@@ -172,7 +170,7 @@ class OCSContent{
 		if(file_exists($path)){
 			unlink($path);
 			$this->downloadlink1 = "";
-			$this->main->db->q("UPDATE ocs_content SET downloadlink1='' WHERE id=".$this->id." LIMIT 1");
+			EDatabase::q("UPDATE ocs_content SET downloadlink1='' WHERE id=".$this->id." LIMIT 1");
 		}
 	}
 	
@@ -201,7 +199,7 @@ class OCSContent{
 		//if upload file failed print error. Else add link to content object.
 		if(file_exists($path)){
 			unlink($path);
-			$this->main->db->q("UPDATE ocs_content SET preview$preview='' WHERE id=".$this->id." LIMIT 1");
+			EDatabase::q("UPDATE ocs_content SET preview$preview='' WHERE id=".$this->id." LIMIT 1");
 		}
 	}
 	
@@ -251,9 +249,9 @@ class OCSContent{
 		//TODO: implement unique name.
 		
 		//saving
-		$this->main->db->q("INSERT INTO ocs_content (name,type,owner,downloadname1,downloadlink1,description,summary,version,changelog,preview1,preview2,preview3) VALUES ('".$this->name."',".$this->type.",".$this->owner.",'".$this->downloadname1."','".$this->downloadlink1."','".$this->description."','".$this->summary."','".$this->version."','".$this->changelog."','".$this->preview1."','".$this->preview2."','".$this->preview3."')");
+		EDatabase::q("INSERT INTO ocs_content (name,type,owner,downloadname1,downloadlink1,description,summary,version,changelog,preview1,preview2,preview3) VALUES ('".$this->name."',".$this->type.",".$this->owner.",'".$this->downloadname1."','".$this->downloadlink1."','".$this->description."','".$this->summary."','".$this->version."','".$this->changelog."','".$this->preview1."','".$this->preview2."','".$this->preview3."')");
 		//updating new id, got from database
-		$r = $this->main->db->q("SELECT id FROM ocs_content where name='".$this->name."' and owner=".$this->owner." LIMIT 1");
+		$r = EDatabase::q("SELECT id FROM ocs_content where name='".$this->name."' and owner=".$this->owner." LIMIT 1");
 		$this->id = $r[0]["id"];
 	}
 	
@@ -265,7 +263,7 @@ class OCSContent{
 	}
 	
 	public function delete(){
-		$this->main->db->q("DELETE FROM ocs_content WHERE id=".$this->id." LIMIT 1");
+		EDatabase::q("DELETE FROM ocs_content WHERE id=".$this->id." LIMIT 1");
 	}
 	
 	/*
@@ -280,7 +278,7 @@ class OCSContent{
 	 */
 	public function set_data($data){
 		// assuring those are not evil data to be used as SQL injections
-		$this->main->db->safe($data);
+		EDatabase::safe($data);
 		//data validations
 		if(!isset($data['type'])){ ELog::error("OCSContent: type not defined. Mandatory field."); } else { $this->type = $data['type']; }
 		if(!isset($data['name'])){ ELog::error("OCSContent: name not defined. Mandatory field."); } else { $this->name = $data['name']; }

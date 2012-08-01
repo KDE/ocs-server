@@ -19,43 +19,40 @@
 
 class EHeaderDataParser {
 	
-	private $gets;
-	private $posts;
-	private $quotes;
-	
-	private $main;
+	private static $gets;
+	private static $posts;
+	private static $quotes;
 	
 	/*
 	 * Store all the keys  of gets and posts in arrays.
 	 */
-	public function __construct(){
-		$this->main = EMain::getRef();
-		$this->quotes = get_magic_quotes_gpc();
-		$this->gets = $_GET;
-		$this->posts = $_POST;
+	public static function load(){
+		EHeaderDataParser::$quotes = get_magic_quotes_gpc();
+		EHeaderDataParser::$gets = $_GET;
+		EHeaderDataParser::$posts = $_POST;
 	}
 	
 	// Generates safe data for using in databases.
-	public function safeAll(){
-		if(!$this->quotes){
-			foreach ($this->gets as $key => $value){
-				$this->gets[$key] = $this->main->db->safe($value);
+	public static function safeAll(){
+		if(!EHeaderDataParser::$quotes){
+			foreach (EHeaderDataParser::$gets as $key => $value){
+				EHeaderDataParser::$gets[$key] = EHeaderDataParser::$main->db->safe($value);
 			}
 			foreach ($this->posts as $key => $value){
-				$this->posts[$key] = $this->main->db->safe($value);
+				$this->posts[$key] = EDatabase::safe($value);
 			}
 		}
 	}
 	
-	public function exists_post($key){
-		if(isset($this->posts[$key])){
+	public static function exists_post($key){
+		if(isset(EHeaderDataParser::$posts[$key])){
 			return true;
 		} else {
 			return false;
 		}
 	}
 	
-	public function exists_get($key){
+	public static function exists_get($key){
 		if(isset($this->gets[$key])){
 			return true;
 		} else {
@@ -63,7 +60,7 @@ class EHeaderDataParser {
 		}
 	}
 	
-	public function out_get($key){
+	public static function out_get($key){
 		if($this->quotes){
 			return stripslashes($this->gets[$key]);
 		} else {
@@ -71,7 +68,7 @@ class EHeaderDataParser {
 		}
 	}
 	
-	public function out_post($key){
+	public static function out_post($key){
 		if($this->quotes){
 			return stripslashes($this->posts[$key]);
 		} else {
@@ -80,21 +77,21 @@ class EHeaderDataParser {
 	}
 	
 	// Use instead of accessing $_GET
-	public function db_get($key){
+	public static function db_get($key){
 		if($this->quotes){
 			return $this->gets[$key];
 		} else {
-			return $this->main->db->safe($this->gets[$key]);
+			return EDatabase::safe($this->gets[$key]);
 		}
 	}
 	
 	
 	// Use instead of accessing $_POST
-	public function db_post($key){
+	public static function db_post($key){
 		if($this->quotes){
 			return $this->posts[$key];
 		} else {
-			return $this->main->db->safe($this->posts[$key]);
+			return EDatabase::safe($this->posts[$key]);
 		}
 	}
 }

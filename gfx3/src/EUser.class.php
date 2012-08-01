@@ -21,12 +21,10 @@ class EUser{
 	private $nick;
 	private $mail;
 	private $id;
-	private $main;
 	
 	private $status;
 	
 	public function __construct(){
-		$this->main = EMain::getRef();
 		
 		session_start();
 		if(isset($_SESSION['nick'])){
@@ -38,9 +36,9 @@ class EUser{
 			$this->pass = $_SESSION['pass'];
 		} else {
 			if(isset($_COOKIE['nick']) and isset($_COOKIE['pass'])){
-				$r = $this->main->db->q("SELECT * FROM users WHERE nick='".$_COOKIE['nick']."' AND pass='".$_COOKIE['pass']."' LIMIT 1");
+				$r = EDatabase::q("SELECT * FROM users WHERE nick='".$_COOKIE['nick']."' AND pass='".$_COOKIE['pass']."' LIMIT 1");
 				//error management in case user is not installed
-				if(!$r or $this->main->db->status()!=0){
+				if(!$r or EDatabase::status()!=0){
 					//catching an error, setting status and doing nothing
 					$this->status = 1;
 				} else {
@@ -63,8 +61,8 @@ class EUser{
 	
 	//get current userclass installation status
 	public function getStatus(){
-		$r = $this->main->db->q("SELECT * FROM users LIMIT 1");
-		if(!$r or $this->main->db->status()!=0){
+		$r = EDatabase::q("SELECT * FROM users LIMIT 1");
+		if(!$r or EDatabase::status()!=0){
 			//catching an error, setting status
 			$this->status = 1;
 			ELog::warning("EUser is not logged!");
@@ -93,7 +91,7 @@ class EUser{
 	}
 	
 	public function login($nick, $pass){
-		$r = $this->m->db->q("SELECT * FROM users WHERE nick='$nick' AND pass='$pass' LIMIT 1");
+		$r = EDatabase::q("SELECT * FROM users WHERE nick='$nick' AND pass='$pass' LIMIT 1");
 		while($row = mysql_fetch_array($r)){
 			setcookie("nick",$nick, time()+2419200);
 			setcookie("pass",$pass, time()+2419200);
@@ -118,11 +116,7 @@ class EUser{
 		$groups = explode("|", $this->group);
 		foreach($groups as $thGroup){
 			if($thGroup==$g){
-				$error = " <div style=\"border:1px black solid; margin:10px; padding:10px;\">
-				<h2>Qualcosa mi dice che non dovresti essere qui...</h2>
-				Non hai i permessi per vedere la pagina.<br>
-				Se pensi che dovresti poterla vedere manda una mail all'amministratore spiegando perche'.<br><br>
-				<center><small><i>TRT GFX INSIDE! vMyLasyMile</i></small></center></div>";
+				ELog::error("You're not allowed to be here.");
 				die($error);
 			}
 		}
@@ -133,7 +127,7 @@ class EUser{
 	}
 	
 	public function refresh(){
-		$r = $this->m->db->q("SELECT * FROM users WHERE nick='".$this->nick."' AND pass='".$this->pass."' LIMIT 1");
+		$r = EDatabase::q("SELECT * FROM users WHERE nick='".$this->nick."' AND pass='".$this->pass."' LIMIT 1");
 		while($row = mysql_fetch_array($r)){
 			$this->nick = $_SESSION['nick'] = $row['nick'];
 			$this->id = $_SESSION['id'] = $row['id'];
@@ -154,12 +148,7 @@ class EUser{
 				}
 			}
 		}
-		$error = " <div style=\"border:1px black solid; margin:10px; padding:10px;\">
-			<h2>Qualcosa mi dice che non dovresti essere qui...</h2>
-			Non hai i permessi per vedere la pagina.<br>
-			Se pensi che dovresti poterla vedere manda una mail all'amministratore spiegando perche'.<br><br>
-			<center><small><i>TRT GFX INSIDE! vMyLastMile | admin: <a href=\"mailto:happy.snizzo@gmail.com\">happy.snizzo@gmail.com</a></i></small></center></div>";
-		die($error);
+		ELog::error("You're not allowed to be here.");
 		return false;
 	}
 	
@@ -179,7 +168,7 @@ class EUser{
 	}
 	
 	public function register($nick, $pass, $group){
-		$this->m->db->q("INSERT INTO users (nick, pass, tgroup) VALUES ('$nick', '$pass', '$group')");
+		EDatabase::q("INSERT INTO users (nick, pass, tgroup) VALUES ('$nick', '$pass', '$group')");
 	}
 	
 }

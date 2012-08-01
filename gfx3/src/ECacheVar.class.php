@@ -26,11 +26,9 @@ class ECacheVar {
 	
 	private $name = false;
 	
-	private $main;
 	private $debug = true;
 	
 	public function __construct($name=false){
-		$this->main = EMain::getRef();
 		
 		$this->name = "gfx3varcache_$name";
 	}

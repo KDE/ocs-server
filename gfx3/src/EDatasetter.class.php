@@ -7,20 +7,10 @@
 
 class EDataSetter{
 	
-	private $table_list = array();
+	private static $table_list = array();
 	
-	public function __construct(){
+	public static function load(){
 		//
-	}
-	
-	public function table_list(){
-		$tlbs = new ECache("tables_list");
-		if(!$tbls->exists()){
-			$q = $edb->q('show tables');
-			while($row=mysql_fetch_array($q)){
-				
-			}
-		}
 	}
 	
 }

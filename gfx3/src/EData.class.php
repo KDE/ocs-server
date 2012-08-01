@@ -28,13 +28,9 @@ class EData {
 	private $fields = array();
 	private $noquery = false;
 	
-	private $main;
-	
 	public function __construct($tbl){
-		$this->main = EMain::getRef();
-		
 		$this->table = $tbl;
-		if($this->main->db->table_exists($this->table)){
+		if(EDatabase::table_exists($this->table)){
 			$this->get_table_info();
 		} else {
 			ELog::error("$tbl does not exists on database.");
@@ -89,7 +85,7 @@ class EData {
 		} else {
 			$cache = new ECacheVar($cache_name);
 			
-			$describe = $this->main->db->q("DESCRIBE ".$this->table);
+			$describe = EDatabase::q("DESCRIBE ".$this->table);
 			
 			while($row=mysql_fetch_array($describe)){
 				$type = "null";
@@ -123,14 +119,14 @@ class EData {
 		//accepting eventual data as valid
 		if(!empty($allowed_fields)){
 			foreach($this->fields as $field){
-				if($this->main->data->exists_post($field['field']) and in_array($field['field'],$allowed_fields)){
-					$entries[] = array("field" => $field['field'], "value" => $this->main->data->db_post($field['field']), "type" => $field['type']);
+				if(EHeaderDataParser::exists_post($field['field']) and in_array($field['field'],$allowed_fields)){
+					$entries[] = array("field" => $field['field'], "value" => EHeaderDataParser::db_post($field['field']), "type" => $field['type']);
 				}
 			}
 		} else {
 			foreach($this->fields as $field){
-				if($this->main->data->exists_post($field['field']) ){
-					$entries[] = array("field" => $field['field'], "value" => $this->main->data->db_post($field['field']), "type" => $field['type']);
+				if(EHeaderDataParser::exists_post($field['field']) ){
+					$entries[] = array("field" => $field['field'], "value" => EHeaderDataParser::db_post($field['field']), "type" => $field['type']);
 				}
 			}
 		}
@@ -154,7 +150,7 @@ class EData {
 			
 			//outputting or executing
 			if($this->noquery==false){
-				$this->main->db->q($sql);
+				EDatabase::q($sql);
 			} else {
 				echo $sql;
 			}
@@ -166,7 +162,7 @@ class EData {
 	 */
 	public function find($what=" * ", $where="") {
 		$q = "SELECT $what FROM ".$this->table." $where";
-		$r = $this->main->db->q($q);
+		$r = EDatabase::q($q);
 		while($arr = mysql_fetch_assoc($r)){
 			$result[] = $arr;
 		}
@@ -189,7 +185,7 @@ class EData {
 	public function take($what=" * ", $where="") {
 		if(!empty($where)){ $where = " WHERE ".$where." "; }
 		
-		$result = $this->main->db->sq("SELECT $what FROM ".$this->table." $where");
+		$result = EDatabase::sq("SELECT $what FROM ".$this->table." $where");
 		
 		return $result;
 		
@@ -201,7 +197,7 @@ class EData {
 	public function row($what=" * ", $where="") {
 		if(!empty($where)){ $where = " ".$where." "; }
 		
-		$r = $this->main->db->q("SELECT $what FROM ".$this->table." $where");
+		$r = EDatabase::q("SELECT $what FROM ".$this->table." $where");
 		
 		while($row=mysql_fetch_array($r)){
 			$result = $row;
@@ -223,7 +219,7 @@ class EData {
 		
 		if(!empty($where)){ $where = " WHERE ".$where." "; }
 		
-		$r = $this->main->db->q("SELECT COUNT($field) FROM ".$this->table." $where");
+		$r = EDatabase::q("SELECT COUNT($field) FROM ".$this->table." $where");
 		while($row=mysql_fetch_array($r)){
 			$result = $row[0];
 		}
@@ -251,7 +247,7 @@ class EData {
 		if(!empty($where)){ $where = " WHERE ".$where." "; }
 		if(!empty($howmany)){ $howmany = " LIMIT ".$howmany." "; }
 		
-		$this->main->db->q("DELETE FROM ".$this->table." $where $howmany");
+		EDatabase::q("DELETE FROM ".$this->table." $where $howmany");
 	}
 	
 	
@@ -267,16 +263,16 @@ class EData {
 		if(empty($allowed_fields)){
 			foreach($this->fields as $field){
 				if($field['field']!="id"){
-					if($this->main->data->exists_post($field['field']) and in_array($field['field'],$allowed_fields)){
-						$entries[] = array("field" => $field['field'], "value" => $this->main->data->db_post($field['field']), "type" => $field['type']);
+					if(EHeaderDataParser::exists_post($field['field']) and in_array($field['field'],$allowed_fields)){
+						$entries[] = array("field" => $field['field'], "value" => EHeaderDataParser::db_post($field['field']), "type" => $field['type']);
 					}
 				}
 			}
 		} else {
 			foreach($this->fields as $field){
 				if($field['field']!="id"){
-					if($this->main->data->exists_post($field['field']) ){
-						$entries[] = array("field" => $field['field'], "value" => $this->main->data->db_post($field['field']), "type" => $field['type']);
+					if(EHeaderDataParser::exists_post($field['field']) ){
+						$entries[] = array("field" => $field['field'], "value" => EHeaderDataParser::db_post($field['field']), "type" => $field['type']);
 					}
 				}
 			}
@@ -300,7 +296,7 @@ class EData {
 			$sql = rtrim($sql,",")." $where";
 			
 			if($this->noquery==false){
-				$this->main->db->q($sql);
+				EDatabase::q($sql);
 			} else {
 				echo $sql;
 			}
