@@ -64,6 +64,11 @@ class OCSUser{
 		}
 	}
 	
+	public static function login()
+	{
+        return OCSUser::$login;
+    }
+	
 	/*
 	 * Some utils functions regarding users
 	 */
@@ -74,14 +79,23 @@ class OCSUser{
 		return $r;
 	}
 	
-	public static  function get_user_info(){
-		$user_info["id"] = OCSUser::$id;
-		$user_info["login"] = OCSUser::$login;
-		$user_info["firstname"] = OCSUser::$firstname;
-		$user_info["lastname"] = OCSUser::$lastname;
-		$user_info["email"] = OCSUser::$email;
-		
-		return $user_info;
+	/*
+     * TODO:  ocsuser on logged user return array, on other user return array of array
+     */
+	public static  function get_user_info($username=""){
+		if($username==OCSUser::$login){
+			$user_info["id"] = OCSUser::$id;
+			$user_info["login"] = OCSUser::$login;
+			$user_info["firstname"] = OCSUser::$firstname;
+			$user_info["lastname"] = OCSUser::$lastname;
+			$user_info["email"] = OCSUser::$email;
+			
+			return $user_info;
+		} else {
+			$ocs_person = new EData("ocs_person");
+			$user_info = $ocs_person->find("*","where login='$username' limit 1");
+			return $user_info;
+		}
 	}
 	
 	public static  function register($login,$passwd,$firstname,$lastname,$email){

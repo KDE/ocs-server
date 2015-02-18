@@ -87,7 +87,7 @@ class EData {
 			
 			$describe = EDatabase::q("DESCRIBE ".$this->table);
 			
-			while($row=mysql_fetch_array($describe)){
+			while($row=EDatabase::fetch_array($describe)){
 				$type = "null";
 				if(stristr($row['Type'], "varchar")){ $type = "varchar"; }
 				if(stristr($row['Type'], "int")){ $type = "int"; }
@@ -163,7 +163,7 @@ class EData {
 	public function find($what=" * ", $where="") {
 		$q = "SELECT $what FROM ".$this->table." $where";
 		$r = EDatabase::q($q);
-		while($arr = mysql_fetch_assoc($r)){
+		while($arr = EDatabase::fetch_assoc($r)){
 			$result[] = $arr;
 		}
 		
@@ -199,7 +199,7 @@ class EData {
 		
 		$r = EDatabase::q("SELECT $what FROM ".$this->table." $where");
 		
-		while($row=mysql_fetch_array($r)){
+		while($row=EDatabase::fetch_array($r)){
 			$result = $row;
 		}
 		
@@ -220,7 +220,7 @@ class EData {
 		if(!empty($where)){ $where = " WHERE ".$where." "; }
 		
 		$r = EDatabase::q("SELECT COUNT($field) FROM ".$this->table." $where");
-		while($row=mysql_fetch_array($r)){
+		while($row=EDatabase::fetch_array($r)){
 			$result = $row[0];
 		}
 		
@@ -260,7 +260,7 @@ class EData {
 		if(!empty($where)){ $where = " WHERE ".$where." "; }
 		
 		//recupero le informazioni automaticamente
-		if(empty($allowed_fields)){
+		if(!empty($allowed_fields)){
 			foreach($this->fields as $field){
 				if($field['field']!="id"){
 					if(EHeaderDataParser::exists_post($field['field']) and in_array($field['field'],$allowed_fields)){
@@ -300,6 +300,8 @@ class EData {
 			} else {
 				echo $sql;
 			}
+		} else {
+			ELog::warning("EData->update called with empty entries");
 		}
 	}
 	

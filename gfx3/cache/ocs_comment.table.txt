@@ -1,0 +1,10 @@
+id|int
+type|int
+owner|int
+content|int
+content2|int
+parent|int
+votes|int
+score|int
+subject|varchar
+message|text

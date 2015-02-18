@@ -1,0 +1,348 @@
+------------------------------------------------------------------------------
+|                         1 . Introduction                                   |
+------------------------------------------------------------------------------
+
+This library is written not for fun nor for any other purpose other than quick
+development. So, also the user manual tries to follow the main philosophy
+behind this framework.
+One of the most important tips you should never forget while coding with this
+lib is be lazy. You shouldn’t find yourself doing so much work for doing a small
+(or) repetitive job. Maybe you’re doing some mistakes somewhere. You should
+looking over standard classes and maybe consider deriving some of them.
+One other thing you should keep in mind is: this lib is built with many conven-
+tions in mind. If you keep them in mind, you should have no problems in fast
+coding. In the other case, you’ll better change framework.
+For now, that’s all folks! Let’s so exploring the standard website structure of a
+GFX installation.
+
+------------------------------------------------------------------------------
+|                      2 . Creating index.php                                |
+------------------------------------------------------------------------------
+
+Our index.php file must be placed at the root of our web site, it must just include
+gfx3 lib file so it will appear like this:
+
+	<?php
+	include("gfx3/lib.php");
+	?>
+
+If you place this file also in a sub directory of gfx3 eg.. there's /gfx3 and you
+put index.php into /src/index.php EModuleIncluder will search for the lib and include it
+automatically.
+
+------------------------------------------------------------------------------
+|                            3 . Templating                                  |
+------------------------------------------------------------------------------
+
+In GFX3 the template module is called EStructure. It is a static class. In order 
+for it to work you must do 3 steps:
+1) Call EStructure::load() at the top of your php page
+2) Create an html file unde /template like /template/main.html
+3) Write your code on your php page and call EStructure::unload()
+
+You php page can appear like this:
+
+	<?php
+	include("gfx3/lib.php"); //load lib
+
+	EStructure::load(); //load template
+	//put here your code
+	EStructure::unload(); //build webpage
+	?>
+
+In your html file you have to define "zones" in which your dynamic code will
+be put into. Zones are writable like this:
+
+		<!--^--zone_name--^-->
+		
+	Your template can look like this.
+	<html>
+		<body>
+		<!--^--header--^-->
+		<hr>
+		<!--^--news--^-->
+		<hr>
+		<!--^--footer--^-->
+		</body>
+	</html>
+
+You can put code into zones in 2 ways.
+1) Inline using EStructure::code(), writing code, and then calling EStructure::insert("zone_name");
+2) Putting a php file into /template with the same name as the zone, so it will be automatically executed,
+and put into the right zone.
+
+	Small reference:
+	EStructure::load() -> initialize the template engine
+	EStructure::unload() -> build the webpage. Call it at the very end!
+	EStructure::code() -> start taking output into a separated buffer
+	EStructure::insert($zone) -> put generated code into that $zone
+	EStructure::module($filename,$zone) -> load $filename as a module, execute, output on buffer and insert it into $zone 
+
+------------------------------------------------------------------------------
+|                         4 . User management                                |
+------------------------------------------------------------------------------
+
+In GFX3 there's a static class called EUser. In order to have users working on your system just call
+
+	EUser::load();
+
+Your database must be working and a db table called "users" must be set up with (at least) the following structure:
+ 
++-----------+------------------+------+-----+---------+----------------+
+| Field     | Type             | Null | Key | Default | Extra          |
++-----------+------------------+------+-----+---------+----------------+
+| id        | int(10) unsigned | NO   | PRI | NULL    | auto_increment |
+| login     | varchar(45)      | NO   |     | NULL    |                |
+| password  | varchar(45)      | NO   |     | NULL    |                |
+| firstname | varchar(45)      | NO   |     | NULL    |                |
+| lastname  | varchar(45)      | NO   |     | NULL    |                |
+| email     | varchar(100)     | NO   |     | NULL    |                |
+| tgoup     | text             | NO   |     | NULL    |                |
++-----------+------------------+------+-----+---------+----------------+
+
+And it will automatically do all the job. This is also OCS complaint, as for OCS v1.6.
+
+Small reference:
+
+	EUser::login($login,$password) -> execute login if possible
+	EUser::logged() -> returns true or false depending if logged or not
+	EUser::logout() -> execute logout
+	EUser::refresh() -> refresh current info in case you're dynamically modifying user data
+	EUser::gdeny($group) -> deny the access to the webpage if user does belong to $group, allow others
+	EUser::gallow($group) -> allow the access to the webpage if user does belong to $group, deny others
+	EUser::belongs_to_group($group) -> returns boolen. True if user belongs to $group.
+
+------------------------------------------------------------------------------
+|                    5 . Low-level MySQL database                            |
+------------------------------------------------------------------------------
+
+In GFX3 there's the static class EDatabase which provide a direct communication
+channel with your database.
+It is automatically initialized and you simply have to call it.
+
+Small reference:
+
+	EDatabase::q($sql_query) -> execute $sql_query
+	EDatabase::sq($sql_query) -> execute $sql_query and returns the first result. Useful for counts etc. 
+	EDatabase::table_exists($table) -> check if table exists and return boolean.
+	EDatabase::last_insert_id() -> returns the id of the last inserted row.
+
+------------------------------------------------------------------------------
+|                      6 . High-level MySQL database                         |
+------------------------------------------------------------------------------
+
+In GFX3 there's an abstraction layer up on mysql tables called EData.
+First, you prepare your EData object by creating an object like this:
+
+	$dbtable = new EData("dbtable"); // "test" is the exact name of the table
+
+And then you can use all of EData methods. Small API:
+
+	$dbtable->insert(array $allowed_fields) -> insert a new row 
+	$dbtable->find($what, $where) -> returns the result of the query into an associative array example: $dbtable->find("*","id = 6");
+	$dbtable->count($field, $where) -> returns an integer returned from a count query. example: $dbtable->count("id","id = 6");
+	$dbtable->is_there($field,$where) -> check if $field is present $where.
+	$dbtable->update($where, array $allowed_fields) -> update same as insert
+	$dbtable->delete($where, $howmany) -> delete same as insert
+
+For some special methods like find, insert, update and delete EData will take
+$_POST data with the same name as the field name on the database table.
+Please be careful when using those intelligent features as they are easily
+exploitable. In order to avoid those kind of bugs always use $allowed_fields.
+
+------------------------------------------------------------------------------
+|                          7 . Error Management                              |
+------------------------------------------------------------------------------
+
+GFX3 provides a nice class to handle error management.
+
+	ELog::error("this will be shown");
+
+This string will produce a backtrace and break the execution of the script exactly where this is introduced.
+This is the main difference between an error and a warning.
+
+	ELog::warning("this will be shown");
+
+------------------------------------------------------------------------------
+|                          8 . Debugging tools                               |
+------------------------------------------------------------------------------
+
+The only debugging tool provided is a breakpoint.
+You can use it like this:
+
+	eval(DEBUG_BREAKPOINT);
+	
+This will also print the variable stack in which the breakpoint is called.
+
+------------------------------------------------------------------------------
+|                     9 . Retrieving safe GET/POST data                      |
+------------------------------------------------------------------------------
+
+GFX provides a class that automatically handles and parse GET and POST data.
+So instead of directly accessing those arrays you should use EHeaderDataParser.
+
+If you have to output your data you can use:
+	
+	EHeaderDataParser::out_get(string $name);
+	EHeaderDataParser::out_post(string $name);
+
+If you have to insert your data into database and you need them to be safe you can use:
+	
+	EHeaderDataParser::db_get(string $name);
+	EHeaderDataParser::db_post(string $name);
+
+If you need all your data to be safe you can easily do:
+	
+	EHeaderDataParser::safeAll();
+
+You can also set GET and POST manually using:
+
+	EHeaderDataParser::add_get(string $key, string $value);
+	EHeaderDataParser::add_post(string $key, string $value);
+
+This can result particularly useful when you need to use EData's insert and update
+but nto all the data comes from user request.
+
+If you want to take those variables fast and you can't decide you can choose
+the unsafe way using:
+	
+	EHeaderDataParser::get(string $key);
+	EHeaderDataParser::post(string $key);
+	
+------------------------------------------------------------------------------
+|                             10 . URL Rewriting                             |
+------------------------------------------------------------------------------
+
+GFX has a module that do URL rewriting without any .htaccess stuff.
+You have to set your page to be rewritable under /config/rewrite.conf.php
+
+like this:
+	
+	<?php die(); ?>
+	index.php|true
+	mail.php|false
+	mypage.php|true
+
+And then it will rewrite following this rule:
+	
+	from: http://website.com/index.php/id/6/title/the-sad-mummy-story
+	to:   http://website.com/index.php?id=6&title=the-sad-mummy-story
+	
+which is way more convenient and "SEO".
+In a few words you write the first URL and you will have your GET and POST
+set coorectly, also on EHeaderDataParser.
+
+In order to build a nice title (also if it's not useful for your app logic you should use:
+	
+	$url = ERewriter::prettify("I'm a terrible title");
+
+------------------------------------------------------------------------------
+|                            11 . Config manager                             |
+------------------------------------------------------------------------------
+
+GFX use a class to load config every time from a bunch of files. You can also
+create your config and find them placed under EConfig.
+
+If you edit your /config/database.conf.php like this:
+	<?php die(); ?>
+	name|test
+	host|localhost
+	user|root
+	password|asd
+
+You will automatically find them placed calling
+	EConfig::$data["database"]["name"];
+
+Note that "database" is the filename without extensions and name is the variable name.
+Don't be afraid to use this feature as config files are cached using the cache engine.
+
+Also note that PHP code in config files will just be ignored, so it's quite safe to put
+some kind of die(); on the first line so no one will be able to see your inner config.
+
+------------------------------------------------------------------------------
+|                           12 . Cache Engine                                |
+------------------------------------------------------------------------------
+
+GFX make large use of APC module in order to be more efficient and caching everything 
+is cacheable.
+
+You can create your list of vars (like in EConfig) using ECacheVar. Small reference:
+	$cvar = new ECacheVar("name of the container");
+	$cvar->get($var) -> get previously setted variable
+	$cvar->set($var, $value) -> set new variable
+	$cvar->del($var) -> delete a variable
+	$cvar->get_array_assoc(); -> returns an associative array of the whole container (iterable)
+
+You can create your full page of cache using ECacheList. Small reference:
+	$cvar = new ECacheList("name of the container");
+	$cvar->get() -> get previously setted value
+	$cvar->set($value) -> set container value
+	$cvar->del() -> delete the container
+
+It's also present an abstraction to put entire files into cache so you won't be loading too many times
+that txt file. Small referece:
+	$cvar = new ECacheFile($filepath); -> load file from cache. If not present put into cache and load.
+	$cvar->get(); -> get file value
+
+------------------------------------------------------------------------------
+|                       13 . File System utilities                           |
+------------------------------------------------------------------------------
+
+GFX offers a static class as a file system helper. Small reference:
+	EFileSystem::get_file_extension(string $filename) -> returns string extension
+	EFileSystem::get_file_name(string $filename) -> returns string name
+	EFileSystem::rename_file(string $from, string $to) -> rename file
+	EFileSystem::move_uploaded_file_in($path,$newname) -> move uploaded file to $path and change name to $newname
+	EFileSystem::get_uploaded_file_name() -> returns original uploaded file name.
+	
+------------------------------------------------------------------------------
+|                       14 . Network Socket object                           |
+------------------------------------------------------------------------------
+
+GFX permits also to interact with other APIs and websites through ENetworkSocket.
+ENetworkSocket is an object that makes http requests with get and post data to the specified address.
+	
+	$s = new ENetworkSocket("http://localhost");
+	$c = $s->get("index.php");
+	
+This will set content of $c to the content of http://localhost/index.php performing a get request.
+	
+	$postdata = array(
+						"name"    => "john",
+						"surname" => "smith"
+						)
+	
+	$s = new ENetworkSocket("http://localhost");
+	$c = $s->post("index.php", $postdata);
+	
+This will set content of $c to the content of http://localhost/index.php performing a post request and
+sending $postdata as $_POST value.
+
+------------------------------------------------------------------------------
+|                          15 . XML utilities                                |
+------------------------------------------------------------------------------
+
+In order to simply read xml GFX3 offers a small class still WIP to handle XML. Small reference:
+	
+	EXmlParser::to_array($raw_xml); -> turns raw xml into a structured array.
+
+------------------------------------------------------------------------------
+|                            16 . More tools                                 |
+------------------------------------------------------------------------------
+
+If your installation is on / you will have also some utils and debugging tools like
+the realtime GFX console in which you can type and execute your code very fast just
+to try it, inspect and code faster. You'll find this tool under /utils/index.php
+
+If you want to know more about the usage that APC has in your system you can also 
+go to /utils/apc.php
+
+------------------------------------------------------------------------------
+|                               17 . Contacts                                |
+------------------------------------------------------------------------------
+
+This manual has been written by snizzo during an afternoon.
+If there are any error please mail me or open a ticket here in google code:
+
+	http://gfx-framework.googlecode.com
+	happy.snizzo@gmail.com

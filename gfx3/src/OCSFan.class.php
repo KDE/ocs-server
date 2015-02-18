@@ -19,12 +19,22 @@ class OCSFan {
 	
 	public function add($content){
 		$person = OCSUser::id();
-		$this->main->db->q("INSERT INTO ocs_fan (person,content) VALUES ($person,$content)");
+		EDatabase::q("INSERT INTO ocs_fan (person,content) VALUES ($person,$content)");
+		
+		//part needed for activity
+		$con = new OCSContent();
+		$con->load($content);
+		OCSActivity::add(OCSUser::id(), 9, OCSUser::login()." is now fan of ".$con->name);
 	}
 	
 	public function remove($content){
 		$person = OCSUser::id();
-		$this->main->db->q("DELETE FROM ocs_fan WHERE person=$person and content=$content");
+		EDatabase::q("DELETE FROM ocs_fan WHERE person=$person and content=$content");
+		
+		//part needed for activity
+        $con = new OCSContent();
+        $con->load($content);
+        OCSActivity::add(OCSUser::id(), 10, OCSUser::login()." is no longer fan of ".$con->name);
 	}
 	
 	public function isfan($content){

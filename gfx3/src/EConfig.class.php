@@ -68,6 +68,7 @@ class EConfig{
 		//mapping file line per line
 		$cache = new ECacheFile($filename);
 		$file = $cache->get();
+		
 		$file = explode("\n",$file);
 		$file = EConfig::erase_php_code($file);
 		foreach($file as $line){

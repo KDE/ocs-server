@@ -1,0 +1,43 @@
+body {
+	background-image:url('../../img/bg.png');
+} 
+
+.container{
+	margin-top:10px;
+}
+
+.navbar{
+	padding-bottom:20px;
+}
+
+.carousel{
+	border:1px solid black;
+}
+
+.myradius{
+	border-radius: 5px;
+}
+
+.myshadow{
+	box-shadow:0px 0px 10px #000000;
+}
+
+.mytable td .right{
+	color: black;
+	padding:5px;
+}
+
+.mytable{
+}
+
+.gamefooter{
+color: black;
+font-style:oblique;
+}
+
+.bold{
+font-weight:bold;
+}
+
+/*Twitter Bootstrap override*/
+

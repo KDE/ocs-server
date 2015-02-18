@@ -79,6 +79,15 @@ class ERewriter{
 			 return false;
 		 }
 	 }
+	 
+	 
+	 /**
+	  * Used to make url pretty in order to SEO
+	  * TODO: improve
+	  */
+	 public static function prettify($string){
+		 return str_replace(" ", "-", $string);
+	 }
 }
 
 ?>

@@ -36,11 +36,27 @@ class EHeaderDataParser {
 	public static function safeAll(){
 		if(!EHeaderDataParser::$quotes){
 			foreach (EHeaderDataParser::$gets as $key => $value){
-				EHeaderDataParser::$gets[$key] = EHeaderDataParser::$main->db->safe($value);
+				EHeaderDataParser::$gets[$key] = EDatabase::safe($value);
 			}
-			foreach ($this->posts as $key => $value){
-				$this->posts[$key] = EDatabase::safe($value);
+			foreach (EHeaderDataParser::$posts as $key => $value){
+				EHeaderDataParser::$posts[$key] = EDatabase::safe($value);
 			}
+		}
+	}
+	
+	public static function post($key){
+		if(isset(EHeaderDataParser::$posts[$key])){
+			return EHeaderDataParser::$posts[$key];
+		} else {
+			return false;
+		}
+	}
+	
+	public static function get($key){
+		if(isset(EHeaderDataParser::$gets[$key])){
+			return EHeaderDataParser::$gets[$key];
+		} else {
+			return false;
 		}
 	}
 	
@@ -53,7 +69,7 @@ class EHeaderDataParser {
 	}
 	
 	public static function exists_get($key){
-		if(isset($this->gets[$key])){
+		if(isset(EHeaderDataParser::$gets[$key])){
 			return true;
 		} else {
 			return false;
@@ -61,38 +77,71 @@ class EHeaderDataParser {
 	}
 	
 	public static function out_get($key){
-		if($this->quotes){
-			return stripslashes($this->gets[$key]);
+		if(isset(EHeaderDataParser::$gets[$key])){		
+			if(EHeaderDataParser::$quotes){
+				return stripslashes(EHeaderDataParser::$gets[$key]);
+			} else {
+				return EHeaderDataParser::$gets[$key];
+			}
 		} else {
-			return $this->gets[$key];
+			return false;
 		}
 	}
 	
 	public static function out_post($key){
-		if($this->quotes){
-			return stripslashes($this->posts[$key]);
+		if(isset(EHeaderDataParser::$gets[$key])){		
+			if(EHeaderDataParser::$quotes){
+				return stripslashes(EHeaderDataParser::$posts[$key]);
+			} else {
+				return EHeaderDataParser::$posts[$key];
+			}
 		} else {
-			return $this->posts[$key];
+			return false;
 		}
 	}
 	
 	// Use instead of accessing $_GET
 	public static function db_get($key){
-		if($this->quotes){
-			return $this->gets[$key];
+		if(isset(EHeaderDataParser::$gets[$key])){
+			if(EHeaderDataParser::$quotes){
+				return EHeaderDataParser::$gets[$key];
+			} else {
+				return EDatabase::safe(EHeaderDataParser::$gets[$key]);
+			}
 		} else {
-			return EDatabase::safe($this->gets[$key]);
+			return false;
 		}
 	}
 	
 	
 	// Use instead of accessing $_POST
 	public static function db_post($key){
-		if($this->quotes){
-			return $this->posts[$key];
+		if(isset(EHeaderDataParser::$posts[$key])){
+			if(EHeaderDataParser::$quotes){
+				return EHeaderDataParser::$posts[$key];
+			} else {
+				return EDatabase::safe(EHeaderDataParser::$posts[$key]);
+			}
 		} else {
-			return EDatabase::safe($this->posts[$key]);
+			return false;
 		}
+	}
+	
+	public static function add_post($key,$value){
+		if(!isset(EHeaderDataParser::$posts[$key])){
+			EHeaderDataParser::$posts[$key] = $value;
+		} //else ignored
+	}
+	
+	public static function add_get($key,$value){
+		if(!isset(EHeaderDataParser::$gets[$key])){
+			EHeaderDataParser::$gets[$key] = $value;
+		} //else ignored
+	}
+	
+	public static function erase_get_data($url){
+		$url = explode("?", $url);
+		return $url[0];
 	}
 }
  

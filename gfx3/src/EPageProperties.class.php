@@ -22,7 +22,12 @@ class EPageProperties {
 	 */
 	
 	public static function get_page_name(){
-		return substr($_SERVER["SCRIPT_NAME"],strrpos($_SERVER["SCRIPT_NAME"],"/")+1);
+		
+		$name = substr($_SERVER["SCRIPT_NAME"],strrpos($_SERVER["SCRIPT_NAME"],"/")+1);
+		$name = substr($name,strrpos($name,"?"));
+		$name = substr($name,strrpos($name,"/"));
+		
+		return $name;
 	}
 	
 	public static function get_current_website_url(){
@@ -39,6 +44,13 @@ class EPageProperties {
 		
 		return $pageURL;
 	}
+	
+	public static function get_previous_page(){
+		$prevpage = $_SERVER['HTTP_REFERER'];
+		$prevpage = EHeaderDataParser::erase_get_data($prevpage);
+		return $prevpage;
+	}
+	
 }
 
 ?>

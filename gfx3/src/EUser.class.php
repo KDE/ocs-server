@@ -13,134 +13,140 @@
 
 class EUser{
 	
-	public $debug = true;
+	public static $debug = true;
 	
-	private $logged = false;
-	private $group = "anonymous";
-	private $pass;
-	private $nick;
-	private $mail;
-	private $id;
+	private static $logged = false;
+	private static $group = "anonymous";
+	private static $pass;
+	private static $nick;
+	private static $mail;
+	private static $id;
 	
-	private $status;
-	
-	public function __construct(){
+	public static function load(){
+		
+		EUser::$debug = true;
+		EUser::$logged = false;
+		EUser::$group = "anonymous";
 		
 		session_start();
+		
 		if(isset($_SESSION['nick'])){
-			$this->logged = true;
-			$this->nick = $_SESSION['nick'];
-			$this->id = $_SESSION['id'];
-			$this->group = $_SESSION['group'];
-			$this->mail = $_SESSION['mail'];
-			$this->pass = $_SESSION['pass'];
+			EUser::$logged = true;
+			EUser::$nick = $_SESSION['nick'];
+			EUser::$id = $_SESSION['id'];
+			EUser::$group = $_SESSION['group'];
+			EUser::$mail = $_SESSION['mail'];
+			EUser::$pass = $_SESSION['pass'];
 		} else {
 			if(isset($_COOKIE['nick']) and isset($_COOKIE['pass'])){
-				$r = EDatabase::q("SELECT * FROM users WHERE nick='".$_COOKIE['nick']."' AND pass='".$_COOKIE['pass']."' LIMIT 1");
-				//error management in case user is not installed
-				if(!$r or EDatabase::status()!=0){
-					//catching an error, setting status and doing nothing
-					$this->status = 1;
-				} else {
-					//proceding with a fine status
-					$this->status = 0;
-					while($row = mysql_fetch_array($r)){
-						$this->nick = $_SESSION['nick'] = $row['nick'];
-						$this->id = $_SESSION['id'] = $row['id'];
-						$this->logged = true;
-						$this->group = $_SESSION['group'] = $row['tgroup'];
-						$this->mail = $_SESSION['mail'] = $row['mail'];
-						$this->pass = $_SESSION['pass'] = $row['pass'];
+				$r = EDatabase::q("SELECT * FROM ocs_person WHERE login='".$_COOKIE['nick']."' AND password='".$_COOKIE['pass']."' LIMIT 1");
+				
+				while($row = EDatabase::fetch_array($r)){
+					EUser::$nick = $_SESSION['nick'] = $row['login'];
+					EUser::$id = $_SESSION['id'] = $row['id'];
+					EUser::$group = $_SESSION['group'] = $row['tgroup'];
+					EUser::$mail = $_SESSION['mail'] = $row['email'];
+					EUser::$pass = $_SESSION['pass'] = $row['password'];
+					if(!empty($row['login'])){
+						EUser::$logged = true;
+					} else {
+						EUser::$logged = false;
 					}
 				}
+			
 			} else {
-				$this->logged = false;
+				EUser::$logged = false;
 			}
 		}
-	}
-	
-	//get current userclass installation status
-	public function getStatus(){
-		$r = EDatabase::q("SELECT * FROM users LIMIT 1");
-		if(!$r or EDatabase::status()!=0){
-			//catching an error, setting status
-			$this->status = 1;
-			ELog::warning("EUser is not logged!");
-		}
+		
 	}
 	
 	
-	public function status(){
-		return $this->status;
+	public static function status(){
+		return EUser::$status;
 	}
 	
-	public function nick(){
-		return $this->nick;
+	public static function password(){
+		return EUser::$pass;
 	}
 	
-	public function mail(){
-		return $this->mail;
+	public static function mail(){
+		return EUser::$mail;
 	}
 	
-	public function id(){
-		return $this->id;
+	public static function id(){
+		return EUser::$id;
 	}
 	
-	public function logged(){
-		return $this->logged;
+	public static function nick(){
+		return EUser::$nick;
 	}
 	
-	public function login($nick, $pass){
-		$r = EDatabase::q("SELECT * FROM users WHERE nick='$nick' AND pass='$pass' LIMIT 1");
-		while($row = mysql_fetch_array($r)){
+	public static function logged(){
+		return EUser::$logged;
+	}
+	
+	public static function login($nick, $pass){
+		$r = EDatabase::q("SELECT * FROM ocs_person WHERE login='$nick' AND password='$pass' LIMIT 1");
+		
+		while($row = EDatabase::fetch_array($r)){
+			
+			if(!empty($row['login'])){
+				EUser::$logged = true;
+				echo "LOGGED!";
+			} else {
+				echo "NOT LOGGED!";
+				EUser::$logged = false;
+			}
+						
 			setcookie("nick",$nick, time()+2419200);
 			setcookie("pass",$pass, time()+2419200);
-			$this->nick = $_SESSION['nick'] = $row['nick'];
-			$this->id = $_SESSION['id'] = $row['id'];
-			$this->group = $_SESSION['group'] = $row['tgroup'];
-			$this->logged = true;
-			$this->mail = $_SESSION['mail'] = $row['mail'];
-			$this->pass = $_SESSION['pass'] = $row['pass'];
+			EUser::$nick = $_SESSION['nick'] = $row['login'];
+			EUser::$id = $_SESSION['id'] = $row['id'];
+			EUser::$group = $_SESSION['group'] = $row['tgroup'];
+			EUser::$logged = true;
+			EUser::$mail = $_SESSION['mail'] = $row['email'];
+			EUser::$pass = $_SESSION['pass'] = $row['password'];
 		}
-		return $this->logged();
+		return EUser::logged();
 	}
 	
-	public function logout(){
+	public static function logout(){
 		session_destroy();
 		setcookie("nick","", time()-2419200);
 		setcookie("pass","", time()-2419200);
-		$this->logged = false;
+		EUser::$logged = false;
 	}
 	
-	public function gdeny($g){
-		$groups = explode("|", $this->group);
+	public static function gdeny($g){
+		$groups = explode("|", EUser::$group);
 		foreach($groups as $thGroup){
 			if($thGroup==$g){
 				ELog::error("You're not allowed to be here.");
 				die($error);
 			}
 		}
-		if($this->logged==false){
+		if(EUser::$logged==false){
 			$error = "Loggati e riprova!";
 			die($error);
 		}
 	}
 	
-	public function refresh(){
-		$r = EDatabase::q("SELECT * FROM users WHERE nick='".$this->nick."' AND pass='".$this->pass."' LIMIT 1");
-		while($row = mysql_fetch_array($r)){
-			$this->nick = $_SESSION['nick'] = $row['nick'];
-			$this->id = $_SESSION['id'] = $row['id'];
-			$this->group = $_SESSION['group'] = $row['tgroup'];
-			$this->logged = true;
-			$this->mail = $_SESSION['mail'] = $row['mail'];
+	public static function refresh(){
+		$r = EDatabase::q("SELECT * FROM ocs_person WHERE login='".EUser::$nick."' AND password='".EUser::$pass."' LIMIT 1");
+		while($row = EDatabase::fetch_array($r)){
+			EUser::$nick = $_SESSION['nick'] = $row['login'];
+			EUser::$id = $_SESSION['id'] = $row['id'];
+			EUser::$group = $_SESSION['group'] = $row['tgroup'];
+			EUser::$logged = true;
+			EUser::$mail = $_SESSION['mail'] = $row['email'];
 		}
-		return $this->logged();
+		return EUser::$logged();
 	}
 	
-	public function gallow($g){
+	public static function gallow($g){
 		$allowedgroups = explode("|", $g);
-		$groups = explode("|", $this->group);
+		$groups = explode("|", EUser::$group);
 		foreach($groups as $thGroup){
 			foreach($allowedgroups as $alGroup){
 				if($thGroup==$alGroup){
@@ -152,8 +158,8 @@ class EUser{
 		return false;
 	}
 	
-	public function belongs_to_group($g){
-		$groups = explode("|", $this->group);
+	public static function belongs_to_group($g){
+		$groups = explode("|", EUser::$group);
 		foreach($groups as $thGroup){
 			if($thGroup==$g){
 				return true;
@@ -163,12 +169,12 @@ class EUser{
 		return false;
 	}
 	
-	public function group(){
-		return $this->group;
+	public static function group(){
+		return EUser::$group;
 	}
 	
-	public function register($nick, $pass, $group){
-		EDatabase::q("INSERT INTO users (nick, pass, tgroup) VALUES ('$nick', '$pass', '$group')");
+	public static function register($nick, $pass, $group){
+		EDatabase::q("INSERT INTO ocs_person (login, password, tgroup) VALUES ('$nick', '$pass', '$group')");
 	}
 	
 }

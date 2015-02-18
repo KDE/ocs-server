@@ -1,0 +1,19 @@
+<providers>
+
+<provider>
+ <id>gamingfreedom</id>
+ <location>http://www.gamingfreedom.org/v1/</location>
+ <name>gamingfreedom</name>
+ <icon></icon>
+ <termsofuse>https://opendesktop.org/terms/</termsofuse>
+ <register>https://opendesktop.org/usermanager/new.php</register>
+ <services>
+   <person ocsversion="1.6" />
+   <activity ocsversion="1.6" />
+   <content ocsversion="1.6" />
+   <fan ocsversion="1.6" />
+   <friend ocsversion="1.6" />
+ </services>
+</provider>
+
+</providers>

@@ -63,6 +63,12 @@ class ELog {
 		}
 	}
 	
+	public static function pd($q){
+		echo "<pre>";
+		var_dump($q);
+		echo "</pre>";
+	}
+	
 	public static function clear_log(){
 		if(file_exists(ELog::$error_file) and ELog::$preserve_errors == false){
 			unlink(ELog::$error_file);

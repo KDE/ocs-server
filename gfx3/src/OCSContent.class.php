@@ -16,6 +16,7 @@ class OCSContent{
 	
 	public $id;
 	public $owner;
+	public $personid;
 	public $name;
 	public $type;
 	public $description;
@@ -26,6 +27,7 @@ class OCSContent{
 	public $downloadlink1;
 	public $votes;
 	public $score;
+	public $license;
 	public $preview1;
 	public $preview2;
 	public $preview3;
@@ -49,6 +51,7 @@ class OCSContent{
 			$r = $this->ocs_content->find("*", "where id=$id LIMIT 1");
 			$this->id = $id;
 			$this->owner = $r[0]["owner"];
+			$this->personid = $r[0]["personid"];
 			$this->name = $r[0]["name"];
 			$this->type = $r[0]["type"];
 			$this->description = $r[0]["description"];
@@ -62,6 +65,7 @@ class OCSContent{
 			$this->preview1 = $r[0]["preview1"];
 			$this->preview2 = $r[0]["preview2"];
 			$this->preview3 = $r[0]["preview3"];
+			$this->license = $r[0]["license"];
 			return true;
 		} else {
 			return false;
@@ -103,15 +107,22 @@ class OCSContent{
 			chdir("..");
 		}
 		$path = "content/".$this->id."/";
-		//if upload file failed print error. Else add link to content object.
 		
-		if(!EFileSystem::move_uploaded_file_in($path)){
+		//clean evetual additional files
+		EFileSystem::clean_all_files_in($path,array("1","2","3"));
+		
+		//if upload file failed print error. Else add link to content object.
+		if(!EFileSystem::move_uploaded_file_in_ext($path)){
 			ELog::error("<b>get_uploaded_file</b> failed! Path: ($path) ");
 			return false;
 		} else {
-			$this->downloadlink1 = EPageProperties::get_current_website_url(); //retrieve website running server
+			$this->downloadlink1 = "http://".EConfig::$data["ocs"]["host"]; //retrieve website running server
 			$this->downloadlink1 .= "/content/".$this->id."/".EFileSystem::get_uploaded_file_name();
-			EDatabase::q("UPDATE ocs_content SET downloadlink1='".$this->downloadlink1."' WHERE id=".$this->id." LIMIT 1");
+			$this->downloadname1 = EFileSystem::get_uploaded_file_name();
+			EDatabase::q("UPDATE ocs_content SET downloadlink1='".$this->downloadlink1."', downloadname1='".$this->downloadname1."' WHERE id=".$this->id." LIMIT 1");
+			//activity update
+			OCSActivity::add(OCSUser::id(), 3, OCSUser::login()." uploaded a new version of ".$this->name);
+			
 			return true;
 		}
 	}
@@ -128,7 +139,7 @@ class OCSContent{
 			}
 			chdir("..");
 		}
-		$path = "content/".$this->id."/"; 
+		$path = "content/".$this->id."/";
 		
 		//if upload file failed print error. Else add link to content object.
 		//if(!EFileSystem::move_uploaded_file_in($path,$preview)){
@@ -138,18 +149,18 @@ class OCSContent{
 		} else {
 			switch($preview){
 				case 1:
-					$this->preview1 = EPageProperties::get_current_website_url(); //retrieve website running server
-					$this->preview1 .= "/content/".$this->id."/".$preview.".".EFileSystem::get_file_extension(EFileSystem::get_uploaded_file_name());
+					$this->preview1 = "http://".EConfig::$data["ocs"]["host"]; //retrieve website running server
+					$this->preview1 .= "/content/".$this->id."/".$preview;
 					$previewlink = $this->preview1;
 					break;
 				case 2:
-					$this->preview2 = EPageProperties::get_current_website_url(); //retrieve website running server
-					$this->preview2 .= "/content/".$this->id."/".$preview.".".EFileSystem::get_file_extension(EFileSystem::get_uploaded_file_name());
+					$this->preview2 = "http://".EConfig::$data["ocs"]["host"]; //retrieve website running server
+					$this->preview2 .= "/content/".$this->id."/".$preview;
 					$previewlink = $this->preview2;
 					break;
 				case 3:
-					$this->preview3 = EPageProperties::get_current_website_url(); //retrieve website running server
-					$this->preview3 .= "/content/".$this->id."/".$preview.".".EFileSystem::get_file_extension(EFileSystem::get_uploaded_file_name());
+					$this->preview3 = "http://".EConfig::$data["ocs"]["host"]; //retrieve website running server
+					$this->preview3 .= "/content/".$this->id."/".$preview;
 					$previewlink = $this->preview3;
 					break;
 			}
@@ -242,6 +253,10 @@ class OCSContent{
 		return $this->score;
 	}
 	
+	public function license(){
+		return $this->license;
+	}
+	
 	/*
 	 * Saving the ram rapresentation into memory (database).
 	 */
@@ -249,10 +264,9 @@ class OCSContent{
 		//TODO: implement unique name.
 		
 		//saving
-		EDatabase::q("INSERT INTO ocs_content (name,type,owner,downloadname1,downloadlink1,description,summary,version,changelog,preview1,preview2,preview3) VALUES ('".$this->name."',".$this->type.",".$this->owner.",'".$this->downloadname1."','".$this->downloadlink1."','".$this->description."','".$this->summary."','".$this->version."','".$this->changelog."','".$this->preview1."','".$this->preview2."','".$this->preview3."')");
+		EDatabase::q("INSERT INTO ocs_content (name,type,owner,personid,downloadname1,downloadlink1,description,summary,version,changelog,preview1,preview2,preview3,license) VALUES ('".$this->name."',".$this->type.",".$this->owner.",'".$this->personid."','".$this->downloadname1."','".$this->downloadlink1."','".$this->description."','".$this->summary."','".$this->version."','".$this->changelog."','".$this->preview1."','".$this->preview2."','".$this->preview3."',".$this->license.")");
 		//updating new id, got from database
-		$r = EDatabase::q("SELECT id FROM ocs_content where name='".$this->name."' and owner=".$this->owner." LIMIT 1");
-		$this->id = $r[0]["id"];
+		$this->id = $id = EDatabase::last_insert_id();
 	}
 	
 	/*
@@ -263,7 +277,10 @@ class OCSContent{
 	}
 	
 	public function delete(){
+		//EDatabase::q("DELETE FROM ocs_content WHERE id=".$this->id." LIMIT 1");
 		EDatabase::q("DELETE FROM ocs_content WHERE id=".$this->id." LIMIT 1");
+		EDatabase::q("DELETE FROM ocs_comment WHERE content=".$this->id);
+		EFileSystem::rmdir("content/".$this->id);
 	}
 	
 	/*
@@ -282,6 +299,7 @@ class OCSContent{
 		//data validations
 		if(!isset($data['type'])){ ELog::error("OCSContent: type not defined. Mandatory field."); } else { $this->type = $data['type']; }
 		if(!isset($data['name'])){ ELog::error("OCSContent: name not defined. Mandatory field."); } else { $this->name = $data['name']; }
+		if(!isset($data['personid'])){ ELog::error("OCSContent: personid not defined. Mandatory field."); } else { $this->personid = $data['personid']; }
 		if(!isset($data['downloadname1'])){ $this->downloadname1 = ""; } else { $this->downloadname1 = $data['downloadname1']; }
 		if(!isset($data['downloadlink1'])){ $this->downloadlink1 = ""; } else { $this->downloadlink1 = $data['downloadlink1']; }
 		if(!isset($data['description'])){ $this->description = ""; } else { $this->description = $data['description']; }
@@ -291,7 +309,13 @@ class OCSContent{
 		if(!isset($data['preview1'])){ $this->preview1 = ""; } else { $this->preview1 = $data['preview1']; }
 		if(!isset($data['preview2'])){ $this->preview2 = ""; } else { $this->preview2 = $data['preview2']; }
 		if(!isset($data['preview3'])){ $this->preview3 = ""; } else { $this->preview3 = $data['preview3']; }
+		if(!isset($data['license'])){ $this->license = ""; } else { $this->license = $data['license']; }
 	}
+	
+	public function updated()
+	{
+        OCSActivity::add(OCSUser::id(), 6, OCSUser::login()." updated ".$this->name);
+    }
 	
 	/*
 	 * This function returns the associated id for the selected content

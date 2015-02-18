@@ -71,4 +71,7 @@ EHeaderDataParser::load();
 
 //loading database
 EDatabase::load();
+
+//loading user system
+EUser::load();
 ?>

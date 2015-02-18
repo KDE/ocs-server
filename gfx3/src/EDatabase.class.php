@@ -48,13 +48,14 @@ class EDatabase {
 		EDatabase::$db_pass = EConfig::$data["database"]["password"];
 		
 		//opening session
-		$db = mysql_connect(EDatabase::$db_host, EDatabase::$db_user, EDatabase::$db_pass) or EDatabase::$status = 2;
-		$db_select = mysql_select_db(EDatabase::$db_name, $db) or EDatabase::$status = 1;
-		EDatabase::$db_link = $db;
-		if(EDatabase::$status==0){
+		EDatabase::$db_link = new mysqli(EDatabase::$db_host, EDatabase::$db_user, EDatabase::$db_pass, EDatabase::$db_name);
+		if (mysqli_connect_errno()) {
+			EDatabase::$opened = false;
+			echo 'Connect Error (' . mysqli_connect_errno() . ') '
+				. mysqli_connect_errno();
+		} else {
 			EDatabase::$opened = true;
 		}
-		
 	}
 	
 	public static function set_db_info($name,$host,$user,$pass){
@@ -76,11 +77,11 @@ class EDatabase {
 	public static function safe($s){
 		if(is_array($s)){
 			foreach($s as $key => $value){
-				$s[$key] = mysql_real_escape_string($s[$key]);
+				$s[$key] = mysqli_real_escape_string(EDatabase::$db_link, $s[$key]);
 			}
 			return $s;
 		} else {
-			$s = mysql_real_escape_string($s);
+			$s = mysqli_real_escape_string(EDatabase::$db_link, $s);
 			return $s;
 		}
 	}
@@ -93,16 +94,15 @@ class EDatabase {
 	public static function q($q){
 		if(EDatabase::$opened==true){
 			EDatabase::$queries += 1;
-			$ret = mysql_query($q, EDatabase::$db_link);
-			$error = mysql_error();
-			if(empty($error)){ 
-				$ret = $ret;
+			$ret = EDatabase::$db_link->query($q);
+			$error = EDatabase::$db_link->error;
+			if(empty($error)){
 			} else {
-				ELog::error($error."<br>Query string: ".$q);
+				ELog::error($error);
 			}
 			return $ret;
 		} else {
-			if(EDatabase::$debug==false){
+			if(EDatabase::$debug==true){
 				ELog::error("sql session not already opened!");
 			}
 		}
@@ -114,10 +114,10 @@ class EDatabase {
 	public static function sq($q){
 		if(EDatabase::$opened==true){
 			EDatabase::$queries += 1;
-			$ret = mysql_query($q, EDatabase::$db_link); //FIXME: error management
-			while($row=mysql_fetch_array($ret)){
-				$number = $row[0];
-			}
+			$ret = EDatabase::$db_link->query($q); //FIXME: error management
+			while($row=$ret->fetch_array(MYSQLI_NUM)){
+                $number = $row[0];
+            }
 			return $number;
 		} else {
 			$error = " Query not executed due to mysql session not opened. Try to open one using open method. ";
@@ -127,20 +127,30 @@ class EDatabase {
 	
 	public static function table_exists($table){
 		$r = EDatabase::q("SHOW TABLES LIKE '$table'");
-		$row = mysql_fetch_row($r);
-		if(empty($row)){
-			return false;
+		if(EDatabase::$opened) {
+			$row = mysqli_fetch_row($r);
+			if(empty($row)){
+				return false;
+			} else {
+				return true;
+			}
 		} else {
-			return true;
+			ELog::error("Database not opened!");
+			return false;
 		}
+		
 	}
 	
 	public static function num_rows($result){
-		return mysql_num_rows($result);
+		return mysqli_num_rows($result);
 	}
 	
 	public static function fetch_assoc($result){
-		return mysql_fetch_assoc($result);
+		return mysqli_fetch_assoc($result);
+	}
+	
+	public static function fetch_array($result){
+		return mysqli_fetch_array($result);
 	}
 	
 	public static function status(){

@@ -1,2 +1,4 @@
 <?php die(); ?>
-index.php|false
+index.php|true
+game.php|true
+gamelist.php|true

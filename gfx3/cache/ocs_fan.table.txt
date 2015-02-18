@@ -1,0 +1,2 @@
+person|int
+content|int
