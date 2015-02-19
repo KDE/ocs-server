@@ -19,7 +19,7 @@ include_once("gfx3/lib.php");
 * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
 *	
 * You should have received a copy of the GNU Lesser General Public 
-* License along with this library.	If not, see <http://www.gnu.org/licenses/>.
+* License along with this library.	If not, see <http://www.gnu.org/licenses/>
 * 
 
 
@@ -41,18 +41,10 @@ CREATE TABLE IF NOT EXISTS `apitraffic` (
 	PRIMARY KEY (`ip`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
-
-You need a file names "v1" in the htdocs of your webserver to handle the API requests. It could look like this:
-
-	require_once('some of your libaries');
-	require_once('ocs/lib_ocs.php');
-	$this->handle();
-
 You have to force apache to parse this file even it it doesn´t end with .php
 
-	<Files v1>
-		 ForceType application/x-httpd-php
-	</Files>
+This version use apache .htaccess.
+Make sure your webserver can use .htaccess file and mod_rewrite is installed and available fr this site.
 
 
 */
@@ -72,7 +64,7 @@ class H01_OCS {
 	public $maxrequestsauthenticated;
 	
 	public function __construct(){
-		$this->whitelist = array('127.0.0.2');
+		$this->whitelist = EConfig::$data["whitelist"];
 		$this->maxpersonsearchpage = 200;
 		$this->maxrequests = 1000; // per 15min from one IP
 		$this->maxrequestsauthenticated = 2000;
@@ -149,6 +141,8 @@ class H01_OCS {
 
 		// preprocess url
 		$url=$_SERVER['PHP_SELF'];
+		$url = str_replace("server.php", "v1", $url);
+		
 		if(substr($url,(strlen($url)-1))<>'/') $url.='/';
 		$ex=explode('/',$url);
 
@@ -510,7 +504,7 @@ class H01_OCS {
 		// contentedit - POST - CONTENT/EDIT/"contentid"	 
 		}elseif((($method=='post') and strtolower($ex[1])=='v1') and (strtolower($ex[2])=='content') and (strtolower($ex[3])=='edit') and (count($ex)==6)){						
 			$format=$this->readdata('format','text');
-			$contentid= addslashes($ex[4]);
+			$contentid = addslashes($ex[4]);
 			$this->contentedit($format,$contentid);
 
 		// contentdelete - POST - CONTENT/DELETE/"contentid"	 
@@ -869,21 +863,30 @@ class H01_OCS {
 	 * @return username string
 	 */
 	private  function checkpassword($forceuser=true) {
-
-		// check whitelist
-		if (in_array($_SERVER['REMOTE_ADDR'], $this->whitelist)) {
-			$identifieduser='';
-		}else{
-
 			//valid user account ?
 			if(isset($_SERVER['PHP_AUTH_USER'])) $authuser=$_SERVER['PHP_AUTH_USER']; else $authuser='';
 			if(isset($_SERVER['PHP_AUTH_PW']))	 $authpw=$_SERVER['PHP_AUTH_PW']; else $authpw='';
-
+			
+			//this small (and dirty) hack checks if the client who requested the page is konqueror
+			//which is also Qt itself
+			//TODO: maybe fix this thing?
+			if(isset($_SERVER['HTTP_USER_AGENT'])){
+				$iskonqueror = stristr($_SERVER['HTTP_USER_AGENT'],"Konqueror");
+			} else {
+				$iskonqueror = false;
+			}
+			
 			if(empty($authuser)) {
 				if($forceuser){
-					header('WWW-Authenticate: Basic realm="your valid user account or api key"');
-					header('HTTP/1.0 401 Unauthorized');
-					exit;
+					if(!$iskonqueror){
+						header("WWW-Authenticate: Basic realm=\"Private Area\"");
+						header('HTTP/1.0 401 Unauthorized');
+						exit;
+					} else {
+						$txt=$this->generatexml('','failed',999,'needs authentication');
+						echo($txt);
+						exit;
+					}
 				}else{
 					$identifieduser='';
 				}
@@ -895,9 +898,15 @@ class H01_OCS {
 					$user=OCSUser::checklogin($authuser,$authpw);
 					if($user==false) {
 						if($forceuser){
-							header('WWW-Authenticate: Basic realm="your valid user account or api key"');
-							header('HTTP/1.0 401 Unauthorized');
-							exit;
+							if(!$iskonqueror){
+								header("WWW-Authenticate: Basic realm=\"Private Area\"");
+								header('HTTP/1.0 401 Unauthorized');
+								exit;
+							} else {
+								$txt=$this->generatexml('','failed',999,'needs authentication');
+								echo($txt);
+								exit;
+							}
 						}else{
 							$identifieduser='';
 						}
@@ -909,8 +918,7 @@ class H01_OCS {
 					$identifieduser=$user;
 				}*/
 			}
-		}
-		return($identifieduser);
+		return $identifieduser;
 	}
 
 
@@ -918,8 +926,8 @@ class H01_OCS {
 	 * cleans up the api traffic limit database table.
 	 * this function should be call by a cronjob every 15 minutes
 	 */
-	public  function cleanuptrafficlimit() {
-		EDatabase::q('truncate apitraffic');
+	public function cleanuptrafficlimit() {
+		EDatabase::q('truncate ocs_apitraffic');
 	}
 
 
@@ -929,23 +937,31 @@ class H01_OCS {
 	 * @param string $user
 	 */
 	private  function checktrafficlimit($user) {
-		// BACKUP:
-		// $result = $db->insert('apitraffic','into apitraffic (ip,count) values ('.ip2long($_SERVER['REMOTE_ADDR']).',1) on duplicate key update count=count+1');
-		EDatabase::q('insert into apitraffic (ip,count) values ('.ip2long($_SERVER['REMOTE_ADDR']).',1) on duplicate key update count=count+1');
+		/*
+		$ip = $_SERVER['REMOTE_ADDR'];
+		if(!isset(EConfig::$data["whitelist"][$ip])){
+			// BACKUP:
+			// $result = $db->insert('apitraffic','into apitraffic (ip,count) values ('.ip2long($_SERVER['REMOTE_ADDR']).',1) on duplicate key update count=count+1');
+			EDatabase::q('insert into ocs_apitraffic (ip,count) values ('.ip2long($_SERVER['REMOTE_ADDR']).',1) on duplicate key update count=count+1');
 
-		$result = EDatabase::q('select * from apitraffic where ip="'.ip2long($_SERVER['REMOTE_ADDR']).'"');
-		$numrows = EDatabase::num_rows($result);
-		$DBcount = EDatabase::fetch_assoc($result);
+			$result = EDatabase::q('select * from ocs_apitraffic where ip="'.ip2long($_SERVER['REMOTE_ADDR']).'"');
+			$numrows = EDatabase::num_rows($result);
+			$DBcount = EDatabase::fetch_assoc($result);
 
-		if($numrows==0) return(true);
-		if($user=='') $max=$this->maxrequests; else $max=$this->maxrequestsauthenticated;
+			if($numrows==0) return(true);
+			if($user=='') $max=$this->maxrequests; else $max=$this->maxrequestsauthenticated;
 
-		if($DBcount['count']>$max) {
-			$format=$this->readdata('format','text');
-			echo($this->generatexml($format,'failed',200,'too many API requests in the last 15 minutes from your IP address. please try again later.'));
-			exit();
+			if($DBcount['count']>$max) {
+				$format=$this->readdata('format','text');
+				echo($this->generatexml($format,'failed',200,'too many API requests in the last 15 minutes from your IP address. please try again later.'));
+				exit();
+			}
+			return(true);
+		} else {
+			return(true);
 		}
-		return(true);
+		*/
+		return true;
 
 	}
 
@@ -1109,11 +1125,11 @@ class H01_OCS {
 		$user=$this->checkpassword(false);
 		$this->checktrafficlimit($user);
 
-		$xml['version']='1.6';
-		$xml['website']='gfx3.org';
-		$xml['host']='gfx3.org';
-		$xml['contact']='happy.snizzo@gmail.com';
-		$xml['ssl']='false';
+		$xml['version']=EConfig::$data["ocsserver"]["version"];;
+		$xml['website']=EConfig::$data["ocsserver"]["website"];
+		$xml['host']=EConfig::$data["ocsserver"]["host"];;
+		$xml['contact']=EConfig::$data["ocsserver"]["contact"];;
+		$xml['ssl']=EConfig::$data["ocsserver"]["ssl"];;
 		echo($this->generatexml($format,'ok',100,'',$xml,'config','',1));
 	}
 
@@ -1144,27 +1160,14 @@ class H01_OCS {
 	private  function personsearch($format,$username,$country,$city,$description,$pc,$software,$longitude,$latitude,$distance,$attributeapp,$attributekey,$attributevalue,$page,$pagesize) {
 		$user=$this->checkpassword(false);
 		$this->checktrafficlimit($user);
-
-		if($pagesize==0) $pagesize=10; 
-		$cache = new H01_CACHE('apipersonsearch',array($_SESSION['website'],$_SESSION['lang'],$format,$username.'#'.$user.'#'.$country.'#'.$city.'#'.$description.'#'.$pc.'#'.$software.'#'.$longitude.'#'.$latitude.'#'.$distance.'#'.$attributeapp.'#'.$attributekey.'#'.$attributevalue.'#'.$page.'#'.$pagesize));
-		if ($cache->exist()) {
-			$cache->get();
-			unset($cache);
-		} else {
-
-			if($page>$this->maxpersonsearchpage) {
-				$txt=$this->generatexml($format,'failed',102,'page above '.$this->maxpersonsearchpage.'. it is not allowed to fetch such a big resultset. please specify more search conditions.');
-			}else{
-				$xml=H01_USER::search($user,$username,$country,$city,$description,$pc,$software,$longitude,$latitude,$distance,$attributeapp,$attributekey,$attributevalue,$page,$pagesize);
-				$usercount=$xml['usercount'];
-				unset($xml['usercount']);
-				$txt=$this->generatexml($format,'ok',100,'',$xml,'person','summary',2,$usercount,$pagesize);
-			}
-
-			$cache->put($txt);
-			unset($cache);
-			echo($txt);
-		}
+        
+        $pl = new OCSPersonLister;
+        $xml = $pl->ocs_person_search($username,$page,$pagesize);
+        $plcount = count($xml);
+        
+        $txt=$this->generatexml($format,'ok',100,'',$xml,'person','summary',2,$plcount,$pagesize);
+        
+        echo($txt);
 
 	}
 
@@ -1292,16 +1295,19 @@ class H01_OCS {
 		}
 		$this->checktrafficlimit($user);
 		if(empty($username)) $username=$user;
-
-		$DBuser=OCSUser::get_user_info($username);
-
+		
+		$DBuser = OCSUser::get_user_info($username);
+		
 		if(is_null($DBuser)){
 			$txt=$this->generatexml($format,'failed',101,'person not found');
+			echo($txt);
+		}else if (empty($user)) {
 		}else{
 			$xml=array();
 			$xml[0]['personid']=$DBuser['login'];
 			$xml[0]['firstname']=$DBuser['firstname'];
 			$xml[0]['lastname']=$DBuser['lastname'];
+			$xml[0]['email']=$DBuser['email'];
 			//$xml[0]['description']=H01_UTIL::bbcode2html($DBuser['description']);
 			
 			$txt=$this->generatexml($format,'ok',100,'',$xml,'person','full',2);
@@ -1470,7 +1476,7 @@ class H01_OCS {
 			$xml['status']='fan';
 			$txt=$this->generatexml($format,'ok',100,'',$xml,'','',1); 
 		}else{
-			$xml['status']='not fan';
+			$xml['status']='notfan';
 			$txt=$this->generatexml($format,'ok',100,'',$xml,'','',1); 
 		}
 		echo($txt);
@@ -1492,32 +1498,13 @@ class H01_OCS {
 	private  function friendsentinvitations($format,$page,$pagesize) {
 		$user=$this->checkpassword();
 		$this->checktrafficlimit($user);
-
-		$fromuser=addslashes($user);
-		$page = intval($page);
-		$start=$pagesize*$page;
-		$count=$pagesize;
-
-		$cache = new H01_CACHE('apifriendssentinvitations',array($fromuser,CONFIG_USERDB,$page,$pagesize,$format));
-		if ($cache->exist()) {
-			$cache->get();
-			unset($cache);
-		} else {
-
-			$countsentinvitations=H01_RELATION::countsentrequests(1,$fromuser,CONFIG_USERDB);
-			$relations=H01_RELATION::getsentrequests(1,$fromuser,CONFIG_USERDB,$start,$count);
-			$itemscount=count($relations);
-
-			$xml=array();
-			for ($i=0; $i < $itemscount;$i++) {
-				$xml[$i]['personid']=$relations[$i]['user'];
-			}
-			$txt=$this->generatexml($format,'ok',100,'',$xml,'user','id',2,$countsentinvitations,$pagesize);
-
-			$cache->put($txt);
-			unset($cache);
-			echo($txt);
-		}
+        
+        $friend = new OCSFriendsLister;
+        $xml = $friend->ocs_sentinvitations($page,$pagesize);
+        $friendcount = count($xml);
+        $txt=$this->generatexml($format,'ok',100,'',$xml,'person','id',2,$friendcount,$pagesize);
+        
+        echo $txt;
 	}
 
 	/**	 
@@ -1531,30 +1518,12 @@ class H01_OCS {
 		$user=$this->checkpassword();
 		$this->checktrafficlimit($user);
 
-		$fromuser=addslashes($user);
-		$page = intval($page);
-		$start=$pagesize*$page;
-		$count=$pagesize;
-
-		$cache = new H01_CACHE('apifriendsreceivedinvitations',array($fromuser,CONFIG_USERDB,$page,$pagesize,$format));
-		if ($cache->exist()) {
-			$cache->get();
-			unset($cache);
-		} else {
-
-			$countreceivedinvitations=H01_RELATION::countreceivedrequests(1,$fromuser,CONFIG_USERDB);
-			$relations=H01_RELATION::getreceivedrequests(1,$fromuser,CONFIG_USERDB,$start,$count);
-			$itemscount=count($relations);
-			$xml=array();
-			for ($i=0; $i < $itemscount;$i++) {
-				$xml[$i]['personid']=$relations[$i]['user'];
-			}
-			$txt=$this->generatexml($format,'ok',100,'',$xml,'user','id',2,$countreceivedinvitations,$pagesize);
-
-			$cache->put($txt);
-			unset($cache);
-			echo($txt);
-		}
+        $friend = new OCSFriendsLister;
+        $xml = $friend->ocs_receivedinvitations($page,$pagesize);
+        $friendcount = count($xml);
+        $txt=$this->generatexml($format,'ok',100,'',$xml,'person','id',2,$friendcount,$pagesize);
+        
+        echo $txt;
 	}
 
 
@@ -1562,20 +1531,18 @@ class H01_OCS {
 	/**	 
 	 * get the list of friends from a person
 	 * @param string $format
-	 * @param string $fromuser
+	 * @param string $fromuser user which called the query
 	 * @param string $page
 	 * @param string $pagesize
 	 * @return string xml/json
 	 */
-	private  function friendget($format,$fromuser,$page,$pagesize) {
+	private  function friendget($format,$fromuser,$page,$pagesize) { //example params: (,snizzo,0,10);
 		$user=$this->checkpassword();
 		$this->checktrafficlimit($user);
-
+		
 		$fromuser=strip_tags(addslashes($fromuser));
-		$page = intval($page);
-		$start=$pagesize*$page;
-		$count=$pagesize;
-
+        
+        /*
 		$cache = new H01_CACHE('apifriends',array($fromuser,CONFIG_USERDB,$page,$pagesize,$format));
 		if ($cache->exist()) {
 			$cache->get();
@@ -1611,8 +1578,6 @@ class H01_OCS {
 						else	{	$pic=HOST.'/usermanager/nopic.png'; $found=false ;}
 						$xml[$i]['avatarpic']=$pic;
 						$xml[$i]['avatarpicfound']=$found;
-
-
 					}
 					$txt=$this->generatexml($format,'ok',100,'',$xml,'user','id',2,$countapprovedrelations,$pagesize);
 				}else{
@@ -1626,7 +1591,13 @@ class H01_OCS {
 			unset($cache);
 			echo($txt);
 		}
-
+		*/
+        $fan = new OCSFriendsLister;
+        $xml = $fan->ocs_friend_list($fromuser,$page,$pagesize);
+        $friendcount = count($xml);
+        $txt=$this->generatexml($format,'ok',100,'',$xml,'person','id',2,$friendcount,$pagesize);
+        
+        echo $txt;
 	}
 
 
@@ -1645,13 +1616,10 @@ class H01_OCS {
 		$inviteuser = strip_tags(addslashes($inviteuser));
 		$message = strip_tags(addslashes($message));
 
-		$u=H01_USER::getuser($inviteuser,CONFIG_USERDB);
-		if($u==false) $inviteuser=false; else $inviteuser=$u['login'];
-
 		if($user<>'' and $inviteuser<>'' and $inviteuser<>false) {
 			if($user<>$inviteuser) {
 				if($message<>'') {
-					H01_RELATION::requestrelation(1,$user,$inviteuser,CONFIG_USERDB,$message);
+					OCSFriend::send_invitation($inviteuser, $message);
 					echo($this->generatexml($format,'ok',100,''));
 				} else {
 					echo($this->generatexml($format,'failed',101,'message must not be empty'));
@@ -1662,7 +1630,7 @@ class H01_OCS {
 		} else {
 			echo($this->generatexml($format,'failed',103,'user not found'));
 		}
-
+		
 	}
 
 	/**	 
@@ -1677,7 +1645,7 @@ class H01_OCS {
 		$inviteuser = strip_tags(addslashes($inviteuser));
 
 		if($user<>'' and $inviteuser<>'') {
-			H01_RELATION::confirmrelation(1,$user,$inviteuser,CONFIG_USERDB);
+			OCSFriend::approve_invitation($inviteuser);
 			echo($this->generatexml($format,'ok',100,''));
 		} else {
 			echo($this->generatexml($format,'failed',101,'user not found'));
@@ -1698,7 +1666,7 @@ class H01_OCS {
 		$inviteuser = strip_tags(addslashes($inviteuser));
 
 		if($user<>'' and $inviteuser<>'') {
-			H01_RELATION::declinerelation(1,$user,$inviteuser,CONFIG_USERDB);
+			OCSFriend::decline_invitation($inviteuser);
 			echo($this->generatexml($format,'ok',100,''));
 		} else {
 			echo($this->generatexml($format,'failed',101,'user not found'));
@@ -1719,7 +1687,7 @@ class H01_OCS {
 		$inviteuser = strip_tags(addslashes($inviteuser));
 
 		if($user<>'' and $inviteuser<>'') {
-			H01_RELATION::cancelrelation(1,$user,$inviteuser,CONFIG_USERDB);
+			OCSFriend::cancel_friendship($inviteuser);
 			echo($this->generatexml($format,'ok',100,''));
 		} else {
 			echo($this->generatexml($format,'failed',101,'user not found'));
@@ -1931,42 +1899,26 @@ class H01_OCS {
 		$user=$this->checkpassword();
 		$this->checktrafficlimit($user);
 		
-		$cache = new H01_CACHE('apilog',array($user,CONFIG_USERDB,$page,$pagesize,$format));
-		if ($cache->exist()) {
-			$cache->get();
-			unset($cache);
-		} else {
+		$al = new OCSActivityLister();
+        $log=$al->ocs_activity_list($user,$page,$pagesize);
+        $itemscount=count($log);
+        $xml=array();
+        for ($i=0; $i < $itemscount;$i++) {
+            $xml[$i]['id']=$log[$i]['id'];
+            $xml[$i]['personid']=$log[$i]['personid'];
+            $xml[$i]['firstname']=$log[$i]['firstname'];
+            $xml[$i]['lastname']=$log[$i]['lastname'];
+            $xml[$i]['profilepage']='';
+            $xml[$i]['avatarpic']='';
+            $xml[$i]['timestamp']=date('c',$log[$i]['timestamp']);
+            $xml[$i]['type']=$log[$i]['type'];
+            $xml[$i]['message']=strip_tags($log[$i]['message']);
+            $xml[$i]['link']='';
+        }
 
-			$log=H01_LOG::getlist($user,CONFIG_USERDB,$page,$pagesize);
-			$totalcount=$log['count'];
-			unset($log['count']);
-			$itemscount=count($log);
-			$xml=array();
-			for ($i=0; $i < $itemscount;$i++) {
-				$xml[$i]['id']=$log[$i]['id'];
-				$xml[$i]['personid']=$log[$i]['user'];
-				$xml[$i]['firstname']=$log[$i]['firstname'];
-				$xml[$i]['lastname']=$log[$i]['name'];
-				$xml[$i]['profilepage']='http://'.CONFIG_WEBSITEHOST.'/usermanager/search.php?username='.urlencode($log[$i]['user']); 
+        $txt=$this->generatexml($format,'ok',100,'',$xml,'activity','full',2,count($xml),$pagesize);
 
-				if		 (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$log[$i]['user'].'.jpg')) $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$log[$i]['user'].'.jpg';
-				elseif (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$log[$i]['user'].'.png')) $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$log[$i]['user'].'.png';
-				elseif (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$log[$i]['user'].'.gif')) $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$log[$i]['user'].'.gif';
-				else	 $pic='http://'.CONFIG_WEBSITEHOST.'/usermanager/nopic.png';
-				$xml[$i]['avatarpic']=$pic;
-
-				$xml[$i]['timestamp']=date('c',$log[$i]['timestamp']);
-				$xml[$i]['type']=$log[$i]['type'];
-				$xml[$i]['message']=strip_tags($log[$i]['logmessage']);
-				$xml[$i]['link']=$log[$i]['link'];
-			}
-
-			$txt=$this->generatexml($format,'ok',100,'',$xml,'activity','full',2,$totalcount,$pagesize);
-
-			$cache->put($txt);
-			unset($cache);
-			echo($txt);
-		}
+        echo($txt);
 
 	}
 
@@ -1982,7 +1934,7 @@ class H01_OCS {
 
 		if($user<>'') {
 			if(trim($message)<>'') {
-				H01_MICROBLOG::send($user,CONFIG_USERDB,$message);
+				OCSActivity::add(OCSUser::id(), 1, $message);
 				echo($this->generatexml($format,'ok',100,''));
 			} else {
 				echo($this->generatexml($format,'failed',101,'empty message'));
@@ -2016,11 +1968,10 @@ class H01_OCS {
 		if (!$con->load($content)) {
 			$txt=$this->generatexml($format,'failed',101,'content not found');
 		} else {
-
 			$xml['id']=$con->id;
 			$xml['name']=$con->name;
 			$xml['version']=$con->version;
-			//$xml['typeid']=$con['type'];
+			$xml['typeid']=$con->type;
 			//$xml['typename']=$WEBSITECONTENT[$con['type']];
 			//$xml['language']=H01_CONTENT::$LANGUAGES[$con['language']];
 			$xml['personid']=$con->owner;
@@ -2033,6 +1984,11 @@ class H01_OCS {
 			$xml['summary'] = $con->summary;
 			//$xml['feedbackurl'] = $con['feedbackurl'];
 			$xml['changelog'] = $con->changelog;
+			$xml['license'] = $con->license;
+			$xml['personid'] = $con->personid;
+			$xml['preview1'] = $con->preview1;
+			$xml['preview2'] = $con->preview2;
+			$xml['preview3'] = $con->preview3;
 			/*$xml['homepage'] = $con['homepage1'];
 			if($con['homepagetype1']<>0) $xml['homepagetype']=H01_CONTENT::$LINK_CATEGORY[$con['homepagetype1']]; else $xml['homepagetype']='';
 			$xml['homepage2']=$con['homepage2'];
@@ -2225,10 +2181,6 @@ class H01_OCS {
 	 * @return string xml/json
 	 */
 	private  function contentlist($format,$contents,$searchstr,$searchuser,$external,$distribution,$license,$sortmode,$page,$pagesize) {
-		//category -> ignore
-		//sortmode -> 
-		//page     ->
-		//pagesize ->
 		$user=$this->checkpassword(false);
 		$this->checktrafficlimit($user);
 		
@@ -2299,19 +2251,16 @@ class H01_OCS {
 	 * @return string xml/json
 	 */
 	private  function contentcategories($format) {
-		global $WEBSITECONTENT;
-		global $WEBSITECONTENTTHEME;
-
 		$user=$this->checkpassword(false);
 		$this->checktrafficlimit($user);
 
 		$i=0;
-		foreach($WEBSITECONTENT as $key=>$value) {
+		foreach(EConfig::$data["ocs_categories"] as $key=>$value) {
 			$i++;
 			$xml[$i]['id']=$key;
 			$xml[$i]['name']=$value;
 		}
-		$txt=$this->generatexml($format,'ok',100,'',$xml,'category','',2,count($WEBSITECONTENT));
+		$txt=$this->generatexml($format,'ok',100,'',$xml,'category','',2,count(EConfig::$data["ocs_categories"]));
 
 		echo($txt);
 	}
@@ -2321,9 +2270,9 @@ class H01_OCS {
 	 * @param string $format
 	 * @return string xml/json
 	 */
-	private  function contentlicenses($format) {
-		global $contentlicense;
-		global $contentlicenselink;
+	private function contentlicenses($format) {
+		$contentlicense = EConfig::$data["licenses"];
+		$contentlicenselink = EConfig::$data["licenseslink"];
 
 		$user=$this->checkpassword(false);
 		$this->checktrafficlimit($user);
@@ -2543,6 +2492,7 @@ class H01_OCS {
 	 * @return string xml/json
 	 */
 	private  function contentdownloadupload($format,$contentid) {
+		
 		$user=$this->checkpassword(true);
 		$this->checktrafficlimit($user);
 		$content=addslashes($contentid);
@@ -2578,23 +2528,33 @@ class H01_OCS {
 	 * @return string xml/json
 	 */
 	private  function contentadd($format) {
-		$user=$this->checkpassword();
+		$user=$this->checkpassword(true);
 		$this->checktrafficlimit($user);
-
+		
+		$categories = EConfig::$data["ocs_categories"];
+		$numcats = count($categories);
+		
 		if(OCSUser::is_logged()) {
 
 			$data=array();
 			$data['name']=$this->readdata('name','text');
 			$data['type']=$this->readdata('type','int');
 			
-			if($this->readdata('downloadname1','text')<>'')			 $data['downloadname1']			=$this->readdata('downloadname1','text');
-			if($this->readdata('downloadlink1','text')<>'')			 $data['downloadlink1']			=$this->readdata('downloadlink1','text');
-			if($this->readdata('description','text')<>'')					$data['description']=$this->readdata('description','text');
-			if($this->readdata('summary','text')<>'')							$data['summary']=$this->readdata('summary','text');
-			if($this->readdata('version','text')<>'')							$data['version']=$this->readdata('version','text');
-			if($this->readdata('changelog','text')<>'')						$data['changelog']=$this->readdata('changelog','text');
+			if($this->readdata('downloadname1','text')<>'')	$data['downloadname1']=$this->readdata('downloadname1','text') ;
+			if($this->readdata('downloadlink1','text')<>'')			$data['downloadlink1']=$this->readdata('downloadlink1','text');
+			if($this->readdata('description','text')<>'') { $data['description']=$this->readdata('description','text'); } else { $data['description']='...'; }
+			if($this->readdata('summary','text')<>'') { $data['summary']=$this->readdata('summary','text'); } else { $data['summary']='...'; }
+			if($this->readdata('version','text')<>'') { $data['version']=$this->readdata('version','text'); } else { $data['version']='...'; }
+			if($this->readdata('changelog','text')<>'') { $data['changelog']=$this->readdata('changelog','text'); } else { $data['changelog']='...'; }
+			//if($this->readdata('personid','text')<>'')			$data['personid']=$this->readdata('personid','text');
+			if($this->readdata('license','int') >=0 or $this->readdata('license','int')<5)  $data['license']=$this->readdata('license','int');
 			
-			if(($data['name']<>'') and ($data['type']<>0)) {
+			$data['preview1'] = "http://".EConfig::$data["ocs"]["host"]."/template/img/screenshot-unavailable.png";
+			$data['preview2'] = "http://".EConfig::$data["ocs"]["host"]."/template/img/screenshot-unavailable.png";
+			$data['preview3'] = "http://".EConfig::$data["ocs"]["host"]."/template/img/screenshot-unavailable.png";
+			$data['personid'] = $user;
+			
+			if( ($data['name']<>'') or ($data['type']<0) or ($data['type']>$numcats) ) {
 				$content = new OCSContent();
 				$content->set_owner(OCSUser::id());
 				$content->set_data($data);
@@ -2602,7 +2562,7 @@ class H01_OCS {
 				
 				$xml = array();
 				$xml[0]['id'] = $content->id();
-				$txt = $this->generatexml($format,'ok',100,'',$xml,'content','',2); 
+				$txt = $this->generatexml($format,'ok',100,'',$xml,'content','',2);
 			}else{
 				$txt = $this->generatexml($format,'failed',101,'please specify all mandatory fields');
 			}
@@ -2623,10 +2583,13 @@ class H01_OCS {
 	 * @return string xml/json
 	 */
 	private  function contentedit($format,$contentid) {
-
+		
 		$user=$this->checkpassword(true);
 		$this->checktrafficlimit($user);
 		$content=addslashes($contentid);
+		
+		$categories = EConfig::$data["ocs_categories"];
+		$numcats = count($categories);
 		
 		// fetch data
 		$con = new OCSContent();
@@ -2638,15 +2601,14 @@ class H01_OCS {
 			
 			if($this->readdata('downloadname1','text')<>$con->downloadname1)		$data['downloadname1'] = $this->readdata('downloadname1','text');
 			if($this->readdata('downloadlink1','text')<>$con->downloadlink1)		$data['downloadlink1'] = $this->readdata('downloadlink1','text');
-			if($this->readdata('description','text')<>$con->description)		$data['description'] = $this->readdata('description','text');
-			if($this->readdata('summary','text')<>$con->summary)			$data['summary'] = $this->readdata('summary','text');
-			if($this->readdata('version','text')<>$con->version)			$data['version'] = $this->readdata('version','text');
-			if($this->readdata('changelog','text')<>$con->changelog)			$data['changelog'] = $this->readdata('changelog','text');
+			if($this->readdata('description','text')<>'') { $data['description']=$this->readdata('description','text'); } else { $data['description']='...'; }
+			if($this->readdata('summary','text')<>'') { $data['summary']=$this->readdata('summary','text'); } else { $data['summary']='...'; }
+			if($this->readdata('version','text')<>'') { $data['version']=$this->readdata('version','text'); } else { $data['version']='...'; }
+			if($this->readdata('changelog','text')<>'') { $data['changelog']=$this->readdata('changelog','text'); } else { $data['changelog']='...'; }
+			if($this->readdata('license','int') >=0 or $this->readdata('license','int')<5)  $data['license']=$this->readdata('license','int');
 			
-			
-			if(($data['name']<>'') and ($data['type']<>0)) {
-				$con->set_data($data);
-				$con->update();
+			if( ($data['name']<>'') or ($data['type']<0) or ($data['type']>$numcats) ) {
+				$con->update(array("name","type","downloadname1","downloadlink1","description","summary","version","changelog","license"));
 				
 				$xml = array();
 				$txt = $this->generatexml($format,'ok',100,'',$xml,'content'); 
@@ -2656,6 +2618,7 @@ class H01_OCS {
 		}else{
 			$txt=$this->generatexml($format,'failed',102,'no permission to change content');
 		}
+		$con->updated();
 
 		echo($txt);
 
@@ -3119,7 +3082,7 @@ class H01_OCS {
 		$coml = new OCSCommentLister();
 		$comments = $coml->ocs_comment_list($type,$content,$content2,$page,$pagesize);
 		$totalitems = count($comments);
-//			$txt=$this->generatexml($format,'ok',100,'',$xml,'event','detail',2,$totalitems,$pagesize);
+		//$txt=$this->generatexml($format,'ok',100,'',$comments,'event','detail',2,$totalitems,$pagesize);
 
 		$txt=$this->generatexml($format,'ok',100,'',$comments,'comment','','dynamic',$totalitems,$pagesize);
 		echo($txt);
