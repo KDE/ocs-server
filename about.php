@@ -5,6 +5,7 @@ include("gfx3/lib.php");
 EStructure::load("gamelist");
 
 EStructure::code();
+
 ?>
 
 
