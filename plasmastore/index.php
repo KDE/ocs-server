@@ -1,5 +1,9 @@
 <?php
-include "gfx3/lib.php"; //including gfx3 library
+include "../gfx3/lib.php"; //including gfx3 library
+
+$client = new OCSClient();
+
+$categories = $client->get("v1/content/categories");
 ?>
 <!DOCTYPE html>
 <html lang="en"><head>
@@ -72,9 +76,14 @@ include "gfx3/lib.php"; //including gfx3 library
         <div class="col-sm-3 col-md-2 sidebar">
           <ul class="nav nav-sidebar">
             <li class="active"><a href="#">Category 1<span class="sr-only">(current)</span></a></li>
-            <li><a href="#">Category 2</a></li>
-            <li><a href="#">Category 3</a></li>
-            <li><a href="#">Category 4</a></li>
+            
+            <?php
+			
+			foreach($categories["ocs"]["data"]["category"] as $category){
+				echo "<li><a href=\"\">".$category["name"]."</a></li>";
+			}
+			
+            ?>
           </ul>
           <ul class="nav nav-sidebar">
             <li><a href="">Category 5</a></li>
