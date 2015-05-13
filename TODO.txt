@@ -1,0 +1,7 @@
+Porting todo file gfx3 -> gfx4.
+
+OCS CALLS NEEDED TO BE PORTED:
+
+DONE:
+
+CONFIG
