@@ -16,17 +16,20 @@ class EImage {
 	/*
 	 * To be defined.
 	 */
-	public function __construct(){
+	public function __construct()
+	{
 		//
 	}
 	
 	/*
 	 * Makes a thumbnail mantaining the aspect ratio.
 	 * That's what $maxwidth and $maxheight are for.
-	 * 
 	 * WARNING: works only with JPG or PNG
+	 * 
+	 * @require php-gd
 	 */
-	public function make_thumbnail($from,$to,$maxwidth,$maxheight){
+	public function make_thumbnail($from,$to,$maxwidth,$maxheight)
+	{
 		$ext = EFileSystem::get_file_extension($from);
 		if(!list($width, $height, $type, $attr) = getimagesize($from)){ echo "error: $from |"; }
 		if($width>$height){

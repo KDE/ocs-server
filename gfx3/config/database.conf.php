@@ -1,5 +1,5 @@
 <?php die("You cannot see config in here."); ?>
-name|gamingfreedom
+name|test
 host|localhost
-user|gamingfreedom
-password|XhydjcCq4HcEr5Tb
+user|root
+password|asd

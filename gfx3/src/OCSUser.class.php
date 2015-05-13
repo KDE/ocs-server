@@ -64,11 +64,6 @@ class OCSUser{
 		}
 	}
 	
-	public static function login()
-	{
-        return OCSUser::$login;
-    }
-	
 	/*
 	 * Some utils functions regarding users
 	 */
@@ -79,9 +74,6 @@ class OCSUser{
 		return $r;
 	}
 	
-	/*
-     * TODO:  ocsuser on logged user return array, on other user return array of array
-     */
 	public static  function get_user_info($username=""){
 		if($username==OCSUser::$login){
 			$user_info["id"] = OCSUser::$id;

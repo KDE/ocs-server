@@ -34,11 +34,13 @@ class ECacheVar {
 	}
 	
 	public static function exists($name){
-		return apc_exists($name);
+		//return apc_exists($name);
+		return false;
 	}
 	
 	//returns the value associate to $var
 	public function get($var){
+		/*
 		$content = apc_fetch($this->name);
 		$content = explode("\n", $content);
 		foreach($content as $line){
@@ -47,9 +49,11 @@ class ECacheVar {
 				return rtrim($line[1], "\n");
 			}
 		}
+		*/
 	}
 	
 	public function set($var, $value){
+		/*
 		$content = apc_fetch($this->name);
 		$content = explode("\n", $content);
 		
@@ -69,9 +73,11 @@ class ECacheVar {
 		
 		$str = implode("\n", $content);
 		apc_store($this->name, $str);
+		* */
 	}
 	
 	public function get_array_assoc(){
+		/*
 		$content = apc_fetch($this->name);
 		$content = explode("\n", $content);
 		
@@ -84,9 +90,11 @@ class ECacheVar {
 			}
 		}
 		return $assoc;
+		*/
 	}
 	
 	public function del($var){
+		/*
 		$content = apc_fetch($this->name);
 		$content = explode("\n", $content);
 		
@@ -100,10 +108,13 @@ class ECacheVar {
 		
 		$str = implode("\n", $content);
 		apc_store($this->name, $str);
+		* */
 	}
 	
 	public function print_raw_cache(){
+		/*
 		echo apc_fetch($this->name);
+		* */
 	}
 	
 }

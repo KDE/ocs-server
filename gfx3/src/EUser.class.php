@@ -41,7 +41,7 @@ class EUser{
 			if(isset($_COOKIE['nick']) and isset($_COOKIE['pass'])){
 				$r = EDatabase::q("SELECT * FROM ocs_person WHERE login='".$_COOKIE['nick']."' AND password='".$_COOKIE['pass']."' LIMIT 1");
 				
-				while($row = EDatabase::fetch_array($r)){
+				while($row = mysql_fetch_array($r)){
 					EUser::$nick = $_SESSION['nick'] = $row['login'];
 					EUser::$id = $_SESSION['id'] = $row['id'];
 					EUser::$group = $_SESSION['group'] = $row['tgroup'];
@@ -88,14 +88,11 @@ class EUser{
 	
 	public static function login($nick, $pass){
 		$r = EDatabase::q("SELECT * FROM ocs_person WHERE login='$nick' AND password='$pass' LIMIT 1");
-		
-		while($row = EDatabase::fetch_array($r)){
+		while($row = mysql_fetch_array($r)){
 			
 			if(!empty($row['login'])){
 				EUser::$logged = true;
-				echo "LOGGED!";
 			} else {
-				echo "NOT LOGGED!";
 				EUser::$logged = false;
 			}
 						
@@ -134,7 +131,7 @@ class EUser{
 	
 	public static function refresh(){
 		$r = EDatabase::q("SELECT * FROM ocs_person WHERE login='".EUser::$nick."' AND password='".EUser::$pass."' LIMIT 1");
-		while($row = EDatabase::fetch_array($r)){
+		while($row = mysql_fetch_array($r)){
 			EUser::$nick = $_SESSION['nick'] = $row['login'];
 			EUser::$id = $_SESSION['id'] = $row['id'];
 			EUser::$group = $_SESSION['group'] = $row['tgroup'];

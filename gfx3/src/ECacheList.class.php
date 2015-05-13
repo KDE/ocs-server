@@ -10,38 +10,48 @@
  *   http://opensource.org/licenses/mit-license.php
  */ 
 
-/*
- * The fallback module is provided just for compatibility.
- * 
- * In any way this is considered to be a cache system. It will simply force
- * the engine to ask for data every time.
- */
 
-class ECacheFile {
+/*
+ * This class stores elements of a list in a text file for caching.
+ * 
+ * example:
+ * 
+ * data1
+ * data2
+ * data3
+ * 
+ */
+/*
+ * Just see if this can go to ECacheVar
+ */
+class ECacheList {
 	
-	private $var = "";
-	private $prefix = "ecachefile_";
-	private $content = "";
+	private $var;
+	private $prefix = "ecachelist_";
 	
 	public function __construct($file=false){
-		$this->var = $file;
-		
-		if(file_exists($this->var)){
-			$this->content = file_get_contents($this->var);
-		}
+		/*if($this->exists($file)){
+			$this->var = $file;
+		}*/
+	}
+	
+	public function exists($key){
+		//apc_exists($this->prefix.$key);
 	}
 	
 	// get the value of a variable
 	public function get(){
-		return $this->content;
+		//apc_fetch($this->prefix.$this->var);
 	}
 	
 	//set the value of a variable
 	public function set($value){
-		//does this really do something? :S
+		//apc_store($this->prefix.$this->var,$value);
 	}
 	
 	public function del(){
-		//also, does this really do something? :S
+		//apc_delete($this->prefix.$this->var);
 	}
 }
+
+?>

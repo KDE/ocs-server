@@ -120,9 +120,6 @@ class OCSContent{
 			$this->downloadlink1 .= "/content/".$this->id."/".EFileSystem::get_uploaded_file_name();
 			$this->downloadname1 = EFileSystem::get_uploaded_file_name();
 			EDatabase::q("UPDATE ocs_content SET downloadlink1='".$this->downloadlink1."', downloadname1='".$this->downloadname1."' WHERE id=".$this->id." LIMIT 1");
-			//activity update
-			OCSActivity::add(OCSUser::id(), 3, OCSUser::login()." uploaded a new version of ".$this->name);
-			
 			return true;
 		}
 	}
@@ -279,7 +276,7 @@ class OCSContent{
 	public function delete(){
 		//EDatabase::q("DELETE FROM ocs_content WHERE id=".$this->id." LIMIT 1");
 		EDatabase::q("DELETE FROM ocs_content WHERE id=".$this->id." LIMIT 1");
-		EDatabase::q("DELETE FROM ocs_comment WHERE content=".$this->id);
+		EDatabase::q("DELETE FROM ocs_comment WHERE content=".$this->id."<br>");
 		EFileSystem::rmdir("content/".$this->id);
 	}
 	
@@ -311,11 +308,6 @@ class OCSContent{
 		if(!isset($data['preview3'])){ $this->preview3 = ""; } else { $this->preview3 = $data['preview3']; }
 		if(!isset($data['license'])){ $this->license = ""; } else { $this->license = $data['license']; }
 	}
-	
-	public function updated()
-	{
-        OCSActivity::add(OCSUser::id(), 6, OCSUser::login()." updated ".$this->name);
-    }
 	
 	/*
 	 * This function returns the associated id for the selected content

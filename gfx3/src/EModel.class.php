@@ -20,7 +20,7 @@
  * update()
  */
 
-class EData {
+class EModel {
 	//in order to avoid avoidable queries
 	private $dbg = false;
 	private $tcount = "nd";
@@ -87,7 +87,7 @@ class EData {
 			
 			$describe = EDatabase::q("DESCRIBE ".$this->table);
 			
-			while($row=EDatabase::fetch_array($describe)){
+			while($row=$describe->fetch_array()){
 				$type = "null";
 				if(stristr($row['Type'], "varchar")){ $type = "varchar"; }
 				if(stristr($row['Type'], "int")){ $type = "int"; }
@@ -163,7 +163,7 @@ class EData {
 	public function find($what=" * ", $where="") {
 		$q = "SELECT $what FROM ".$this->table." $where";
 		$r = EDatabase::q($q);
-		while($arr = EDatabase::fetch_assoc($r)){
+		while($arr = $r->fetch_assoc()){
 			$result[] = $arr;
 		}
 		
@@ -199,7 +199,7 @@ class EData {
 		
 		$r = EDatabase::q("SELECT $what FROM ".$this->table." $where");
 		
-		while($row=EDatabase::fetch_array($r)){
+		while($row=$r->fetch_array()){
 			$result = $row;
 		}
 		
@@ -220,7 +220,7 @@ class EData {
 		if(!empty($where)){ $where = " WHERE ".$where." "; }
 		
 		$r = EDatabase::q("SELECT COUNT($field) FROM ".$this->table." $where");
-		while($row=EDatabase::fetch_array($r)){
+		while($row=$r->fetch_array()){
 			$result = $row[0];
 		}
 		

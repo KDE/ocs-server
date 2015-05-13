@@ -12,7 +12,7 @@
 
 //db related include files
 include_once("EDatasetter.class.php");
-include_once("EData.class.php");
+include_once("EModel.class.php");
 
 class EDatabase {
 	
@@ -48,14 +48,13 @@ class EDatabase {
 		EDatabase::$db_pass = EConfig::$data["database"]["password"];
 		
 		//opening session
-		EDatabase::$db_link = new mysqli(EDatabase::$db_host, EDatabase::$db_user, EDatabase::$db_pass, EDatabase::$db_name);
-		if (mysqli_connect_errno()) {
-			EDatabase::$opened = false;
-			echo 'Connect Error (' . mysqli_connect_errno() . ') '
-				. mysqli_connect_errno();
-		} else {
+		$db = mysqli_connect(EDatabase::$db_host, EDatabase::$db_user, EDatabase::$db_pass) or EDatabase::$status = 2;
+		$db_select = mysqli_select_db($db, EDatabase::$db_name) or EDatabase::$status = 1;
+		EDatabase::$db_link = $db;
+		if(EDatabase::$status==0){
 			EDatabase::$opened = true;
 		}
+		
 	}
 	
 	public static function set_db_info($name,$host,$user,$pass){
@@ -77,7 +76,7 @@ class EDatabase {
 	public static function safe($s){
 		if(is_array($s)){
 			foreach($s as $key => $value){
-				$s[$key] = mysqli_real_escape_string(EDatabase::$db_link, $s[$key]);
+				$s[$key] = mysqli_real_escape_string($s[$key]);
 			}
 			return $s;
 		} else {
@@ -94,15 +93,16 @@ class EDatabase {
 	public static function q($q){
 		if(EDatabase::$opened==true){
 			EDatabase::$queries += 1;
-			$ret = EDatabase::$db_link->query($q);
-			$error = EDatabase::$db_link->error;
-			if(empty($error)){
+			$ret = mysqli_query(EDatabase::$db_link, $q);
+			$error = mysqli_error(EDatabase::$db_link);
+			if(empty($error)){ 
+				$ret = $ret;
 			} else {
-				ELog::error($error);
+				ELog::error($error."<br>Query string: ".$q);
 			}
 			return $ret;
 		} else {
-			if(EDatabase::$debug==true){
+			if(EDatabase::$debug==false){
 				ELog::error("sql session not already opened!");
 			}
 		}
@@ -114,10 +114,10 @@ class EDatabase {
 	public static function sq($q){
 		if(EDatabase::$opened==true){
 			EDatabase::$queries += 1;
-			$ret = EDatabase::$db_link->query($q); //FIXME: error management
-			while($row=$ret->fetch_array(MYSQLI_NUM)){
-                $number = $row[0];
-            }
+			$ret = mysqli_query(EDatabase::$db_link, $q); //FIXME: error management
+			while($row = $ret->fetch_array()){
+				$number = $row[0];
+			}
 			return $number;
 		} else {
 			$error = " Query not executed due to mysql session not opened. Try to open one using open method. ";
@@ -146,11 +146,8 @@ class EDatabase {
 	}
 	
 	public static function fetch_assoc($result){
-		return mysqli_fetch_assoc($result);
-	}
-	
-	public static function fetch_array($result){
-		return mysqli_fetch_array($result);
+		die("<b>[BUG]</b> use my to implement database/fetch_assoc!");
+		//return mysql_fetch_assoc($result);
 	}
 	
 	public static function status(){
