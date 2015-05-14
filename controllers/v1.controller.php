@@ -15,7 +15,7 @@ class V1Controller extends EController
 		$xml['host']=EConfig::$data["ocsserver"]["host"];;
 		$xml['contact']=EConfig::$data["ocsserver"]["contact"];;
 		$xml['ssl']=EConfig::$data["ocsserver"]["ssl"];;
-		echo(OCSXML::generatexml('json','ok',100,'',$xml,'config','',1));
+		echo(OCSXML::generatexml('xml','ok',100,'',$xml,'config','',1));
     }
     
 }

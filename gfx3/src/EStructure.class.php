@@ -33,6 +33,13 @@ class EStructure {
 		
 		$args = $chunks;
 		
+		//parsing extra args correctly
+		$last = end($args);
+		$extraargs = explode("?", $last);
+		if(count($extraargs)>=2){
+			//TODO: finish
+		}
+		
 		//checking if controller is available
 		if (class_exists($controller)){
 			$current_controller = new $controller();
