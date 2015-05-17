@@ -47,7 +47,11 @@ class EStructure {
 			if(empty($method)){
 				$current_controller->index($chunks);
 			} else {
-				$current_controller->$method($chunks);
+				if(method_exists($current_controller,$method)){
+					$current_controller->$method($chunks);
+				} else {
+					ELog::warning($controller."->".$method."() is not defined. Please define it.");
+				}
 			}
 		}
 		
