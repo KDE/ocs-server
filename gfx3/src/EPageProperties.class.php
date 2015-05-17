@@ -16,10 +16,6 @@
  * Static class used as a helper for managing various web page properties.
  */
 class EPageProperties {
-	/*
-	 * Returns the exact website in which is running this system.
-	 * For example: http://www.gfx3.org
-	 */
 	
 	public static function get_page_name(){
 		
@@ -30,6 +26,10 @@ class EPageProperties {
 		return $name;
 	}
 	
+	/*
+	 * Returns the exact website in which is running this system.
+	 * For example: http://www.gfx3.org
+	 */
 	public static function get_current_website_url(){
 		$pageURL = 'http';
 		//TODO: implements https?

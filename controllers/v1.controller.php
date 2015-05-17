@@ -6,6 +6,14 @@
 class V1Controller extends EController
 {
 	
+	public function index()
+	{
+		$v1_config_url = EPageProperties::get_current_website_url()."/v1/config";
+		
+		echo "Hello! This webserver runs an Open Collaboration Services server.<br>";
+		echo "Check <a href=\"$v1_config_url\">$v1_config_url</a> for configuring your OCS client.";
+	}
+	
     public function config()
     {
         //$user=$this->checkpassword(false);
