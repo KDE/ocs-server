@@ -25,11 +25,19 @@ class ERewriter{
 	public static function load()
 	{
 		//if web page is set to be not rewritable, simply return
+		$current_uri = $_SERVER['REQUEST_URI'];
 		
-		if(isset(EConfig::$data['rewrite'][$_SERVER['REQUEST_URI']])){
-			$_SERVER['REQUEST_URI'] = EConfig::$data['rewrite'][$_SERVER['REQUEST_URI']];
-		} else {
-			return;
+		foreach(EConfig::$data['rewrite'] as $key => $value){
+			$pos = strpos($current_uri,$key);
+			
+			//if we found a rewrite rule that can be applied
+			if ($pos !== false) {
+				//rewrite only at the very start of the string
+				if($pos==0){
+					$rewritten = str_replace($key, $value, $current_uri);
+					$_SERVER['REQUEST_URI'] = $rewritten;
+				}
+			}
 		}
 	}
 

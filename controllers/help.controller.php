@@ -6,7 +6,7 @@
 class HelpController extends EController
 {
 	
-    public function index()
+    public function index($args)
     {
         EStructure::view("help/index");
     }

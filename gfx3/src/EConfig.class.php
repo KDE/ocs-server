@@ -75,6 +75,9 @@ class EConfig{
 			if(!empty($line)){
 				$chunks = explode("|",$line);
 				//gives correct key and correct value, erasing line break.
+				if(isset($result[$chunks[0]])){
+					ELog::warning("<b>".$chunks[0]."</b> property is set more than once in ".$filename." config file!");
+				}
 				$result[$chunks[0]] = rtrim($chunks[1], "\n");
 			}
 		}
