@@ -22,7 +22,8 @@ class EStructure {
 	public static function render()
 	{
 		//getting correct input
-		$input = trim($_SERVER['REQUEST_URI'], "/");
+		$uri = explode("?", $_SERVER['REQUEST_URI']); //ignoring all normal get part as for now
+		$input = trim($uri[0], "/");
 		$chunks = explode("/", $input);
 		
 		if(isset($chunks[0])){ $controller = $chunks[0];		unset($chunks[0]); }
@@ -33,11 +34,20 @@ class EStructure {
 		
 		$args = $chunks;
 		
-		//parsing extra args correctly
+		//resetting array index and getting last element
+		$args = array_values($args);
 		$last = end($args);
 		$extraargs = explode("?", $last);
 		if(count($extraargs)>=2){
-			//TODO: finish
+			unset($args[count($args)-1]); //erase last raw unparsed element
+			
+			//add last element
+			if(!empty($extraargs[1])){
+				$args[] = $extraargs[0];
+			}
+			
+			//manually injecting get data
+			EHeaderDataParser::add_from_string($extraargs[1]);
 		}
 		
 		//checking if controller is available
@@ -48,7 +58,7 @@ class EStructure {
 				$current_controller->index($chunks);
 			} else {
 				if(method_exists($current_controller,$method)){
-					$current_controller->$method($chunks);
+					$current_controller->$method($args);
 				} else {
 					ELog::warning($controller."->".$method."() is not defined. Please define it.");
 				}

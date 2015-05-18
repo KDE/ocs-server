@@ -33,49 +33,7 @@ automatically.
 |                            3 . Templating                                  |
 ------------------------------------------------------------------------------
 
-In GFX3 the template module is called EStructure. It is a static class. In order 
-for it to work you must do 3 steps:
-1) Call EStructure::load() at the top of your php page
-2) Create an html file unde /template like /template/main.html
-3) Write your code on your php page and call EStructure::unload()
-
-You php page can appear like this:
-
-	<?php
-	include("gfx3/lib.php"); //load lib
-
-	EStructure::load(); //load template
-	//put here your code
-	EStructure::unload(); //build webpage
-	?>
-
-In your html file you have to define "zones" in which your dynamic code will
-be put into. Zones are writable like this:
-
-		<!--^--zone_name--^-->
-		
-	Your template can look like this.
-	<html>
-		<body>
-		<!--^--header--^-->
-		<hr>
-		<!--^--news--^-->
-		<hr>
-		<!--^--footer--^-->
-		</body>
-	</html>
-
-You can put code into zones in 2 ways.
-1) Inline using EStructure::code(), writing code, and then calling EStructure::insert("zone_name");
-2) Putting a php file into /template with the same name as the zone, so it will be automatically executed,
-and put into the right zone.
-
-	Small reference:
-	EStructure::load() -> initialize the template engine
-	EStructure::unload() -> build the webpage. Call it at the very end!
-	EStructure::code() -> start taking output into a separated buffer
-	EStructure::insert($zone) -> put generated code into that $zone
-	EStructure::module($filename,$zone) -> load $filename as a module, execute, output on buffer and insert it into $zone 
+GFX4 uses a Model-View-Controller pattern. This will be documented very soon.
 
 ------------------------------------------------------------------------------
 |                         4 . User management                                |
@@ -199,7 +157,7 @@ You can also set GET and POST manually using:
 	EHeaderDataParser::add_get(string $key, string $value);
 	EHeaderDataParser::add_post(string $key, string $value);
 
-This can result particularly useful when you need to use EData's insert and update
+This can result particularly useful when you need to use EModel's insert and update
 but nto all the data comes from user request.
 
 If you want to take those variables fast and you can't decide you can choose
@@ -207,6 +165,11 @@ the unsafe way using:
 	
 	EHeaderDataParser::get(string $key);
 	EHeaderDataParser::post(string $key);
+
+If you have a string formed as a standard get key/value list (e.g. example=val&example2=val2)
+you can use this handy method to have that added to the module's stack.
+	
+	EHeaderDataParser::add_from_string(string $str);
 	
 ------------------------------------------------------------------------------
 |                             10 . URL Rewriting                             |

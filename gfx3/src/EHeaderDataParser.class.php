@@ -1,7 +1,7 @@
 <?php
 
 /*
- *   TRT GFX 3.0.1 (beta build) BackToSlash
+ *   TRT GFX 4.0
  * 
  *   support:	happy.snizzo@gmail.com
  *   website:	http://trt-gfx.googlecode.com
@@ -44,6 +44,9 @@ class EHeaderDataParser {
 		}
 	}
 	
+	/*
+	 * Access untouched data
+	 */
 	public static function post($key){
 		if(isset(EHeaderDataParser::$posts[$key])){
 			return EHeaderDataParser::$posts[$key];
@@ -60,6 +63,9 @@ class EHeaderDataParser {
 		}
 	}
 	
+	/*
+	 * Used to check if get/post has been set
+	 */
 	public static function exists_post($key){
 		if(isset(EHeaderDataParser::$posts[$key])){
 			return true;
@@ -76,6 +82,9 @@ class EHeaderDataParser {
 		}
 	}
 	
+	/*
+	 * Useful if get or post need to be printed in html pages
+	 */
 	public static function out_get($key){
 		if(isset(EHeaderDataParser::$gets[$key])){		
 			if(EHeaderDataParser::$quotes){
@@ -100,6 +109,9 @@ class EHeaderDataParser {
 		}
 	}
 	
+	/*
+	 * Safe parsed data to be used with databases 
+	 */
 	// Use instead of accessing $_GET
 	public static function db_get($key){
 		if(isset(EHeaderDataParser::$gets[$key])){
@@ -127,6 +139,11 @@ class EHeaderDataParser {
 		}
 	}
 	
+	/*
+	 * Manually adding values to module
+	 * 
+	 * Can be useful when using EModel automatic database management
+	 */
 	public static function add_post($key,$value){
 		if(!isset(EHeaderDataParser::$posts[$key])){
 			EHeaderDataParser::$posts[$key] = $value;
@@ -139,6 +156,22 @@ class EHeaderDataParser {
 		} //else ignored
 	}
 	
+	/*
+	 * Loads GET/POST data from parsing an html string
+	 */
+	public static function add_from_string($str){
+		$chunks = explode("&", $str);
+		
+		foreach($chunks as $chunk){
+			$data = explode("=", $chunk);
+			EHeaderDataParser::add_get($data[0],$data[1]);
+		}
+	}
+	
+	/*
+	 * Simply returns page without additional data.
+	 * Maybe to be moved to EPageProperties?
+	 */
 	public static function erase_get_data($url){
 		$url = explode("?", $url);
 		return $url[0];
