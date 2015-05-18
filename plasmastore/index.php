@@ -1,10 +1,9 @@
-<?php
+<?php   
 include "../gfx3/lib.php"; //including gfx3 library
-
 $client = new OCSClient();
-
 $categories = $client->get("v1/content/categories");
 ?>
+
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
@@ -19,6 +18,7 @@ $categories = $client->get("v1/content/categories");
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="css/logo.css">
     <link rel="stylesheet" href="css/app.css">
+    <!--<link rel="stylesheet" href="css/responsive_preview.css">-->
   </head>
 
 <body>
@@ -75,15 +75,15 @@ $categories = $client->get("v1/content/categories");
       <div class="row">
         <div class="col-sm-3 col-md-2 sidebar">
           <ul class="nav nav-sidebar">
-            <li class="active"><a href="#">Category 1<span class="sr-only">(current)</span></a></li>
-            
-            <?php
-			
-			foreach($categories["ocs"]["data"]["category"] as $category){
-				echo "<li><a href=\"\">".$category["name"]."</a></li>";
-			}
-			
+            <? php
+                foreach($categories["ocs"]["data"]["category"] as $category){
+                    echo "<li><a href=\"\">".$category["name"]."</a></li>";
+                }
             ?>
+            <li class="active"><a href="#">Category 1<span class="sr-only">(current)</span></a></li>
+            <li><a href="#">Category 2</a></li>
+            <li><a href="#">Category 3</a></li>
+            <li><a href="#">Category 4</a></li>
           </ul>
           <ul class="nav nav-sidebar">
             <li><a href="">Category 5</a></li>
@@ -108,56 +108,78 @@ $categories = $client->get("v1/content/categories");
 </ol>
 
 </div>
-<div class="container-fluid"> <!--e sto coso lo lascio o lo tolgo? informarsi  UPDATE fino a che non metto qualcosa a dx tenerlo-->
  <div class="col-md-7 col-md-offset-2 col-sm-offset-3">
-
-                <div class="thumbnail">
-                    <img class="img-responsive" src="http://placehold.it/800x480" alt="">
-                    <div class="caption-full">
-                        <h4 class="pull-right">Free</h4>
-                        <h4><a href="#">App Name</a>
-                        </h4>
-                        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum</p>
-                    </div>
-                    <div class="ratings">
-                        <p class="pull-right">3 reviews</p>
-                        <p>
-                            <span class="glyphicon glyphicon-star"></span>
-                            <span class="glyphicon glyphicon-star"></span>
-                            <span class="glyphicon glyphicon-star"></span>
-                            <span class="glyphicon glyphicon-star"></span>
-                            <span class="glyphicon glyphicon-star-empty"></span>
-                            4.0 stars
-                        </p>
-                    </div>
-                    <div class="text-left">
-                        <a class="btn btn-success"><span class="glyphicon glyphicon-download-alt"></span> Download it!</a>
-                    </div>
+    <div class="thumbnail">
+        
+        <div id="img_carousel" class="carousel slide" data-ride="carousel">
+            <!--indicators -->
+            <ol class="carousel-indicators">
+                <li data-target="#img_carousel" data-slide="0" class="active"></li>
+                <li data-target="#img_carousel" data-slide="1" class="active"></li>
+                <li data-target="#img_carousel" data-slide="2" class="active"></li>
+            </ol>
+            <!-- wrapper for slides -->
+            <div class="carousel-inner" role="listbox">
+                <div class="item active">
+                    <img src="http://placehold.it/800x300">
                 </div>
+                <div class="item">
+                    <img src="http://placehold.it/800x300">
+                </div>
+                <div class="item">
+                    <img src="http://placehold.it/800x300">
+                </div>
+            </div>
+            <!-- carousel arrows -->
+            <a class="left carousel-control" href="#img_carousel" role="button" data-slide="prev">
+                <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"> </span>
+                <span class="sr-only">Previous</span>
+            </a>
+            <a class="right carousel-control" href="#img_carousel" role="button" data-slide="next">
+                <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"> </span>
+                <span class="sr-only">Next</span>
+            </a>
+        </div> <!-- .carousel-->
 
-                <div class="well"> <!-- guardati i navtabs-->
 
+        <!-- App description -->
+        <div class="caption-full">
+            <h4 class="pull-right">Free</h4>
+            <h4><a href="#">App Name</a></h4>
+            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum</p>
+        </div> <!-- .App description -->
+        <div class="ratings">
+            <p class="pull-right">3 reviews </p>
+            <p>
+                <span class="glyphicon glyphicon-star"></span>
+                <span class="glyphicon glyphicon-star"></span>
+                <span class="glyphicon glyphicon-star"></span>
+                <span class="glyphicon glyphicon-star"></span>
+                <span class="glyphicon glyphicon-star-empty"></span>
+                4.0 stars
+            </p>
+        </div> <!-- .ratings -->
+        <div class="text-left">
+            <a class="btn btn-success" href="#"><span class="glyphicon glyphicon-download-alt"></span> Download it!</a>
+        </div>
+        <br>
+
+    </div> <!-- .thumbnail-->
+    <!--div class="well"-->
+        <div class="container">
+        <ul class="nav nav-tabs">
+            <li role="presentation" class="active"><a href="#reviews" data-toggle="tab">Reviews</a></li>
+            <li><a href="#comments" data-toggle="tab">Comments</a></li>
+            <li><a href="#author" data-toggle="tab">About the author</a></li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane fade in active" id="reviews">
+                <div class="well">
                     <div class="text-right">
-                        <a class="btn btn-success">Leave a Review</a>
+                        <a class="btn btn-success" href="#"> Leave a Review</a>
                     </div>
-
                     <hr>
-
-                    <div class="row">
-                        <div class="col-md-12">
-                            <span class="glyphicon glyphicon-star"></span>
-                            <span class="glyphicon glyphicon-star"></span>
-                            <span class="glyphicon glyphicon-star"></span>
-                            <span class="glyphicon glyphicon-star"></span>
-                            <span class="glyphicon glyphicon-star-empty"></span>
-                            Anonymous
-                            <span class="pull-right">3 days ago</span>
-                            <p>Taaaa</p>
-                        </div>
-                    </div>
-
-                    <hr>
-
                     <div class="row">
                         <div class="col-md-12">
                             <span class="glyphicon glyphicon-star"></span>
@@ -167,13 +189,14 @@ $categories = $client->get("v1/content/categories");
                             <span class="glyphicon glyphicon-star-empty"></span>
                             Anonymous
                             <span class="pull-right">10 days ago</span>
-                            <p>jcfjxgfj</p>
+                            <p>aaaaaaa</p>
                         </div>
                     </div>
+                
 
-                    <hr>
+                <hr>
 
-                    <div class="row">
+                <div class="row">
                         <div class="col-md-12">
                             <span class="glyphicon glyphicon-star"></span>
                             <span class="glyphicon glyphicon-star"></span>
@@ -181,17 +204,25 @@ $categories = $client->get("v1/content/categories");
                             <span class="glyphicon glyphicon-star"></span>
                             <span class="glyphicon glyphicon-star-empty"></span>
                             Anonymous
-                            <span class="pull-right">20 days ago</span>
-                            <p>hdhdxhjxfjt</p>
+                            <span class="pull-right">10 days ago</span>
+                            <p>bbb</p>
                         </div>
                     </div>
+                </div> <!-- .well -->
+         </div>
 
+            <div class="tab-pane fade" id="comments">
+                <div class="well">
+                    <div class="text-right">
+                        <a class="btn btn-success">Leave a comment</a>
+                    </div>
+                    <hr>
                 </div>
-
-            </div>
-
-    </div>
-
+             </div>
+        </div> <!-- .tab content -->
+    </div> <!-- .container -->
+    <!--/div--> <!-- .well -->
+ </div> <!-- .col-md-7 col-md-offset-2 col-sm-offset-3-->
   
 
     <!-- Bootstrap core JavaScript
@@ -199,6 +230,7 @@ $categories = $client->get("v1/content/categories");
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="js/jquery.js"></script>
     <script src="js/bootstrap.js"></script>
+    <script src="js/bootstrap.min.js"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <script src="js/ie10-viewport-bug-workaround.js"></script>
 </body>
