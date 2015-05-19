@@ -1,7 +1,7 @@
 <?php
 
 /*
- *   TRT GFX 3.0.1 (beta build) BackToSlash
+ *   TRT GFX 4.0 DyoMynchya
  * 
  *   support:	happy.snizzo@gmail.com
  *   website:	http://trt-gfx.googlecode.com
@@ -31,7 +31,7 @@ class EImage {
 	public function make_thumbnail($from,$to,$maxwidth,$maxheight)
 	{
 		$ext = EFileSystem::get_file_extension($from);
-		if(!list($width, $height, $type, $attr) = getimagesize($from)){ echo "error: $from |"; }
+		if(!list($width, $height, $type, $attr) = getimagesize($from)){ ELog::error("$from |"); }
 		if($width>$height){
 			$x = $width/$maxwidth;
 			$fwidth = floor($width / $x);

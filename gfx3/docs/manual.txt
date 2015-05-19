@@ -33,7 +33,52 @@ automatically.
 |                            3 . Templating                                  |
 ------------------------------------------------------------------------------
 
-GFX4 uses a Model-View-Controller pattern. This will be documented very soon.
+GFX4 uses a Model-View-Controller pattern that works with a rewrite engine.
+
+In the model-view-controller the code is splitted mainly in 3 semantic categories
+which are, of course:
+ - Model, represented by EModel class
+ - View, represented by simple html, css or js templating code
+ - Controller, represented by a subclass of the EController class
+
+Each one of these should contain a different type of code. Let's see them closer.
+
+The EModel class incorporates the old EData class now deprecated and contains
+various facilities for querying databases and performing standard tasks like SELECT,
+INSERT, UPDATE and DELETE. So, for example, if you're writing a class that interfaces
+with the "posts" class in your database, you should create a file name "posts.model.php"
+in the "model" directory. GFX already knows that there are models there.
+
+Every model should be name following this syntax <tablename>.model.php in order to be
+automatically loaded by gfx as a model. Then you can write your code that basically queries
+the database and returns the correct data, along with all manipulations done.
+
+Think of a Model of an object that has to return data that should already human understandable
+if seen raw.
+
+------
+
+Then there's the View folder, which is at the root of the gfx application and is called "views".
+This one contains php files named under the following syntax:
+		<viewname>.views.php
+Each view has the php final extension but can contain both php and standard templating code like
+pure html, css, js. In fact, a view should contain exaclty the code needed to display data to the
+use in the desired way. This will be achieved by a particular interaction that we'll see later
+in this guide.
+
+You can also create a views hierarchy simply by creating a set of folders. The load process
+will be completely transparent for the engine, and it's done by simply putting the entire url starting
+from "views" in the load command. This will be seen in a pratical example later.
+
+------
+
+Lastly, the more important of both the components, the Controller, represented by the EController
+class and located in the folder "controllers" following this filename syntax:
+		<controllername>.controller.php
+
+The controller is used to "glue" the data produced with the model and put it in the view in the correct
+order. In the controller will be written also all the logic of the application. Here is a practical
+example of a working model/view/controller. 
 
 ------------------------------------------------------------------------------
 |                         4 . User management                                |
