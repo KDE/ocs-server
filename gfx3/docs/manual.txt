@@ -43,6 +43,8 @@ which are, of course:
 
 Each one of these should contain a different type of code. Let's see them closer.
 
+------------------------------MODEL--------------------------------------
+
 The EModel class incorporates the old EData class now deprecated and contains
 various facilities for querying databases and performing standard tasks like SELECT,
 INSERT, UPDATE and DELETE. So, for example, if you're writing a class that interfaces
@@ -56,7 +58,7 @@ the database and returns the correct data, along with all manipulations done.
 Think of a Model of an object that has to return data that should already human understandable
 if seen raw.
 
-------
+------------------------------VIEW---------------------------------------
 
 Then there's the View folder, which is at the root of the gfx application and is called "views".
 This one contains php files named under the following syntax:
@@ -70,18 +72,95 @@ You can also create a views hierarchy simply by creating a set of folders. The l
 will be completely transparent for the engine, and it's done by simply putting the entire url starting
 from "views" in the load command. This will be seen in a pratical example later.
 
-------
+------------------------------CONTROLLER---------------------------------
 
 Lastly, the more important of both the components, the Controller, represented by the EController
 class and located in the folder "controllers" following this filename syntax:
 		<controllername>.controller.php
 
 The controller is used to "glue" the data produced with the model and put it in the view in the correct
-order. In the controller will be written also all the logic of the application. Here is a practical
-example of a working model/view/controller. 
+order. In the controller will be written also all the logic of the application.
+
+Every controller class name should named after the "section" of the website that you want to handle.
+For example the MainController->index($args) above will be executed when www.mywebsite.com/main/index
+is called. 
+
+Here is a practical example of a working controller.
+
+----------------------------main.controller.php------------------------------
+
+<?php
+class MainController extends EController
+{
+	public function index($args)
+	{
+		EStructure::view("home");
+	}
+	
+	public function last_news()
+	{
+		$articles = new ArticlesModel();
+		EStructure::view("articles", $articles->getAll());
+	}
+}
+?>
+
+------------------------------articles.model.php-----------------------------
+<?php
+class ArticlesModel extends EModel
+{
+	public function __construct()
+	{
+		parent::__construct("articles");
+	}
+	
+	public function getAll()
+	{
+		$data = $this->find("*");
+		return $data;
+	}
+}
+?>
+-----------------------------articles.views.php------------------------------
+<html>
+	<head><title>Articles page</title></head>
+	<body>
+		<?php foreach($data as $article) { ?>
+		<h1><?php echo $article['id']; ?></h1>
+		<p><?php echo $article['text']; ?></p>
+		<?php } ?>
+	</body>
+</html>
 
 ------------------------------------------------------------------------------
-|                         4 . User management                                |
+|                         4 . URL Rewriting                                  |
+------------------------------------------------------------------------------
+Gfx contains a simple but working url rewriter that works in conjunction with
+the MVC system. It basically translates an URL asked by the client into a new one
+elaborated by the server.
+
+All the rules are in the file "gfx3/config/rewrite.conf.php". This is an example rewrite config file:
+
+<?php die(); ?>
+/help|/help/index
+/yourpath|/install/index
+
+Notice how the first URL is the one written by the client and the second one is that one elaborated
+by the server, when handling the request of a webpage.
+
+Everything that comes after a controller is usually handled as a parameter, except when you rewrite the URL.
+So, for example, calling /help/index/arg1/arg2/arg3 will be directly passed as an argument array to the method
+index($args) of the controller HelpController. Every other standard GET parameter can be passed as usual:
+http://www.example.com/help/index?x=5
+http://www.example.com/help/index/?x=5
+http://www.example.com/help/index/arg1/arg2?x=5
+http://www.example.com/help/index/arg1/arg2/?x=5
+
+In those URLs, the get parameters will be held in the EHeaderDataParser class, that offers also protection against
+SQL injections.
+
+------------------------------------------------------------------------------
+|                         5 . User management                                |
 ------------------------------------------------------------------------------
 
 In GFX3 there's a static class called EUser. In order to have users working on your system just call
@@ -115,7 +194,7 @@ Small reference:
 	EUser::belongs_to_group($group) -> returns boolen. True if user belongs to $group.
 
 ------------------------------------------------------------------------------
-|                    5 . Low-level MySQL database                            |
+|                    6 . Low-level MySQL database                            |
 ------------------------------------------------------------------------------
 
 In GFX3 there's the static class EDatabase which provide a direct communication
@@ -130,7 +209,7 @@ Small reference:
 	EDatabase::last_insert_id() -> returns the id of the last inserted row.
 
 ------------------------------------------------------------------------------
-|                      6 . High-level MySQL database                         |
+|                      7 . High-level MySQL database                         |
 ------------------------------------------------------------------------------
 
 In GFX3 there's an abstraction layer up on mysql tables called EData.
@@ -153,7 +232,7 @@ Please be careful when using those intelligent features as they are easily
 exploitable. In order to avoid those kind of bugs always use $allowed_fields.
 
 ------------------------------------------------------------------------------
-|                          7 . Error Management                              |
+|                          8 . Error Management                              |
 ------------------------------------------------------------------------------
 
 GFX3 provides a nice class to handle error management.
@@ -166,7 +245,7 @@ This is the main difference between an error and a warning.
 	ELog::warning("this will be shown");
 
 ------------------------------------------------------------------------------
-|                          8 . Debugging tools                               |
+|                          9 . Debugging tools                               |
 ------------------------------------------------------------------------------
 
 The only debugging tool provided is a breakpoint.
@@ -177,7 +256,7 @@ You can use it like this:
 This will also print the variable stack in which the breakpoint is called.
 
 ------------------------------------------------------------------------------
-|                     9 . Retrieving safe GET/POST data                      |
+|                     10 . Retrieving safe GET/POST data                      |
 ------------------------------------------------------------------------------
 
 GFX provides a class that automatically handles and parse GET and POST data.
@@ -217,7 +296,7 @@ you can use this handy method to have that added to the module's stack.
 	EHeaderDataParser::add_from_string(string $str);
 	
 ------------------------------------------------------------------------------
-|                             10 . URL Rewriting                             |
+|                             11 . URL Rewriting                             |
 ------------------------------------------------------------------------------
 
 GFX has a module that do URL rewriting without any .htaccess stuff.
@@ -244,7 +323,7 @@ In order to build a nice title (also if it's not useful for your app logic you s
 	$url = ERewriter::prettify("I'm a terrible title");
 
 ------------------------------------------------------------------------------
-|                            11 . Config manager                             |
+|                            12 . Config manager                             |
 ------------------------------------------------------------------------------
 
 GFX use a class to load config every time from a bunch of files. You can also
@@ -267,7 +346,7 @@ Also note that PHP code in config files will just be ignored, so it's quite safe
 some kind of die(); on the first line so no one will be able to see your inner config.
 
 ------------------------------------------------------------------------------
-|                           12 . Cache Engine                                |
+|                           13 . Cache Engine                                |
 ------------------------------------------------------------------------------
 
 GFX make large use of APC module in order to be more efficient and caching everything 
@@ -292,7 +371,7 @@ that txt file. Small referece:
 	$cvar->get(); -> get file value
 
 ------------------------------------------------------------------------------
-|                       13 . File System utilities                           |
+|                       14 . File System utilities                           |
 ------------------------------------------------------------------------------
 
 GFX offers a static class as a file system helper. Small reference:
@@ -303,7 +382,7 @@ GFX offers a static class as a file system helper. Small reference:
 	EFileSystem::get_uploaded_file_name() -> returns original uploaded file name.
 	
 ------------------------------------------------------------------------------
-|                       14 . Network Socket object                           |
+|                       15 . Network Socket object                           |
 ------------------------------------------------------------------------------
 
 GFX permits also to interact with other APIs and websites through ENetworkSocket.
@@ -326,7 +405,7 @@ This will set content of $c to the content of http://localhost/index.php perform
 sending $postdata as $_POST value.
 
 ------------------------------------------------------------------------------
-|                          15 . XML utilities                                |
+|                          16 . XML utilities                                |
 ------------------------------------------------------------------------------
 
 In order to simply read xml GFX3 offers a small class still WIP to handle XML. Small reference:
@@ -334,7 +413,7 @@ In order to simply read xml GFX3 offers a small class still WIP to handle XML. S
 	EXmlParser::to_array($raw_xml); -> turns raw xml into a structured array.
 
 ------------------------------------------------------------------------------
-|                            16 . More tools                                 |
+|                            17 . More tools                                 |
 ------------------------------------------------------------------------------
 
 If your installation is on / you will have also some utils and debugging tools like
@@ -345,11 +424,11 @@ If you want to know more about the usage that APC has in your system you can als
 go to /utils/apc.php
 
 ------------------------------------------------------------------------------
-|                               17 . Contacts                                |
+|                               18 . Contacts                                |
 ------------------------------------------------------------------------------
 
 This manual has been written by snizzo during an afternoon.
-If there are any error please mail me or open a ticket here in google code:
+If there are any error please mail me or open a ticket here on github:
 
-	http://gfx-framework.googlecode.com
+	https://github.com/snizzo/gfx-framework
 	happy.snizzo@gmail.com
