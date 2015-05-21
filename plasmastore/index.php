@@ -1,7 +1,7 @@
 <?php   
 include "../gfx3/lib.php"; //including gfx3 library
 $client = new OCSClient();
-$categories = $client->get("v1/content/categories");
+$categories = $client->get("/gamingfreedom.org/v1/content/categories");
 ?>
 
 <!DOCTYPE html>
@@ -75,7 +75,7 @@ $categories = $client->get("v1/content/categories");
       <div class="row">
         <div class="col-sm-3 col-md-2 sidebar">
           <ul class="nav nav-sidebar">
-            <? php
+            <?php
                 foreach($categories["ocs"]["data"]["category"] as $category){
                     echo "<li><a href=\"\">".$category["name"]."</a></li>";
                 }
