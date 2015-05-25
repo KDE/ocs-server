@@ -65,7 +65,7 @@ This one contains php files named under the following syntax:
 		<viewname>.views.php
 Each view has the php final extension but can contain both php and standard templating code like
 pure html, css, js. In fact, a view should contain exaclty the code needed to display data to the
-use in the desired way. This will be achieved by a particular interaction that we'll see later
+user in the desired way. This will be achieved by a particular interaction that we'll see later
 in this guide.
 
 You can also create a views hierarchy simply by creating a set of folders. The load process
@@ -132,6 +132,12 @@ class ArticlesModel extends EModel
 	</body>
 </html>
 
+MVC can be managed in the generic config file ("gfx3/config/generic.conf.php"):
+Example:
+<?php die("You cannot see config in here."); ?>
+mvc|yes
+mvc|no
+
 ------------------------------------------------------------------------------
 |                         4 . URL Rewriting                                  |
 ------------------------------------------------------------------------------
@@ -158,6 +164,12 @@ http://www.example.com/help/index/arg1/arg2/?x=5
 
 In those URLs, the get parameters will be held in the EHeaderDataParser class, that offers also protection against
 SQL injections.
+
+URL rewriting can be managed in the generic config file ("gfx3/config/generic.conf.php"):
+Example:
+<?php die("You cannot see config in here."); ?>
+rewrite|yes
+rewrite|no
 
 ------------------------------------------------------------------------------
 |                         5 . User management                                |
@@ -192,6 +204,12 @@ Small reference:
 	EUser::gdeny($group) -> deny the access to the webpage if user does belong to $group, allow others
 	EUser::gallow($group) -> allow the access to the webpage if user does belong to $group, deny others
 	EUser::belongs_to_group($group) -> returns boolen. True if user belongs to $group.
+	
+Users can be managed in the generic config file ("gfx3/config/generic.conf.php"):
+Example:
+<?php die("You cannot see config in here."); ?>
+users|yes
+users|no
 
 ------------------------------------------------------------------------------
 |                    6 . Low-level MySQL database                            |
@@ -207,6 +225,12 @@ Small reference:
 	EDatabase::sq($sql_query) -> execute $sql_query and returns the first result. Useful for counts etc. 
 	EDatabase::table_exists($table) -> check if table exists and return boolean.
 	EDatabase::last_insert_id() -> returns the id of the last inserted row.
+
+Database (both high and low level) can be managed in the generic config file ("gfx3/config/generic.conf.php"):
+Example:
+<?php die("You cannot see config in here."); ?>
+database|yes
+database|no
 
 ------------------------------------------------------------------------------
 |                      7 . High-level MySQL database                         |
@@ -243,6 +267,15 @@ This string will produce a backtrace and break the execution of the script exact
 This is the main difference between an error and a warning.
 
 	ELog::warning("this will be shown");
+
+Error management can be suppressed and managed in the file "gfx3/config/generic.conf.php".
+
+<?php die("You cannot see config in here."); ?>
+
+errormode|normal			-> Errors are shown as normal
+errormode|formatted			-> Errors are shown with little html formatting
+errormode|file				-> Errors are written in a log file accessible only from internal server
+errormode|suppressed		-> Errors are simply suppressed (suggested option in production environment)
 
 ------------------------------------------------------------------------------
 |                          9 . Debugging tools                               |
@@ -294,6 +327,14 @@ If you have a string formed as a standard get key/value list (e.g. example=val&e
 you can use this handy method to have that added to the module's stack.
 	
 	EHeaderDataParser::add_from_string(string $str);
+
+EHeaderDataParser can be configure in the generic config file of gfx, which can be located
+here: "gfx3/config/generic.conf.php".
+
+Example:
+<?php die("You cannot see config in here."); ?>
+protectheaders|yes
+protectheaders|no
 	
 ------------------------------------------------------------------------------
 |                             11 . URL Rewriting                             |

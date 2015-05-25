@@ -39,14 +39,17 @@ class ELog {
 				debug_print_backtrace();
 				echo "</pre>";
 				die();
-			case 'nice':
+			case 'formatted':
 				die("<div style=\"border:3px red solid;-moz-border-radius:10px;background-color:#CECECE;padding:7px;margin:auto;margin-top:7px;margin-bottom:7px;font-size:100%; width:300px;\">
 				<center><big><big><b>GFX ERROR:</b></big></big></center>
 				<i>$r</i></div>");
-			case 'log':
+			case 'file':
 				$stream = fopen(ELog::$error_file, 'a+');
 				fwrite($stream, "GFX ERROR: $r\n\n");
 				fclose($stream);
+			case 'suppressed':
+				//ignore error
+				break;
 		}
 	}
 	
@@ -57,13 +60,16 @@ class ELog {
 			case 'normal':
 				echo "GFX WARNING: $r<br>";
 				break;
-			case 'nice':
+			case 'formatted':
 				echo "<p style=\"color:#CDD500;font-size:20px;\">GFX WARNING:</p>
 					<p style=\"color:#D58600;font-size:15px;font-style:italic;\">$r</p>";
-			case 'log':
+			case 'file':
 				$stream = fopen(ELog::$warning_file, 'a+');
 				fwrite($stream, "GFX WARNING: $r\n\n");
 				fclose($stream);
+			case 'suppressed':
+				//ignore error
+				break;
 		}
 	}
 	

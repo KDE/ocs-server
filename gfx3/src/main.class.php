@@ -1,7 +1,7 @@
 <?php
 
 /*
- *   TRT GFX 3.0.1 (beta build) BackToSlash
+ *   GFX 4.0
  * 
  *   support:	happy.snizzo@gmail.com
  *   website:	http://trt-gfx.googlecode.com
@@ -20,21 +20,29 @@ class ELoader{
 	
 	public static $prev_path;
 	public static $abs_path;
+	public static $root_path;
 	public static $source_path = "gfx3/src";
 	public static $cache_path = "gfx3/cache";
-	public static $config_path = "gfx3/config";
+	public static $config_path = "config";
 	public static $controllers_path = "controllers";
 	public static $models_path = "models";
 	public static $views_path = "views";
 	
+	//actual website path, containg config, models, views and controllers
+	public static $site_path = "";
+	public static $setted_config = false;
+	
 	//look for gfx3 installation path
 	public static function getLibInstallPath(){
-		if(is_dir("gfx3")){
-			ELoader::$cache_path = getcwd()."/".ELoader::$cache_path;
+		if(is_dir(ELoader::$config_path) and !ELoader::$setted_config){
 			ELoader::$config_path = getcwd()."/".ELoader::$config_path;
 			ELoader::$controllers_path = getcwd()."/".ELoader::$controllers_path;
 			ELoader::$models_path = getcwd()."/".ELoader::$models_path;
 			ELoader::$views_path = getcwd()."/".ELoader::$views_path;
+			ELoader::$setted_config = true;
+		}
+		if(is_dir("gfx3")){
+			ELoader::$cache_path = getcwd()."/".ELoader::$cache_path;
 			return getcwd()."/".ELoader::$source_path;
 		} else {
 			chdir("..");
@@ -42,26 +50,74 @@ class ELoader{
 		}
 	}
 	
+	/*
+	 * This method gives precedence to sub-websites
+	 * located in subfolders when the url is called
+	 * and set the correct path for loading:
+	 * config, controllers, models and views
+	 * in the subdirectory.
+	 */
+	public static function checkForSubsites(){
+		$current_uri = $_SERVER['REQUEST_URI'];
+		$dirs = explode("/", $current_uri);
+		
+		foreach($dirs as $key => $dir){
+			if(is_dir($dir)){
+				chdir($dir);
+				if(is_dir("config")){
+					//url from gfxroot to config, controllers etc...
+					$base_url = implode("/", array_slice($dirs, 0, $key+1));
+					
+					$pos = strpos($_SERVER['REQUEST_URI'],$base_url);
+					if ($pos !== false) {
+						if($pos==0){
+							$rewritten = str_replace($base_url, "", $_SERVER['REQUEST_URI']);
+							$_SERVER['REQUEST_URI'] = $rewritten;
+						}
+					}
+					
+					ELoader::$site_path = getcwd();
+					break;
+				}
+			}
+		}
+	}
+	
 	//load all modules dynamically
 	public static function loadAllModules(){
 		
+		ELoader::$root_path = $_SERVER["HTTP_HOST"];
 		ELoader::$prev_path = getcwd();
+		
+		//handle eventual subsites, changes directory and leaves unchanged
+		//the engine will later check for gfx presence in an upper folder
+		ELoader::checkForSubsites();
+		
 		ELoader::$abs_path = ELoader::getLibInstallPath();
 		
 		//include source
-		chdir(ELoader::$abs_path);
-		foreach(glob("*.class.php") as $filename){
-			include_once($filename);
+		if(chdir(ELoader::$abs_path)){
+			foreach(glob("*.class.php") as $filename){
+				include_once($filename);
+			}
+		} else {
+			ELog::error("critical error including gfx source. Path: ".ELoader::$abs_path);
 		}
 		//include controllers
-		chdir(ELoader::$controllers_path);
-		foreach(glob("*.controller.php") as $filename){
-			include_once($filename);
+		if(chdir(ELoader::$controllers_path)){
+			foreach(glob("*.controller.php") as $filename){
+				include_once($filename);
+			}
+		} else {
+			ELog::error("critical error including controllers. Path: ".ELoader::$controllers_path);
 		}
 		//include models
-		chdir(ELoader::$models_path);
-		foreach(glob("*.model.php") as $filename){
-			include_once($filename);
+		if(chdir(ELoader::$models_path)){
+			foreach(glob("*.model.php") as $filename){
+				include_once($filename);
+			}
+		} else {
+			ELog::error("critical error including models. Path: ".ELoader::$models_path);
 		}
 		
 		chdir(ELoader::$prev_path);

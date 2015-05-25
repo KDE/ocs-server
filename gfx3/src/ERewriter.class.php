@@ -24,7 +24,7 @@ class ERewriter{
 	 */
 	public static function load()
 	{
-		//if web page is set to be not rewritable, simply return
+		//treat url erasing extra parts
 		$current_uri = $_SERVER['REQUEST_URI'];
 		
 		foreach(EConfig::$data['rewrite'] as $key => $value){
