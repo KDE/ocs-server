@@ -3,14 +3,12 @@
  * on this file gfx inclusion is useless as gfx is already running
  */
 
-class HelpController extends EController
+class MenuController extends EController
 {
-	
     public function index($args)
-    {
-        EStructure::view("help/index");
-    }
-    
+    {	
+        EStructure::view("adminmenu/index");
+    }   
 }
 
 ?>

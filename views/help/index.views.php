@@ -3,6 +3,8 @@
 
 <h1>OCS Server Bible</h1>
 
+<p><?php EStructure::render("/v1/config");?></p>
+
 <p>Welcome to the OCS Server Bible, the ultimate definitive guide and resources regarding<br>
 the only open source OCS server.</p>
 

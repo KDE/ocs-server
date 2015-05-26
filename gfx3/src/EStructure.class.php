@@ -19,10 +19,18 @@ class EStructure {
 	
 	private static $debug = false;
 	
-	public static function render()
+	/*
+	 * Tries to render a method's controller
+	 */
+	public static function render($url="")
 	{
+		//setting default 
+		if(empty($url)){
+			$url = $_SERVER['REQUEST_URI'];
+		}
+		
 		//getting correct input
-		$uri = explode("?", $_SERVER['REQUEST_URI']); //ignoring all normal get part as for now
+		$uri = explode("?", $url); //ignoring all normal get part as for now
 		$input = trim($uri[0], "/");
 		$chunks = explode("/", $input);
 		
@@ -69,10 +77,29 @@ class EStructure {
 		
 	}
 	
+	/*
+	 * Used to load controllers inside other views.
+	 * $path		contains relative url from views folder
+	 * [$args]	contains data arguments that can be used
+	 * 			in view with data[0], data[1] etc...
+	 * 			inside view
+	 * 
+	 * return	void  
+	 */
 	public static function controller($path){
 		echo "calling $path<br>";
 	}
 	
+	/*
+	 * Used to load views from a controller and inside 
+	 * other views.
+	 * $url		contains relative url from views folder
+	 * [$args]	contains data arguments that can be used
+	 * 			in view with data[0], data[1] etc...
+	 * 			inside view
+	 * 
+	 * return	void  
+	 */
 	public static function view($url)
 	{
 		$numargs = func_num_args();

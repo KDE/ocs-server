@@ -162,7 +162,7 @@ if (EConfig::$data['generic']['users'] == "yes"){
 //rendering the page
 if (EConfig::$data['generic']['mvc'] == "yes"){
 	if (EConfig::$data['generic']['rewrite'] == "yes"){
-		EStructure::render();
+		EStructure::render(); //rendering default page
 	} else {
 		ELog::error("You must activate 'rewrite' module under config/generic before using 'mvc'!");
 		return;

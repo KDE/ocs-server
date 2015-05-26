@@ -386,6 +386,28 @@ Don't be afraid to use this feature as config files are cached using the cache e
 Also note that PHP code in config files will just be ignored, so it's quite safe to put
 some kind of die(); on the first line so no one will be able to see your inner config.
 
+You can also use multi value properties like this:
+--------------/config/myname.conf.php-------------
+	<?php die(); ?>
+	info|Claudio|Desideri|kde
+
+If you access EConfig::$data["myname"]["info"]; you get an array containing all the values.
+You can iterate on it using:
+	foreach(EConfig::$data["myname"]["info"] as $item){
+		echo $item;
+	}
+
+This will print:
+	Claudio
+	Desideri
+	kde
+
+And via code that will be accessible using:
+    $info = EConfig::$data["myname"]["info"];
+    $info[0];
+    $info[1];
+    $info[2];
+
 ------------------------------------------------------------------------------
 |                           13 . Cache Engine                                |
 ------------------------------------------------------------------------------

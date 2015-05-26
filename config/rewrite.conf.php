@@ -1,3 +1,4 @@
 <?php die(); ?>
-/help|/help/index
-/install|/install/index
+/help|/help/index|normal
+/install|/install/index|normal
+/|/help/index|exact

@@ -28,16 +28,36 @@ class ERewriter{
 		$current_uri = $_SERVER['REQUEST_URI'];
 		
 		foreach(EConfig::$data['rewrite'] as $key => $value){
-			$pos = strpos($current_uri,$key);
+			if(!is_array($value)){
+				ELog::warning("You need to specify a second value as a rewrite rule in rewrite.conf.php");
+				return;
+			}
 			
-			//if we found a rewrite rule that can be applied
-			if ($pos !== false) {
-				//rewrite only at the very start of the string
-				if($pos==0){
-					$rewritten = str_replace($key, $value, $current_uri);
+			//handle with normal rewrite that
+			//permits to have parameters
+			if($value[1]=="normal"){			
+				$pos = strpos($current_uri,$key);
+				
+				//if we found a rewrite rule that can be applied
+				if ($pos !== false) {
+					//rewrite only at the very start of the string
+					if($pos==0){
+						$rewritten = str_replace($key, $value[0], $current_uri); //TODO FIX HERE FIRST OCCURRENCE
+						//$rewritten = preg_replace("$key", $value, $current_uri, 1);
+						$_SERVER['REQUEST_URI'] = $rewritten;
+					}
+				}
+			}
+			//handle with exact match, that works only if the url is exactly that one
+			else if($value[1]=="exact"){
+				$current_uri_t = explode("?", $current_uri)[0];
+				if($current_uri_t==$key){
+					$rewritten = str_replace($key, $value[0], $current_uri); //TODO FIX HERE
+					//$rewritten = preg_replace("$key", $value, $current_uri, 1);
 					$_SERVER['REQUEST_URI'] = $rewritten;
 				}
 			}
+			
 		}
 	}
 
