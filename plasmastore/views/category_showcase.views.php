@@ -26,7 +26,7 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="#"><span><img class="logo" src="img/plasma.png"/></span> PlasmaStore</a>
+      <a class="navbar-brand" href="#"><span><img class="logo" src="../img/plasma.png"/></span> PlasmaStore</a>
     </div>
 
     <!-- Collect the nav links, forms, and other content for toggling -->

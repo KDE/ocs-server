@@ -1,5 +1,5 @@
 <?php
-class RetriveModel extends EModel {
+class RetrieveModel extends EModel {
 
 public function getCategories() {
 	$client = new OCSClient();
