@@ -2,6 +2,7 @@
 include "../gfx3/lib.php"; //including gfx3 library
 $client = new OCSClient();
 $categories = $client->get("/gamingfreedom.org/v1/content/categories");
+
 ?>
 
 <!DOCTYPE html>
@@ -74,25 +75,24 @@ $categories = $client->get("/gamingfreedom.org/v1/content/categories");
 <div class="container-fluid">
       <div class="row">
         <div class="col-sm-3 col-md-2 sidebar">
-          <ul class="nav nav-sidebar">
+          <ul class="nav nav-sidebar sidebuttons">
             <?php
                 foreach($categories["ocs"]["data"]["category"] as $category){
                     echo "<li><a href=\"\">".$category["name"]."</a></li>";
                 }
             ?>
-            <li class="active"><a href="#">Category 1<span class="sr-only">(current)</span></a></li>
+            <li><a href="#category1" data-toggle="collapse">Category 1<span class="sr-only">(current)</span></a></li>
+            <div class="collapse" id="category1">
+                <a class="list-group-item" id="category1"href="#">subcategory a</a>
+            </div>
             <li><a href="#">Category 2</a></li>
             <li><a href="#">Category 3</a></li>
             <li><a href="#">Category 4</a></li>
-          </ul>
-          <ul class="nav nav-sidebar">
             <li><a href="">Category 5</a></li>
             <li><a href="">Category 6</a></li>
             <li><a href="">Category 7</a></li>
             <li><a href="">Category 8</a></li>
             <li><a href="">Category 9</a></li>
-          </ul>
-          <ul class="nav nav-sidebar">
             <li><a href="">Category 10</a></li>
             <li><a href="">Category 11</a></li>
             <li><a href="">Category 12</a></li>
@@ -166,7 +166,6 @@ $categories = $client->get("/gamingfreedom.org/v1/content/categories");
 
     </div> <!-- .thumbnail-->
     <!--div class="well"-->
-        <div class="container">
         <ul class="nav nav-tabs">
             <li role="presentation" class="active"><a href="#reviews" data-toggle="tab">Reviews</a></li>
             <li><a href="#comments" data-toggle="tab">Comments</a></li>
@@ -177,8 +176,25 @@ $categories = $client->get("/gamingfreedom.org/v1/content/categories");
             <div class="tab-pane fade in active" id="reviews">
                 <div class="well">
                     <div class="text-right">
-                        <a class="btn btn-success" href="#"> Leave a Review</a>
+                        <a class="btn btn-success" href="#reviews-anchor" id="open-review-box"> Leave a Review</a>
                     </div>
+                    <div class="row" id="post-review-box" style="display:none">
+                        <div class="col-md-12">
+                            <form accept-charset="UTF-8" action="" method="post">
+                                <input id="ratings-hidden" name="rating" type="hidden">
+                                <textarea class="form-control animated" cols="50" id="new-review" name="comment" placeholder="Enter your review here..." rows="5"></textarea>
+
+                                <div class="text-right">
+                                    <div class="stars starrr" data-rating="0">
+                                        <a class="btn btn-danger btn-sm" href="#" id="close-review-box" style="display:none; margin-right: 10px;">
+                                            <span class="glyphicon glyphicon-remove"></span>Cancel</a>
+                                            <button class="btn btn-success btn-sm" type="submit">Save</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
                     <hr>
                     <div class="row">
                         <div class="col-md-12">
@@ -220,7 +236,6 @@ $categories = $client->get("/gamingfreedom.org/v1/content/categories");
                 </div>
              </div>
         </div> <!-- .tab content -->
-    </div> <!-- .container -->
     <!--/div--> <!-- .well -->
  </div> <!-- .col-md-7 col-md-offset-2 col-sm-offset-3-->
   
@@ -231,6 +246,8 @@ $categories = $client->get("/gamingfreedom.org/v1/content/categories");
     <script src="js/jquery.js"></script>
     <script src="js/bootstrap.js"></script>
     <script src="js/bootstrap.min.js"></script>
+    <script src="js/sidebuttons.js"></script>
+    <script src="js/reviewbox.js"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <script src="js/ie10-viewport-bug-workaround.js"></script>
 </body>
