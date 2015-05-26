@@ -1,2 +1,1 @@
 <?php die(); ?>
-/|/main/index
