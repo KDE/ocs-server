@@ -1,7 +1,7 @@
 <?php
 
 /*
- *   TRT GFX 3.0.1 (beta build) BackToSlash
+ *   GFX 4.0
  * 
  *   support:	happy.snizzo@gmail.com
  *   website:	http://trt-gfx.googlecode.com
@@ -23,20 +23,24 @@
 class EModel {
 	//in order to avoid avoidable queries
 	private $dbg = false;
+	private $ready = false;
 	private $tcount = "nd";
 	private $table = false;
 	private $fields = array();
 	private $noquery = false;
 	
-	public function __construct($tbl){
-		$this->table = $tbl;
-		if(EDatabase::table_exists($this->table)){
-			$this->get_table_info();
-		} else {
-			ELog::error("$tbl does not exists on database.");
+	public function __construct($tbl=""){
+		if(!empty($tbl)){
+			$this->table = $tbl;
+			if(EDatabase::table_exists($this->table)){
+				$this->get_table_info();
+			} else {
+				ELog::error("$tbl does not exists on database.");
+			}
+			
+			$this->dbg = false;
+			$this->ready = true;
 		}
-		
-		$this->dbg = false;
 	}
 	
 	
@@ -68,11 +72,24 @@ class EModel {
 	}
 	
 	/*
+	 * check if table is loaded,
+	 * if not, empty model is been used
+	 * and warning is printed
+	 */
+	public function is_ready_test(){
+		if(!$this->ready){
+			ELog::warning("EModel without table has been used. Please fix this.");
+		}
+		return $this->ready;
+	}
+	
+	/*
 	 * Load info from a database table.
 	 * Results are also cached.
 	 * TODO: move cache to new ECacheVar.
 	 */
 	private function get_table_info(){
+		if(!$this->is_ready_test()) { return; }
 		//if already cached load from cache else load with a describe AND cache
 		$cache_name = $this->table.".table";
 		if(ECacheVar::exists($cache_name)){
@@ -115,7 +132,7 @@ class EModel {
 	 * TODO: fix this retrocompatibility crap ^^^
 	 */
 	public function insert($allowed_fields=array()) {
-		
+		if(!$this->is_ready_test()) { return; }
 		//accepting eventual data as valid
 		if(!empty($allowed_fields)){
 			foreach($this->fields as $field){
@@ -161,6 +178,7 @@ class EModel {
 	 * Extrapolates data and map it into an associative array
 	 */
 	public function find($what=" * ", $where="") {
+		if(!$this->is_ready_test()) { return; }
 		$q = "SELECT $what FROM ".$this->table." $where";
 		$r = EDatabase::q($q);
 		while($arr = $r->fetch_assoc()){
@@ -183,6 +201,7 @@ class EModel {
 	 * Example: COUNT(....) returns 56. This method returns 56.
 	 */
 	public function take($what=" * ", $where="") {
+		if(!$this->is_ready_test()) { return; }
 		if(!empty($where)){ $where = " WHERE ".$where." "; }
 		
 		$result = EDatabase::sq("SELECT $what FROM ".$this->table." $where");
@@ -195,6 +214,7 @@ class EModel {
 	 * Return a single row from an associative array
 	 */
 	public function row($what=" * ", $where="") {
+		if(!$this->is_ready_test()) { return; }
 		if(!empty($where)){ $where = " ".$where." "; }
 		
 		$r = EDatabase::q("SELECT $what FROM ".$this->table." $where");
@@ -212,6 +232,7 @@ class EModel {
 	 * TODO: maybe a little refactor using db->sq()?
 	 */
 	public function count($field="id", $where=""){
+		if(!$this->is_ready_test()) { return; }
 		//optimized... only one query in a page!
 		if($this->tcount!="nd"){
 			return $this->tcount;
@@ -232,6 +253,7 @@ class EModel {
 	 * check if exists a $field in $this->table $where
 	 */
 	public function is_there($field="", $where=""){
+		if(!$this->is_ready_test()) { return; }
 		$result = $this->count($field, $where);
 		if($result){
 			return true;
@@ -244,6 +266,7 @@ class EModel {
 	 * Deletion method.
 	 */
 	public function delete($where="", $howmany=""){
+		if(!$this->is_ready_test()) { return; }
 		if(!empty($where)){ $where = " WHERE ".$where." "; }
 		if(!empty($howmany)){ $howmany = " LIMIT ".$howmany." "; }
 		
@@ -256,6 +279,7 @@ class EModel {
 	 * Remember to specifies $where when used!
 	 */
 	public function update($where="", $allowed_fields=array()) {
+		if(!$this->is_ready_test()) { return; }
 		//recupero le informazioni di where
 		if(!empty($where)){ $where = " WHERE ".$where." "; }
 		
