@@ -28,7 +28,9 @@ class OCSClient{
 	
 	public function __construct($srv="default"){
 		if($srv=="default"){
-			$this->set_target_server(EConfig::$data["ocs"]["host"]);
+			if(isset(EConfig::$data["ocs"])){
+				$this->set_target_server(EConfig::$data["ocs"]["host"]);
+			}
 		} else {
 			$this->set_target_server($srv);
 		}
