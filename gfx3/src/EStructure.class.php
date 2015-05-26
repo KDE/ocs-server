@@ -63,12 +63,26 @@ class EStructure {
 					ELog::warning($controller."->".$method."() is not defined. Please define it.");
 				}
 			}
+		} else {
+			ELog::warning($controller." class is not defined. Please define it.");
 		}
 		
 	}
 	
-	public static function view($url, $data="")
+	public static function controller($path){
+		echo "calling $path<br>";
+	}
+	
+	public static function view($url)
 	{
+		$numargs = func_num_args();
+		$arg_list = func_get_args();
+		$data = array();
+		
+		for ($i = 1; $i < $numargs; $i++) {
+			$data[] = $arg_list[$i];
+		}
+		
 		$filepath = ELoader::$views_path."/$url.views.php";
 		
 		if(file_exists($filepath)){
