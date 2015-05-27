@@ -354,6 +354,15 @@ And then it will rewrite doing a simple string replace, but internally on the en
 So in this case /help will be rewritten internally as /help/index and therefore
 calling the index() method of the HelpController class defined.
 
+If more rules are matching for the same url, the one with the longest key will be
+used. Example:
+
+	<?php die(); ?>
+	/help/games|/help/games/latest|normal
+	/help|/help/index|normal
+
+Only the second rule will be considered, even if it's defined before the second one.
+
 Every other parameter added after those slashes will be handled as parameter that will
 be passed to the controller's method via the $args array.
 
