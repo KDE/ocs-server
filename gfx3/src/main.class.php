@@ -141,7 +141,10 @@ EConfig::load();
 
 //rewrite url if needed
 if (EConfig::$data['generic']['rewrite'] == "yes"){
+	ERewriter::enable();
 	ERewriter::load();
+} else {
+	ERewriter::disable();
 }
 
 //loading get/post
