@@ -75,10 +75,29 @@ class EConfig{
 			if(!empty($line)){
 				$chunks = explode("|",$line);
 				//gives correct key and correct value, erasing line break.
+				//control if is set more than once
 				if(isset($result[$chunks[0]])){
 					ELog::warning("<b>".$chunks[0]."</b> property is set more than once in ".$filename." config file!");
+				} else
+				//control if is set to empty value
+				if(count($chunks)<2){
+					ELog::warning("<b>".$chunks[0]."</b> property has empty value in ".$filename." config file!");
+				} else
+				//load 1:1 data and gives a simple value
+				if(count($chunks)==2){
+					$result[$chunks[0]] = rtrim($chunks[1], "\n");
+				} else 
+				//load 1:n data and gives an array
+				if(count($chunks)>2){
+					$data = array();
+					for($i=1;$i<count($chunks);$i++){
+						$data[] = rtrim($chunks[$i], "\n");
+					}
+					
+					$result[$chunks[0]] = $data;
+				} else {
+					ELog::error("unknown error in EConfig loading");
 				}
-				$result[$chunks[0]] = rtrim($chunks[1], "\n");
 			}
 		}
 		return $result;

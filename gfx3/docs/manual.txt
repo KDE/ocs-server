@@ -346,23 +346,50 @@ You have to set your page to be rewritable under /config/rewrite.conf.php
 like this:
 	
 	<?php die(); ?>
-	index.php|true
-	mail.php|false
-	mypage.php|true
+	/|/main/index|exact
+	/help|/help/index|normal
+	/games|/games/lates|normal
 
-And then it will rewrite following this rule:
-	
-	from: http://website.com/index.php/id/6/title/the-sad-mummy-story
-	to:   http://website.com/index.php?id=6&title=the-sad-mummy-story
-	
-which is way more convenient and "SEO".
-In a few words you write the first URL and you will have your GET and POST
-set coorectly, also on EHeaderDataParser.
+And then it will rewrite doing a simple string replace, but internally on the engine.
+So in this case /help will be rewritten internally as /help/index and therefore
+calling the index() method of the HelpController class defined.
+
+Every other parameter added after those slashes will be handled as parameter that will
+be passed to the controller's method via the $args array.
+
+Example of HelpController:
+	class HelpController extends EController {
+		public function index($args){
+			var_dump($args);
+		}
+	}
+
+Example of user browser opening the page www.example.com/help/index/arg1/arg2:
+	{
+		"arg1",
+		"arg2"
+	}
+
+Every other parameter passed as standard GET like ?var1=val1&var2=val2 is correctly
+set on EHeaderDataParser.
+
+This kind of parameter management works also for rewritten URLs. For example it would
+exactly be the same if the user calls: www.example.com/help/arg1/arg2
+without the "/index" part.
+
+This is the "normal" rewrite.
+
+The "exact" mode rewrites a URL only if it matches exactly so additional parameters via /
+aren't handled and accepted. Normal GET parameters are handled as usual. 
 
 In order to build a nice title (also if it's not useful for your app logic you should use:
 	
 	$url = ERewriter::prettify("I'm a terrible title");
 
+Rewriting can be enabled/disabled via general.cong.php:
+	<?php die("You cannot see config in here."); ?>
+	rewrite|yes
+	rewrite|no
 ------------------------------------------------------------------------------
 |                            12 . Config manager                             |
 ------------------------------------------------------------------------------
@@ -385,6 +412,28 @@ Don't be afraid to use this feature as config files are cached using the cache e
 
 Also note that PHP code in config files will just be ignored, so it's quite safe to put
 some kind of die(); on the first line so no one will be able to see your inner config.
+
+You can also use multi value properties like this:
+--------------/config/myname.conf.php-------------
+	<?php die(); ?>
+	info|Claudio|Desideri|kde
+
+If you access EConfig::$data["myname"]["info"]; you get an array containing all the values.
+You can iterate on it using:
+	foreach(EConfig::$data["myname"]["info"] as $item){
+		echo $item;
+	}
+
+This will print:
+	Claudio
+	Desideri
+	kde
+
+And via code that will be accessible using:
+    $info = EConfig::$data["myname"]["info"];
+    $info[0];
+    $info[1];
+    $info[2];
 
 ------------------------------------------------------------------------------
 |                           13 . Cache Engine                                |
