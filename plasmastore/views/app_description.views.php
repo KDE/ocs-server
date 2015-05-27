@@ -183,6 +183,17 @@
                     </div>
 
                     <hr>
+                    <?php
+                    foreach($data[2]["ocs"]["data"]["comment"] as $comment){
+                        echo "
+                        <div class=\"row\">
+                        <div class=\"col-md-12\">
+                        <b>".$comment["subject"]."</b>
+                        <p>".$comment["text"]."
+                        <span class=\"pull-right\">".$comment["date"]."</span>
+                        <hr>";
+                    }
+                    ?>
                     <div class="row">
                         <div class="col-md-12">
                             <span class="glyphicon glyphicon-star"></span>
