@@ -6,3 +6,4 @@ class HomeController extends EController {
 
 	}
 }
+?>

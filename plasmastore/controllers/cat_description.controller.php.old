@@ -1,0 +1,9 @@
+<?php
+class App_descriptionController extends EController {
+	public function show ($args) {
+		$cat = new RetrieveModel();
+		EStructure::view("app_description", $cat->getData());
+
+	}
+}
+?>
