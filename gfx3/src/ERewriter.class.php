@@ -1,7 +1,7 @@
 <?php
 
 /*
- *   TRT GFX 3.0.1 (beta build) BackToSlash
+ *   GFX 4
  * 
  *   support:	happy.snizzo@gmail.com
  *   website:	http://trt-gfx.googlecode.com
@@ -17,7 +17,21 @@
 
 class ERewriter{
 	
-	public static $rewritable = false;
+	private static $rewritable = false;
+	
+	/*
+	 * some setters, mainly used during loading
+	 */
+	public static function enable()
+	{
+		ERewriter::$rewritable = true;
+	}
+	
+	public static function disable()
+	{
+		ERewriter::$rewritable = false;
+	}
+	
 	
 	/*
 	 * Rewrite url if needed.
@@ -26,6 +40,8 @@ class ERewriter{
 	{
 		//treat url erasing extra parts
 		$current_uri = $_SERVER['REQUEST_URI'];
+		
+		$matches = array();
 		
 		foreach(EConfig::$data['rewrite'] as $key => $value){
 			if(!is_array($value)){
@@ -42,9 +58,8 @@ class ERewriter{
 				if ($pos !== false) {
 					//rewrite only at the very start of the string
 					if($pos==0){
-						$rewritten = str_replace($key, $value[0], $current_uri); //TODO FIX HERE FIRST OCCURRENCE
-						//$rewritten = preg_replace("$key", $value, $current_uri, 1);
-						$_SERVER['REQUEST_URI'] = $rewritten;
+						//record the allowed key
+						$matches[strlen($key)] = array($key, $value[0]);
 					}
 				}
 			}
@@ -52,13 +67,31 @@ class ERewriter{
 			else if($value[1]=="exact"){
 				$current_uri_t = explode("?", $current_uri)[0];
 				if($current_uri_t==$key){
-					$rewritten = str_replace($key, $value[0], $current_uri); //TODO FIX HERE
-					//$rewritten = preg_replace("$key", $value, $current_uri, 1);
-					$_SERVER['REQUEST_URI'] = $rewritten;
+					if(ERewriter::$rewritable){
+						$rewritten = str_replace($key, $value[0], $current_uri); //TODO FIX HERE
+						//$rewritten = preg_replace("$key", $value, $current_uri, 1);
+						$_SERVER['REQUEST_URI'] = $rewritten;
+						//setting rewritable to false
+						ERewriter::$rewritable = false;
+						break;
+					}
 				}
 			}
-			
 		}
+		
+		if(ERewriter::$rewritable){
+			ksort($matches);
+			$matches = array_reverse(array_values($matches));
+			
+			if(isset($matches[0])){
+				$rule = $matches[0];
+			
+				$rewritten = str_replace($rule[0], $rule[1], $current_uri); //TODO FIX HERE FIRST OCCURRENCE
+				//$rewritten = preg_replace("$key", $value, $current_uri, 1);
+				$_SERVER['REQUEST_URI'] = $rewritten;
+			}
+		}
+		
 	}
 
 	/**
