@@ -39,7 +39,7 @@
 
 
         <div class="col-md-3 col-md-offset-2 col-sm-2">
-          <form class="navbar-form navbar-left" role="search">
+          <form class="navbar-form navbar-center" role="search">
             <div class="form-group">
               <input type="text" class="form-control" placeholder="Search">
             </div>
@@ -47,20 +47,27 @@
           </form>
         </div>
     
-
-      <ul class="nav navbar-nav navbar-right">
-        <li><a href="http://www.google.com">Link</a></li>
-        <li class="dropdown">
-          <!-- USER -->
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><span class="glyphicon glyphicon-user"></span> Guest_User <span class="caret"></span></a>
-          <ul class="dropdown-menu" role="menu">
-            <li><a href="login/login.html"><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
-            <li><a href="#"><span class="glyphicon glyphicon-send"></span>  My Messages</a></li>
-            <li class="divider"></li>
-            <li><a href="#">  My Account</a></li>
+<?php if(!EUser::logged()){ echo "
+      <form class=\"navbar-form navbar-right\">
+        <div class=\"form-group\">
+            <input type=\"text\" class=\"form-control\" name=\"username\" placeholder=\"Username\"> 
+            <input type=\"text\" class=\"form-control\" name=\"password\" placeholder=\"Password\">
+        </div>
+        <button type=\"submit\" class=\"btn btn-default\">Sign In</button>
+      </form>"; } 
+      else {echo "
+      <ul class=\"nav navbar-nav navbar-right\">
+      <li class=\"dropdown\">
+          <a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-expanded=\"false\"><span class=\"glyphicon glyphicon-user\"></span> Guest_User <span class=\"caret\"></span></a>
+          <ul class=\"dropdown-menu\" role=\"menu\">
+            <li><a href=\"#\"><span class=\"glyphicon glyphicon-log-out\"></span> Logout</a></li>
+            <li><a href=\"#\"><span class=\"glyphicon glyphicon-send\"></span>  My Messages</a></li>
+            <li class=\"divider\"></li>
+            <li><a href=\"#\">  My Account</a></li>
           </ul>
-        </li>
-      </ul>
+          </li>
+          </ul>";} 
+      ?>
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
 </nav>
