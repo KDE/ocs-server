@@ -1,7 +1,7 @@
 <?php
 
  if(!EUser::logged()){ echo "
-      <form class=\"navbar-form navbar-right\ action=\"/plasmastore/user/login\" method=\"post\">
+      <form class=\"navbar-form navbar-right\">
         <div class=\"form-group\">
             <input type=\"text\" class=\"form-control\" name=\"username\" placeholder=\"Username\"> 
             <input type=\"text\" class=\"form-control\" name=\"password\" placeholder=\"Password\">
@@ -20,4 +20,5 @@
           </ul>
           </li>
           </ul>";}
+          }
           ?> 
