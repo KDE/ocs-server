@@ -11,6 +11,11 @@ class HelpController extends EController
         EStructure::view("help/index");
     }
     
+    public function prova($args)
+    {
+		echo $args[0];
+	}
+    
 }
 
 ?>

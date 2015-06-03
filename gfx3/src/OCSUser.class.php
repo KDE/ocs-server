@@ -1,7 +1,7 @@
 <?php
 
 /*
- *   TRT GFX 3.0.1 (beta build) BackToSlash
+ *   GFX 4
  * 
  *   support:	happy.snizzo@gmail.com
  *   website:	http://trt-gfx.googlecode.com
@@ -25,9 +25,9 @@ class OCSUser{
 	
 	private static  $persons;
 	
-	public static  function load(){
+	public static function server_load(){
 		//storing root object
-		OCSUser::$persons = new EData("ocs_person");
+		OCSUser::$persons = new EModel("ocs_person");
 	}
 	
 	/*
@@ -42,10 +42,10 @@ class OCSUser{
 	}
 	
 	/*
-	 * attempt an authentication thorugh nickname:password
+	 * attempt an authentication trough nickname:password
 	 * and populates object data if successfull
 	 */
-	public static  function checklogin($login,$passwd){
+	public static  function server_checklogin($login,$passwd){
 		$r = OCSUser::$persons->count("login", "login='$login' and password='$passwd'");
 		if($r==0){
 			OCSUser::$logged = false;
@@ -68,13 +68,13 @@ class OCSUser{
 	 * Some utils functions regarding users
 	 */
 	
-	public static  function exists($user){
+	public static  function server_exists($user){
 		$user = EDatabase::safe($user);
 		$r = OCSUser::$persons->is_there("login","login='$user'");
 		return $r;
 	}
 	
-	public static  function get_user_info($username=""){
+	public static  function server_get_user_info($username=""){
 		if($username==OCSUser::$login){
 			$user_info["id"] = OCSUser::$id;
 			$user_info["login"] = OCSUser::$login;
@@ -90,7 +90,7 @@ class OCSUser{
 		}
 	}
 	
-	public static  function register($login,$passwd,$firstname,$lastname,$email){
+	public static  function server_register($login,$passwd,$firstname,$lastname,$email){
 		$login = EDatabase::safe($login);
 		$passwd = EDatabase::safe($passwd);
 		$firstname = EDatabase::safe($firstname);
@@ -120,7 +120,7 @@ class OCSUser{
 		}
 	}
 	
-	public static  function countusersbyemail($email){
+	public static  function server_countusersbyemail($email){
 		$email = EDatabase::safe($email);
 		$persons = new EData("ocs_person");
 		$r = $persons->count("login", "email='$email'");
@@ -138,7 +138,6 @@ class OCSUser{
 			return false;
 		}
 	}
-	
 }
 
 ?>

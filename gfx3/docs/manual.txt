@@ -2,7 +2,7 @@
 |                         1 . Introduction                                   |
 ------------------------------------------------------------------------------
 
-This library is written for fun and quickd evelopment. So, also the user 
+This library is written for fun and quick development. So, also the user 
 manual tries to follow the main philosophy behind this framework.
 One of the most important tips you should never forget while coding with this
 lib is be lazy. You shouldn’t find yourself doing so much work for doing a small
@@ -19,7 +19,7 @@ GFX installation.
 ------------------------------------------------------------------------------
 
 Our index.php file must be placed at the root of our web site, it must just include
-gfx3 lib file so it will appear like this:
+gfx lib file so it will appear like this:
 
 	<?php
 	include("gfx3/lib.php");

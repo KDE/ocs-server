@@ -26,6 +26,12 @@ class V1Controller extends EController
 		echo(OCSXML::generatexml('xml','ok',100,'',$xml,'config','',1));
     }
     
+    public function person($args){
+		if(empty($args)){
+			
+		}
+	}
+    
 }
 
 ?>
