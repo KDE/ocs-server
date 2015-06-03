@@ -63,6 +63,16 @@ class EHeaderDataParser {
 		}
 	}
 	
+	public static function get_cookie($key){
+		if(isset($_SESSION[$key])){
+			return $_SESSION[$key];
+		}
+	}
+	
+	public static function set_cookie($key, $value){
+		setcookie($kwy,$value, time()+2419200);
+	}
+	
 	/*
 	 * Used to check if get/post has been set
 	 */
@@ -124,6 +134,10 @@ class EHeaderDataParser {
 			return false;
 		}
 	}
+	//usability rename
+	public static function secure_get($key){
+		return EHeaderDataParser::db_get($key);
+	}
 	
 	
 	// Use instead of accessing $_POST
@@ -137,6 +151,10 @@ class EHeaderDataParser {
 		} else {
 			return false;
 		}
+	}
+	//usability rename
+	public static function secure_post($key){
+		return EHeaderDataParser::db_post($key);
 	}
 	
 	/*
