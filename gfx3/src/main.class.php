@@ -12,6 +12,9 @@
  */ 
 
 
+//starting session with cookies
+session_start();
+
 /*
  * Small module includer. Used to include php modules automatically.
  */
