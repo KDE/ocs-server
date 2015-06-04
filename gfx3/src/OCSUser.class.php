@@ -38,7 +38,7 @@ class OCSUser{
 	}
 	
 	public static  function is_logged(){
-		return $OCSUser::logged;
+		return OCSUser::$logged;
 	}
 
 	public static function client_login($login, $password) {
