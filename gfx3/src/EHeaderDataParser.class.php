@@ -70,7 +70,7 @@ class EHeaderDataParser {
 	}
 	
 	public static function set_cookie($key, $value){
-		setcookie($kwy,$value, time()+2419200);
+		setcookie($key,$value, time()+2419200);
 	}
 	
 	/*
@@ -123,6 +123,7 @@ class EHeaderDataParser {
 	 * Safe parsed data to be used with databases 
 	 */
 	// Use instead of accessing $_GET
+	//obsolete? port to secure_get
 	public static function db_get($key){
 		if(isset(EHeaderDataParser::$gets[$key])){
 			if(EHeaderDataParser::$quotes){
@@ -141,6 +142,7 @@ class EHeaderDataParser {
 	
 	
 	// Use instead of accessing $_POST
+	//obsolete? port to secure_post
 	public static function db_post($key){
 		if(isset(EHeaderDataParser::$posts[$key])){
 			if(EHeaderDataParser::$quotes){
