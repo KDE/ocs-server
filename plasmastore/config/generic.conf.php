@@ -3,6 +3,6 @@ render|yes
 protectheaders|yes
 database|yes
 rewrite|yes
-users|no
+users|yes
 mvc|yes
 errormode|normal
