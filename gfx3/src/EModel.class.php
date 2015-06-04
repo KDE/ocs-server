@@ -89,7 +89,8 @@ class EModel {
 	 * TODO: move cache to new ECacheVar.
 	 */
 	private function get_table_info(){
-		if(!$this->is_ready_test()) { return; }
+		//TODO: this makes no sense...
+		//if(!$this->is_ready_test()) { return; }
 		//if already cached load from cache else load with a describe AND cache
 		$cache_name = $this->table.".table";
 		if(ECacheVar::exists($cache_name)){

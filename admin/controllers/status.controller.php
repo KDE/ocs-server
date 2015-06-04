@@ -44,6 +44,56 @@ class StatusController extends EController
         
         EStructure::view("footer");
 	}
+	
+	private function _statuscode_test($data)
+	{
+		if(isset($data["ocs"]["meta"]["statuscode"])){
+			echo '<span style="color:green">ok!</span>(statuscode:'.$data["ocs"]["meta"]["statuscode"].')</p>';
+		} else {
+			echo '<span style="color:red">failed!</span></p>';
+			ELog::pd($client->get_last_raw_result());
+		}
+	}
+	
+	public function test()
+	{
+		EStructure::view("header");
+		
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+        
+        echo '<h3>Sanity OCS test</h3>';
+        
+        echo '<p>person/check..........';
+        $postdata = array( "login" => "test", "password" => "password" );
+        $check = $client->post("v1/person/check",$postdata);
+		$this->_statuscode_test($check);
+        
+        echo '<p>person/add..........';        
+		$postdata = array(
+			"login" => "cavolfiore",
+			"password" => "cavolfiore",
+			"email" => "bababa@bebebe.bu",
+			"firstname" => "cavolf",
+			"lastname" => "chiappe"
+			);
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$check = $client->post("v1/person/add",$postdata);
+		$this->_statuscode_test($check);
+		
+		echo '<p>person/data..........';
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$check = $client->get("v1/person/data");
+		$this->_statuscode_test($check);
+		
+		echo '<p>person/data/[login]..........';
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$check = $client->get("v1/person/data/cavolfiore");
+		$this->_statuscode_test($check);
+        
+        EStructure::view("footer");
+	}
     
 }
 
