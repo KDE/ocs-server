@@ -11,7 +11,7 @@
       else {echo "
       <ul class=\"nav navbar-nav navbar-right\">
       <li class=\"dropdown\">
-          <a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-expanded=\"false\"><span class=\"glyphicon glyphicon-user\"></span> Guest_User <span class=\"caret\"></span></a>
+          <a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-expanded=\"false\"><span class=\"glyphicon glyphicon-user\"></span>".OCSUser::get_login()."<span class=\"caret\"></span></a>
           <ul class=\"dropdown-menu\" role=\"menu\">
             <li><a href=\"/plasmastore/login/logout\"><span class=\"glyphicon glyphicon-log-out\"></span> Logout</a></li>
             <li><a href=\"#\"><span class=\"glyphicon glyphicon-send\"></span>  My Messages</a></li>
