@@ -51,21 +51,17 @@ class OCSUser{
 			$password = EEHeaderDataParser::get_cookie("password");
 		}
 		$postdata = array(
-			"login" => $login;
-			"password" => $password;
+			"login" => $login,
+			"password" => $password
 		);
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		$check = $client->post("v1/person/check",$postdata);
 
 		if($check["ocs"]["meta"]["statuscode"]=="100"){
-			OCSUser::logged=true;
+			OCSUser::$logged=true;
 			EHeaderDataParser::set_cookie("login", $login);
 			EHeaderDataParser::set_cookie("password", $password);
 		}
-
-
-
-
 	}
 	
 	/*
@@ -73,6 +69,9 @@ class OCSUser{
 	 * and populates object data if successfull
 	 */
 	public static  function server_checklogin($login,$passwd){
+		//autoload if necessary
+		if(is_null(OCSUser::$persons)){ OCSUser::server_load(); }
+		//checklogin
 		$r = OCSUser::$persons->count("login", "login='$login' and password='$passwd'");
 		if($r==0){
 			OCSUser::$logged = false;
@@ -96,12 +95,18 @@ class OCSUser{
 	 */
 	
 	public static  function server_exists($user){
+		//autoload if necessary
+		if(is_null(OCSUser::$persons)){ OCSUser::server_load(); }
+		
 		$user = EDatabase::safe($user);
 		$r = OCSUser::$persons->is_there("login","login='$user'");
 		return $r;
 	}
 	
 	public static  function server_get_user_info($username=""){
+		//autoload if necessary
+		if(is_null(OCSUser::$persons)){ OCSUser::server_load(); }
+		
 		if($username==OCSUser::$login){
 			$user_info["id"] = OCSUser::$id;
 			$user_info["login"] = OCSUser::$login;
@@ -111,13 +116,15 @@ class OCSUser{
 			
 			return $user_info;
 		} else {
-			$ocs_person = new EData("ocs_person");
-			$user_info = $ocs_person->find("*","where login='$username' limit 1");
+			$user_info = OCSUser::$persons->find("*","where login='$username' limit 1");
 			return $user_info;
 		}
 	}
 	
 	public static  function server_register($login,$passwd,$firstname,$lastname,$email){
+		//autoload if necessary
+		if(is_null(OCSUser::$persons)){ OCSUser::server_load(); }
+		
 		$login = EDatabase::safe($login);
 		$passwd = EDatabase::safe($passwd);
 		$firstname = EDatabase::safe($firstname);
@@ -148,9 +155,11 @@ class OCSUser{
 	}
 	
 	public static  function server_countusersbyemail($email){
+		//autoload if necessary
+		if(is_null(OCSUser::$persons)){ OCSUser::server_load(); }
+		
 		$email = EDatabase::safe($email);
-		$persons = new EData("ocs_person");
-		$r = $persons->count("login", "email='$email'");
+		$r = OCSUser::$persons->count("login", "email='$email'");
 		return $r;
 	}
 	

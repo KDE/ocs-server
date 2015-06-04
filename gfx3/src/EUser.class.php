@@ -28,8 +28,6 @@ class EUser{
 		EUser::$logged = false;
 		EUser::$group = "anonymous";
 		
-		session_start();
-		
 		if(isset($_SESSION['nick'])){
 			EUser::$logged = true;
 			EUser::$nick = $_SESSION['nick'];

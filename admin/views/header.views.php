@@ -12,6 +12,7 @@
 			<a href="/admin/status/index">Status</a><br>
 			<a href="/admin/status/database">Database</a><br>
 			<a href="/admin/status/categories">Categories</a><br>
+			<a href="/admin/status/test">Sanity Test</a><br>
 		</div>
 
 		<div id="section">

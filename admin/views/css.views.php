@@ -29,7 +29,7 @@ a:active {
     padding:5px;
 }
 #section {
-    width:350px;
+    width:600px;
     float:left;
     padding:10px;
 }

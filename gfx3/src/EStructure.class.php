@@ -63,12 +63,16 @@ class EStructure {
 			$current_controller = new $controller();
 			
 			if(empty($method)){
-				$current_controller->index($chunks);
+				if(method_exists($current_controller, 'index')){
+					$current_controller->index($chunks);
+				}
 			} else {
-				if(method_exists($current_controller,$method)){
-					$current_controller->$method($args);
-				} else {
-					ELog::warning($controller."->".$method."() is not defined. Please define it.");
+				if($method[0]!='_'){ //makes methods with _ not callable
+					if(method_exists($current_controller,$method)){
+						$current_controller->$method($args);
+					} else {
+						ELog::warning($controller."->".$method."() is not defined. Please define it.");
+					}
 				}
 			}
 		} else {

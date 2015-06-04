@@ -313,9 +313,13 @@ You can also set GET and POST manually using:
 
 	EHeaderDataParser::add_get(string $key, string $value);
 	EHeaderDataParser::add_post(string $key, string $value);
+	
+You can use this class to get/set cookie data via:
+	EHeaderDataParser::get_cookie(string $key);
+	EHeaderDataParser::set_cookie(string $key, $value);
 
 This can result particularly useful when you need to use EModel's insert and update
-but nto all the data comes from user request.
+but not all the data comes from user request.
 
 If you want to take those variables fast and you can't decide you can choose
 the unsafe way using:
