@@ -38,7 +38,34 @@ class OCSUser{
 	}
 	
 	public static  function is_logged(){
-		return OCSUser::$logged;
+		return $OCSUser::logged;
+	}
+
+	public static function client_login($login, $password) {
+
+		$login = EHeaderDataParser::secure_post("login");
+		$password = EHeaderDataParser::secure_post("password");
+		
+		if ($login==false && $password==false) {
+			$login = EHeaderDataParser::get_cookie("login");
+			$password = EEHeaderDataParser::get_cookie("password");
+		}
+		$postdata = array(
+			"login" => $login;
+			"password" => $password;
+		);
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$check = $client->post("v1/person/check",$postdata);
+
+		if($check["ocs"]["meta"]["statuscode"]=="100"){
+			OCSUser::logged=true;
+			EHeaderDataParser::set_cookie("login", $login);
+			EHeaderDataParser::set_cookie("password", $password);
+		}
+
+
+
+
 	}
 	
 	/*
