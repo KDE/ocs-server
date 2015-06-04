@@ -1,10 +1,10 @@
 <?php
-
- if(!EUser::logged()){ echo "
-      <form class=\"navbar-form navbar-right\ action=\"/plasmastore/user/login\" method=\"post\">
-        <div class=\"form-group\">
-            <input type=\"text\" class=\"form-control\" name=\"username\" placeholder=\"Username\"> 
-            <input type=\"text\" class=\"form-control\" name=\"password\" placeholder=\"Password\">
+OCSUser::client_login();
+ if(!OCSUser::is_logged()){ echo "
+      <form class=\"navbar-form navbar-right \" action=\"/plasmastore/home/index\" method=\"post\">
+        <div class=\"form-group \">
+            <input type=\"text\" class=\"form-control\" name=\"login\" placeholder=\"Username\"> 
+            <input type=\"password\" class=\"form-control\" name=\"password\" placeholder=\"Password\">
         </div>
         <button type=\"submit\" class=\"btn btn-default\">Sign In</button>
       </form>"; } 

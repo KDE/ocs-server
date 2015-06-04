@@ -39,7 +39,7 @@
 
 
         <div class="col-md-3 col-md-offset-2 col-sm-2">
-          <form class="navbar-form navbar-center" role="search">
+          <form class="navbar-form navbar-left" role="search">
             <div class="form-group">
               <input type="text" class="form-control" placeholder="Search">
             </div>
