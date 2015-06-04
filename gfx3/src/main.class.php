@@ -162,7 +162,7 @@ if (EConfig::$data['generic']['database'] == "yes"){
 
 //loading user system
 if (EConfig::$data['generic']['users'] == "yes"){
-	EUser::load();
+	OCSUser::client_login();
 }
 
 //rendering the page
