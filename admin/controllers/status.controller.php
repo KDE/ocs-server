@@ -45,7 +45,7 @@ class StatusController extends EController
         EStructure::view("footer");
 	}
 	
-	private function _statuscode_test($data)
+	private function _statuscode_test($data, $client)
 	{
 		if(isset($data["ocs"]["meta"]["statuscode"])){
 			echo '<span style="color:green">ok!</span>(statuscode:'.$data["ocs"]["meta"]["statuscode"].')</p>';
@@ -66,7 +66,7 @@ class StatusController extends EController
         echo '<p>person/check..........';
         $postdata = array( "login" => "test", "password" => "password" );
         $check = $client->post("v1/person/check",$postdata);
-		$this->_statuscode_test($check);
+		$this->_statuscode_test($check, $client);
         
         echo '<p>person/add..........';        
 		$postdata = array(
@@ -78,19 +78,25 @@ class StatusController extends EController
 			);
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		$check = $client->post("v1/person/add",$postdata);
-		$this->_statuscode_test($check);
+		$this->_statuscode_test($check, $client);
 		
-		echo '<p>person/data..........';
+		echo '<p>person/data?name=cavol&page=1&pagesize=10..........';
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		$client->set_auth_info("test","password");
-		$check = $client->get("v1/person/data");
-		$this->_statuscode_test($check);
+		$check = $client->get("v1/person/data?name=cavol&page=1&pagesize=10");
+		$this->_statuscode_test($check, $client);
 		
 		echo '<p>person/data/[login]..........';
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		$client->set_auth_info("test","password");
 		$check = $client->get("v1/person/data/cavolfiore");
-		$this->_statuscode_test($check);
+		$this->_statuscode_test($check, $client);
+		
+		echo '<p>person/self..........';
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$check = $client->get("v1/person/self");
+		$this->_statuscode_test($check, $client);
         
         EStructure::view("footer");
 	}

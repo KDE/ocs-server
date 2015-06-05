@@ -1,7 +1,7 @@
 <?php
 
 /*
- *   TRT GFX 3.0.1 (beta build) BackToSlash
+ *   GFX 4
  * 
  *   support:	happy.snizzo@gmail.com
  *   website:	http://trt-gfx.googlecode.com
@@ -22,7 +22,7 @@ class OCSLister{
 		//setting initial value for table
 		if(!empty($data)){
 			$this->table = $data;
-			$this->datatable = new EData($this->table);
+			$this->datatable = new EModel($this->table);
 		} else {
 			$this->set_table_search($this->table);
 		}
@@ -53,13 +53,7 @@ class OCSContentLister extends OCSLister {
 	
 	//inheriting constructor
 	public function __construct($data="ocs_content"){
-		//setting initial value for table
-		if(!empty($data)){
-			$this->table = $data;
-			$this->datatable = new EData($this->table);
-		} else {
-			$this->set_table_search($this->table);
-		}
+		parent::__construct($data);
 	}
 	
 	public function ocs_content_list($searchstr,$sortmode="new",$page=1,$pagesize=10,$user=""){
@@ -97,6 +91,33 @@ class OCSContentLister extends OCSLister {
 	}
 }
 
+class OCSPersonLister extends OCSLister {
+	
+	//variables
+	private $table;
+	private $datatable;
+	
+	//inheriting constructor
+	public function __construct($data="ocs_person"){
+		parent::__construct($data);
+	}
+	
+	public function ocs_person_search($username, $page=1,$pagesize=10){
+		if(empty($page)){ $page=1; }
+		
+		//TODO: move this into parent class constructor
+		// or better: inspect why datatable isn't initialized by constructor
+		if(is_null($this->datatable)){
+			$this->datatable = new EModel("ocs_person");
+		}
+		//setting dynamic page size
+		$page = ($page-1)*($pagesize);
+		
+		$r = $this->datatable->find("id,login,firstname,lastname,email","WHERE login LIKE '%$username%'");
+		return $r;
+	}
+}
+
 class OCSCommentLister extends OCSLister {
 	
 	//variables
@@ -105,13 +126,7 @@ class OCSCommentLister extends OCSLister {
 	
 	//inheriting constructor
 	public function __construct($data="ocs_comment"){
-		//setting initial value for table
-		if(!empty($data)){
-			$this->table = $data;
-			$this->datatable = new EData($this->table);
-		} else {
-			$this->set_table_search($this->table);
-		}
+		parent::__construct($data);
 	}
 	
 	public function ocs_comment_list($type,$content,$content2,$page=1,$pagesize=10){
@@ -153,13 +168,7 @@ class OCSFanLister extends OCSLister {
 	
 	//inheriting constructor
 	public function __construct($data="ocs_fan"){
-		//setting initial value for table
-		if(!empty($data)){
-			$this->table = $data;
-			$this->datatable = new EData($this->table);
-		} else {
-			$this->set_table_search($this->table);
-		}
+		parent::__construct($data);
 	}
 	
 	public function ocs_fan_list($content,$page=1,$pagesize=10){

@@ -152,15 +152,54 @@ class V1Controller extends EController
 		}
 		
 		if($args[0]=='data'){
-			if(isset($args[1])){ $username = $args[1]; } else { $username = ""; }
+			//if a nickname is specified print user info
+			if(isset($args[1])){
+				$username = $args[1];
 					
-			if(empty($username)) {
-				$user=$this->_checkpassword();
-			}else{
-				$user=$this->_checkpassword(false);
+				if(!empty($username)) {
+					$user=$this->_checkpassword(false);
+				}
+							
+				$DBuser = OCSUser::server_get_user_info($username);
+				
+				if($DBuser==false){
+					$txt=OCSXML::generatexml(EConfig::$data["ocsserver"]["format"],'failed',101,'person not found');
+					echo($txt);
+				}else{
+					if(isset($DBuser[0]) and is_array($DBuser[0])){
+						$DBuser = $DBuser[0];
+					}
+					$xml=array();
+					$xml[0]['personid']=$DBuser['login'];
+					$xml[0]['firstname']=$DBuser['firstname'];
+					$xml[0]['lastname']=$DBuser['lastname'];
+					$xml[0]['email']=$DBuser['email'];
+					//$xml[0]['description']=H01_UTIL::bbcode2html($DBuser['description']);
+					
+					$txt=OCSXML::generatexml(EConfig::$data["ocsserver"]["format"],'ok',100,'',$xml,'person','full',2);
+					//$txt=$this->generatexml($format,'failed',102,'data is private');
+					echo($txt);
+				}
+			} else { //if not, search
+				$username = EHeaderDataParser::secure_get('name');
+				$page = EHeaderDataParser::secure_get('page');
+				$pagesize = EHeaderDataParser::secure_get('pagesize');
+				
+				$pl = new OCSPersonLister;
+				$xml = $pl->ocs_person_search($username,$page,$pagesize);
+				$plcount = count($xml);
+				
+				$txt=OCSXML::generatexml(EConfig::$data["ocsserver"]["format"],'ok',100,'',$xml,'person','summary',2,$plcount,$pagesize);
+				
+				echo($txt);
 			}
+
+		}
+		
+		if($args[0]=='self'){
+			$user=$this->_checkpassword();
 			
-			if(empty($username)){ $username=$user; }
+			$username=$user;
 			
 			$DBuser = OCSUser::server_get_user_info($username);
 			
@@ -182,7 +221,6 @@ class V1Controller extends EController
 				//$txt=$this->generatexml($format,'failed',102,'data is private');
 				echo($txt);
 			}
-
 		}
 		
 	}

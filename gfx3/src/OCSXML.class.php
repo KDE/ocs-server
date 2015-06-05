@@ -72,21 +72,23 @@ class OCSXML{
 
 			}elseif($dimension=='2') {
 				xmlwriter_start_element($writer,'data');
-				foreach($data as $entry) {
-					xmlwriter_start_element($writer,$tag);
-					if(!empty($tagattribute)) {
-						xmlwriter_write_attribute($writer,'details',$tagattribute);
-					}
-					foreach($entry as $key=>$value) {
-						if(is_array($value)){
-							foreach($value as $k=>$v) {
-								xmlwriter_write_element($writer,$k,$v);
-							}
-						} else {
-							xmlwriter_write_element($writer,$key,$value);
+				if(!empty($data)){
+					foreach($data as $entry) {
+						xmlwriter_start_element($writer,$tag);
+						if(!empty($tagattribute)) {
+							xmlwriter_write_attribute($writer,'details',$tagattribute);
 						}
+						foreach($entry as $key=>$value) {
+							if(is_array($value)){
+								foreach($value as $k=>$v) {
+									xmlwriter_write_element($writer,$k,$v);
+								}
+							} else {
+								xmlwriter_write_element($writer,$key,$value);
+							}
+						}
+						xmlwriter_end_element($writer);
 					}
-					xmlwriter_end_element($writer);
 				}
 				xmlwriter_end_element($writer);
 
