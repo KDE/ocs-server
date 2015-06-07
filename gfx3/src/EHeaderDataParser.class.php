@@ -72,6 +72,12 @@ class EHeaderDataParser {
 	public static function set_cookie($key, $value){
 		setcookie($key,$value, time()+2419200);
 	}
+
+	public static function del_cookie($key){
+		if(isset(EHeaderDataParser::$gets[key])) {
+			setcookie($key, null, -1, '/');
+		}
+	}
 	
 	/*
 	 * Used to check if get/post has been set
