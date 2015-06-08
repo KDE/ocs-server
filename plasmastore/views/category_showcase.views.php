@@ -53,19 +53,8 @@
   </div><!-- /.container-fluid -->
 </nav>
 
-<div class="container-fluid">
-      <div class="row">
-        <div class="col-sm-3 col-md-2 sidebar">
-          <ul class="nav nav-sidebar sidebuttons">
-            <?php
-                foreach($data[0]["ocs"]["data"]["category"] as $category){
-                    echo "<li><a href=\"\">".$category["name"]."</a></li>";
-                }
-            ?>
-          </ul>
-        </div>
-      </div>
-  </div>
+<?php EStructure::view("categories_sidebar", $data[0]) ?>
+
 <div class="col-md-7 col-md-offset-2 col-sm-offset-3">
     <ol class="breadcrumb">
   <li><a href="#">Category 1</a></li>
@@ -85,24 +74,7 @@
         <!-- /.row -->
 
         <!-- Project One -->
-        <?php
-                foreach($data[1]["ocs"]["data"]["content"] as $content){
-                    echo "
-                    <div class=\"row\">
-                        <div class=\"col-md-7\">
-                            <a href=\"#\">
-                                <img class=\"img-responsive\" src=\"".$content["preview1"]."\" alt=\"\">
-                            </a>
-                        </div>
-                        <div class=\"col-md-5\">
-                            <h3>".$content["name"]."</h3>
-                            <h4>".$content["personid"]."</h4>
-                            <p>".$content["summary"]."</p>
-                            <a class=\"btn btn-primary\" href=\"/plasmastore/app_description/show/".$content["id"]."/".ERewriter::prettify($content["name"])."\">View Project <span class=\"glyphicon glyphicon-chevron-right\"></span></a>
-                        </div>
-                    </div> <hr>";
-
-                } ?>
+        <?php EStructure::view("applist", $data[1]) ?>
         <div class="row">
             <div class="col-md-7">
                 <a href="#">
