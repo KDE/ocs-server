@@ -18,6 +18,12 @@
 class ERewriter{
 	
 	private static $rewritable = false;
+	private static $oldurl = false;
+	
+	public static function oldurl()
+	{
+		return ERewriter::$oldurl;
+	}
 	
 	/*
 	 * some setters, mainly used during loading
@@ -37,9 +43,11 @@ class ERewriter{
 	 * Rewrite url if needed.
 	 */
 	public static function load()
-	{
+	{	
 		//treat url erasing extra parts
 		$current_uri = $_SERVER['REQUEST_URI'];
+		//keeping a local copy
+		ERewriter::$oldurl = $current_uri;
 		
 		$matches = array();
 		
@@ -91,7 +99,6 @@ class ERewriter{
 				$_SERVER['REQUEST_URI'] = $rewritten;
 			}
 		}
-		
 	}
 
 	/**

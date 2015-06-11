@@ -6,6 +6,8 @@
 class StatusController extends EController
 {
 	
+	private $example_contentid;
+	
     public function index($args)
     {	
         EStructure::view("header");
@@ -63,6 +65,10 @@ class StatusController extends EController
         
         echo '<h3>Sanity OCS test</h3>';
         
+        echo '<p>config..........';
+        $check = $client->get("v1/config");
+		$this->_statuscode_test($check, $client);
+        
         echo '<p>person/check..........';
         $postdata = array( "login" => "test", "password" => "password" );
         $check = $client->post("v1/person/check",$postdata);
@@ -97,6 +103,70 @@ class StatusController extends EController
 		$client->set_auth_info("test","password");
 		$check = $client->get("v1/person/self");
 		$this->_statuscode_test($check, $client);
+		
+		echo '<p>content/add..........';
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$postdata = array(
+			"name" => "esempio",
+			"type" => "0",
+			"downloadname1" => "downloadname1",
+			"downloadlink1" => "downloadlink1",
+			"description" => "description",
+			"summary" => "summary",
+			"version" => "version",
+			"changelog" => "changelog",
+			"personid" => "test"
+			);
+		$client->set_auth_info("test","password");
+		$check = $client->post("v1/content/add",$postdata);
+        $this->_statuscode_test($check, $client);
+        
+        echo '<p>content/categories..........';
+        $check = $client->get("v1/content/categories");
+		$this->_statuscode_test($check, $client);
+		
+		echo '<p>content/licenses..........';
+        $check = $client->get("v1/content/licenses");
+		$this->_statuscode_test($check, $client);
+		
+		echo '<p>content/data..........';
+        $check = $client->get("v1/content/data");
+		$this->_statuscode_test($check, $client);
+        
+        echo '<p>content/data?search=esem..........';
+        $check = $client->get("v1/content/data?search=esem");
+        $contentid = $this->example_contentid = $check['ocs']['data']['content'][0]['id'];
+		$this->_statuscode_test($check, $client);
+        
+        echo '<p>content/data/[contentid]..........';
+        $check = $client->get("v1/content/data/$contentid");
+		$this->_statuscode_test($check, $client);
+        
+        echo '<p>content/download/[contentid]/1..........';
+        $check = $client->get("v1/content/download/$contentid/1");
+		$this->_statuscode_test($check, $client);
+		
+		echo '<p>content/vote/[contentid]..........';
+		$id = intval($contentid);
+		$rate = floatval(1);
+		
+		$postdata = array(
+			"vote" => $rate
+			);
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$client->set_post_data($postdata);
+		$check = $client->post("v1/content/vote/$id");
+		$this->_statuscode_test($check, $client);
+        
+        /*
+        /v1/content/edit/"12345"
+        /v1/content/delete/"contentid"
+        /v1/content/uploaddownload/"contentid"
+        /v1/content/deletedownload/"contentid" 
+        /v1/content/uploadpreview/"contentid"/"previewid"
+        /v1/content/deletepreview/"contentid"/"previewid"
+        */
         
         EStructure::view("footer");
 	}

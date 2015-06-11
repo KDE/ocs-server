@@ -77,7 +77,7 @@ class EConfig{
 				//gives correct key and correct value, erasing line break.
 				//control if is set more than once
 				if(isset($result[$chunks[0]])){
-					ELog::warning("<b>".$chunks[0]."</b> property is set more than once in ".$filename." config file!");
+					//ELog::warning("<b>".$chunks[0]."</b> property is set more than once in ".$filename." config file!");
 				} else
 				//control if is set to empty value
 				if(count($chunks)<2){

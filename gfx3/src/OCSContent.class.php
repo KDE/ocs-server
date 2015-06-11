@@ -40,7 +40,7 @@ class OCSContent{
 	 * Enabling main to be on a global context.
 	 */
 	public function __construct(){
-		$this->ocs_content = new EData("ocs_content");
+		$this->ocs_content = new EModel("ocs_content");
 	}
 	
 	/*

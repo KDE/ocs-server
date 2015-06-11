@@ -85,6 +85,11 @@ class OCSContentLister extends OCSLister {
 			$whereuser = "";
 		}
 		
+		//TODO: move this into parent class constructor
+		// or better: inspect why datatable isn't initialized by constructor
+		if(is_null($this->datatable)){
+			$this->datatable = new EModel("ocs_content");
+		}
 		
 		$r = $this->datatable->find("id,owner,personid,description,changelog,preview1,votes,score,name,type,downloadname1,downloadlink1,version,summary,license","WHERE name LIKE '%$searchstr%' $whereuser $where");
 		return $r;

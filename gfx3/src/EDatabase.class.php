@@ -76,7 +76,7 @@ class EDatabase {
 	public static function safe($s){
 		if(is_array($s)){
 			foreach($s as $key => $value){
-				$s[$key] = mysqli_real_escape_string($s[$key]);
+				$s[$key] = mysqli_real_escape_string(EDatabase::$db_link, $s[$key]);
 			}
 			return $s;
 		} else {
