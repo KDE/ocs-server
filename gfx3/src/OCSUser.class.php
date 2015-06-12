@@ -37,6 +37,10 @@ class OCSUser{
 		return OCSUser::$id;
 	}
 	
+	public static function login(){
+		return OCSUser::$login;
+	}
+	
 	public static  function is_logged(){
 		return OCSUser::$logged;
 	}

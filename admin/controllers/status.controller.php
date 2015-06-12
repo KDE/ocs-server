@@ -159,6 +159,24 @@ class StatusController extends EController
 		$check = $client->post("v1/content/vote/$id");
 		$this->_statuscode_test($check, $client);
         
+        echo '<p>content/edit/[contentid]..........';
+		
+		$postdata = array(
+			"name" => "esempiomod",
+			"summary" => "summarymod",
+			"downloadname1" => "downloadname1mod",
+			"downloadlink1" => "downloadlink1mod",
+			"description" => "descriptionmod",
+			"version" => "versionmod",
+			"changelog" => "changelogmod"
+			);
+
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$client->set_post_data($postdata);
+		$check = $client->post("v1/content/edit/$id");
+		$this->_statuscode_test($check, $client);
+        
         /*
         /v1/content/edit/"12345"
         /v1/content/delete/"contentid"

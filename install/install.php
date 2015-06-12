@@ -64,4 +64,36 @@ EDatabase::q("CREATE TABLE IF NOT EXISTS `ocs_person` (
   `email` varchar(100) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM;");
+
+EDatabase::q("DROP TABLE IF EXISTS `ocs_activity`;
+CREATE TABLE `ocs_activity` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `type` int(2) NOT NULL,
+  `person` int(11) NOT NULL,
+  `timestamp` int(15) NOT NULL,
+  `message` text NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `person` (`person`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;");
+
+EDatabase::q("DROP TABLE IF EXISTS `ocs_friendship`;
+CREATE TABLE `ocs_friendship` (
+  `id1` int(11) NOT NULL,
+  `id2` int(11) NOT NULL,
+  UNIQUE KEY `id1` (`id1`,`id2`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;");
+
+EDatabase::q("DROP TABLE IF EXISTS `ocs_friendinvitation`;
+CREATE TABLE `ocs_friendinvitation` (
+  `fromuser` varchar(255) NOT NULL,
+  `touser` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  UNIQUE KEY `from` (`fromuser`,`touser`),
+  KEY `fromuser` (`fromuser`),
+  KEY `touser` (`touser`),
+  KEY `fromuser_2` (`fromuser`),
+  KEY `touser_2` (`touser`),
+  KEY `fromuser_3` (`fromuser`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;");
+
 ?>

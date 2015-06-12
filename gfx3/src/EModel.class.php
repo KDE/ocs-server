@@ -326,7 +326,7 @@ class EModel {
 				echo $sql;
 			}
 		} else {
-			ELog::warning("EData->update called with empty entries");
+			//ELog::warning("EData->update called with empty entries");
 		}
 	}
 	
