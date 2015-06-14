@@ -50,34 +50,14 @@
     
 
       <ul class="nav navbar-nav navbar-right">
-        <li><a href="http://www.google.com">Link</a></li>
-        <li class="dropdown">
-          <!-- USER -->
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><span class="glyphicon glyphicon-user"></span> Guest_User <span class="caret"></span></a>
-          <ul class="dropdown-menu" role="menu">
-            <li><a href="login/login.html"><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
-            <li><a href="#"><span class="glyphicon glyphicon-send"></span>  My Messages</a></li>
-            <li class="divider"></li>
-            <li><a href="#">  My Account</a></li>
-          </ul>
-        </li>
+        <?php EStructure::view("login")?>
       </ul>
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
 </nav>
 
 <div class="container-fluid">
-      <div class="row">
-        <div class="col-sm-3 col-md-2 sidebar">
-          <ul class="nav nav-sidebar sidebuttons">
-            <?php
-                foreach($data[0]["ocs"]["data"]["category"] as $category){
-                    echo "<li><a href=\"\">".$category["name"]."</a></li>";
-                }
-            ?>
-          </ul>
-        </div>
-      </div>
+      <?php EStructure::view("categories_sidebar", $data[0]) ?>
   </div>
 <div class="col-md-7 col-md-offset-2 col-sm-offset-3">
     <ol class="breadcrumb">
