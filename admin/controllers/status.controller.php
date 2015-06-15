@@ -119,6 +119,7 @@ class StatusController extends EController
 			);
 		$client->set_auth_info("test","password");
 		$check = $client->post("v1/content/add",$postdata);
+		$contentid = $this->example_contentid = $check['ocs']['data']['content']['id'];
         $this->_statuscode_test($check, $client);
         
         echo '<p>content/categories..........';
@@ -135,7 +136,6 @@ class StatusController extends EController
         
         echo '<p>content/data?search=esem..........';
         $check = $client->get("v1/content/data?search=esem");
-        $contentid = $this->example_contentid = $check['ocs']['data']['content'][0]['id'];
 		$this->_statuscode_test($check, $client);
         
         echo '<p>content/data/[contentid]..........';
@@ -160,7 +160,6 @@ class StatusController extends EController
 		$this->_statuscode_test($check, $client);
         
         echo '<p>content/edit/[contentid]..........';
-		
 		$postdata = array(
 			"name" => "esempiomod",
 			"summary" => "summarymod",
@@ -177,13 +176,20 @@ class StatusController extends EController
 		$check = $client->post("v1/content/edit/$id");
 		$this->_statuscode_test($check, $client);
         
+        echo '<p>content/delete/[contentid]..........';
+		$postdata = array(
+			"contentid" => $id
+			);
+
+
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$client->set_post_data($postdata);
+		$check = $client->post("v1/content/delete/$id");
+		$this->_statuscode_test($check, $client);
+        
         /*
-        /v1/content/edit/"12345"
         /v1/content/delete/"contentid"
-        /v1/content/uploaddownload/"contentid"
-        /v1/content/deletedownload/"contentid" 
-        /v1/content/uploadpreview/"contentid"/"previewid"
-        /v1/content/deletepreview/"contentid"/"previewid"
         */
         
         EStructure::view("footer");
