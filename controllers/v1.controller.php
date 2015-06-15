@@ -1406,6 +1406,66 @@ class V1Controller extends EController
 		
 		echo($txt);
 	}
+	
+		// ACTIVITY API #############################################
+
+	/**	 
+	 * get my activities
+	 * @param string $format
+	 * @param string $page
+	 * @param string $pagesize
+	 * @return string xml/json
+	 */
+	private  function activityget($format,$page,$pagesize) {
+
+		$user=$this->_checkpassword();
+		//$this->checktrafficlimit($user);
+		
+		$al = new OCSActivityLister();
+        $log=$al->ocs_activity_list($user,$page,$pagesize);
+        $itemscount=count($log);
+        $xml=array();
+        for ($i=0; $i < $itemscount;$i++) {
+            $xml[$i]['id']=$log[$i]['id'];
+            $xml[$i]['personid']=$log[$i]['personid'];
+            $xml[$i]['firstname']=$log[$i]['firstname'];
+            $xml[$i]['lastname']=$log[$i]['lastname'];
+            $xml[$i]['profilepage']='';
+            $xml[$i]['avatarpic']='';
+            $xml[$i]['timestamp']=date('c',$log[$i]['timestamp']);
+            $xml[$i]['type']=$log[$i]['type'];
+            $xml[$i]['message']=strip_tags($log[$i]['message']);
+            $xml[$i]['link']='';
+        }
+
+        $txt=OCSXML::generatexml($format,'ok',100,'',$xml,'activity','full',2,count($xml),$pagesize);
+
+        echo($txt);
+
+	}
+
+	/**	 
+	 * submit a activity
+	 * @param string $format
+	 * @param string $message
+	 * @return string xml/json
+	 */
+	private  function activityput($format,$message) {
+		$user=$this->_checkpassword();
+		//$this->checktrafficlimit($user);
+
+		if($user<>'') {
+			if(trim($message)<>'') {
+				OCSActivity::add(OCSUser::id(), 1, $message);
+				echo(OCSXML::generatexml($format,'ok',100,''));
+			} else {
+				echo(OCSXML::generatexml($format,'failed',101,'empty message'));
+			}
+		} else {
+			echo(OCSXML::generatexml($format,'failed',102,'user not found'));
+		}
+
+	}
     
 }
 

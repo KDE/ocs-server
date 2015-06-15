@@ -180,16 +180,30 @@ class StatusController extends EController
 		$postdata = array(
 			"contentid" => $id
 			);
-
-
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		$client->set_auth_info("test","password");
 		$client->set_post_data($postdata);
 		$check = $client->post("v1/content/delete/$id");
 		$this->_statuscode_test($check, $client);
+		
+		echo '<p>[get] activity..........';
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$check = $client->get("v1/activity");
+		$this->_statuscode_test($check, $client);
+        
+        echo '<p>[post] activity..........';
+        $postdata = array(
+			"message" => "coding is fun"
+			);
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$client->set_post_data($postdata);
+		$check = $client->post("v1/activity");
+		$this->_statuscode_test($check, $client);
         
         /*
-        /v1/content/delete/"contentid"
+         * 
         */
         
         EStructure::view("footer");
