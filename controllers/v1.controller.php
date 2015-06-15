@@ -1466,6 +1466,94 @@ class V1Controller extends EController
 		}
 
 	}
+	
+	// FAN API #############################################
+
+	/**	 
+	 * get the fans of a specific content
+	 * @param string $format
+	 * @param string $content
+	 * @param string $page
+	 * @param string $pagesize
+	 * @return string xml/json
+	 */
+	private  function fanget($format,$content,$page,$pagesize) {
+		$user=$this->_checkpassword(true);
+		//$this->checktrafficlimit($user);
+		$content=strip_tags(addslashes($content));
+		$page = intval($page);
+		
+		$fan = new OCSFanLister;
+		$xml = $fan->ocs_fan_list($content,$page,$pagesize);
+		$fancount = count($xml);
+		$txt=OCSXML::generatexml($format,'ok',100,'',$xml,'person','fans',2,$fancount,$pagesize);
+		
+		echo $txt;
+	}
+
+
+	/**	 
+	 * add a fans to a specific content
+	 * @param string $format
+	 * @param string $content
+	 * @return string xml/json
+	 */
+	private  function addfan($format,$content) {
+		$contentid = intval($content);
+		$user=$this->_checkpassword(true);
+		//$this->checktrafficlimit($user);
+		
+		$fan = new OCSFan;
+		if(!$fan->isfan($content)){
+			$fan->add($contentid);
+		}
+		
+		$txt=OCSXML::generatexml($format,'ok',100,'');
+		echo($txt);
+	}
+
+
+	/**	 
+	 * remove a fans from a specific content
+	 * @param string $format
+	 * @param string $content
+	 * @return string xml/json
+	 */
+	private  function removefan($format,$content) {
+		$contentid = intval($content);
+		$user=$this->_checkpassword(true);
+		//$this->checktrafficlimit($user);
+		
+		$fan = new OCSFan;
+		if($fan->isfan($content)){
+			$fan->remove($contentid);
+		}
+		
+		$txt=OCSXML::generatexml($format,'ok',100,'');
+		echo($txt);
+	}
+ 
+ 
+	/**	 
+	 * check if the user is a fan of a content
+	 * @param string $format
+	 * @param string $content
+	 * @return string xml/json
+	 */
+	private  function isfan($format,$content) {
+		$contentid = intval($content);
+		$user=$this->_checkpassword(true);
+		//$this->checktrafficlimit($user);
+		$fan = new OCSFan;
+		if($fan->isfan($contentid)){
+			$xml['status']='fan';
+			$txt=OCSXML::generatexml($format,'ok',100,'',$xml,'','',1); 
+		}else{
+			$xml['status']='notfan';
+			$txt=OCSXML::generatexml($format,'ok',100,'',$xml,'','',1); 
+		}
+		echo($txt);
+	}
     
 }
 
