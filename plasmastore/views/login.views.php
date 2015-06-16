@@ -1,7 +1,7 @@
 <?php
-
+OCSUser::client_login();
  if(!OCSUser::is_logged()){ echo "
-      <form class=\"navbar-form navbar-right \" action=\"/plasmastore/home/index\" method=\"post\">
+      <form class=\"navbar-form navbar-right \" action=\"/plasmastore/login/prevpage\" method=\"post\">
         <div class=\"form-group \">
             <input type=\"text\" class=\"form-control\" name=\"login\" placeholder=\"Username\"> 
             <input type=\"password\" class=\"form-control\" name=\"password\" placeholder=\"Password\">

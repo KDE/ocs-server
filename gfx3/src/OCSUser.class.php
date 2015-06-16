@@ -54,6 +54,7 @@ class OCSUser{
 		if($login==false && $password==false) {
 			$login = EHeaderDataParser::get_cookie("login");
 			$password = EHeaderDataParser::get_cookie("password");
+			OCSUser::$login= $login;
 		}
 		$postdata = array(
 			"login" => $login,
@@ -72,7 +73,9 @@ class OCSUser{
 
 	public static function client_logout() {
 		$login = EHeaderDataParser::get_cookie("login");
+		$password = EHeaderDataParser::get_cookie("password");
 		EHeaderDataParser::del_cookie("login");
+		EHeaderDataParser::del_cookie("password");
 	}
 
 	public static function get_login(){

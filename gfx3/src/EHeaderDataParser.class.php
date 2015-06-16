@@ -64,18 +64,18 @@ class EHeaderDataParser {
 	}
 	
 	public static function get_cookie($key){
-		if(isset($_SESSION[$key])){
-			return $_SESSION[$key];
+		if(isset($_COOKIE[$key])){
+			return $_COOKIE[$key];
 		}
 	}
 	
 	public static function set_cookie($key, $value){
-		setcookie($key,$value, time()+2419200);
+		setcookie($key,$value, time()+(86400 * 30), "/");
 	}
 
 	public static function del_cookie($key){
-		if(isset(EHeaderDataParser::$gets[key])) {
-			setcookie($key, null, -1, '/');
+		if(isset($_COOKIE[$key])){
+			setcookie($key, "", -1, "/");
 		}
 	}
 	
