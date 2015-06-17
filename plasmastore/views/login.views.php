@@ -16,7 +16,7 @@ OCSUser::client_login();
             <li><a href=\"/plasmastore/login/logout\"><span class=\"glyphicon glyphicon-log-out\"></span> Logout</a></li>
             <li><a href=\"#\"><span class=\"glyphicon glyphicon-send\"></span>  My Messages</a></li>
             <li class=\"divider\"></li>
-            <li><a href=\"#\">  My Account</a></li>
+            <li><a href=\"/plasmastore/userpanel/\">  My Account</a></li>
           </ul>
           </li>
           </ul>";}
