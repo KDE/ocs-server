@@ -175,16 +175,6 @@ class StatusController extends EController
 		$client->set_post_data($postdata);
 		$check = $client->post("v1/content/edit/$id");
 		$this->_statuscode_test($check, $client);
-        
-        echo '<p>content/delete/[contentid]..........';
-		$postdata = array(
-			"contentid" => $id
-			);
-		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
-		$client->set_auth_info("test","password");
-		$client->set_post_data($postdata);
-		$check = $client->post("v1/content/delete/$id");
-		$this->_statuscode_test($check, $client);
 		
 		echo '<p>[get] activity..........';
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
@@ -200,6 +190,46 @@ class StatusController extends EController
 		$client->set_auth_info("test","password");
 		$client->set_post_data($postdata);
 		$check = $client->post("v1/activity");
+		$this->_statuscode_test($check, $client);
+        
+        echo '<p>fan/add..........';
+        $postdata = array("idcontent"=>$contentid);
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$client->set_post_data($postdata);
+		$check = $client->post("v1/fan/add/$id");
+		$this->_statuscode_test($check, $client);
+		
+		echo '<p>fan/data/[contentid]..........';
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$check = $client->get("v1/fan/data/$id");
+		$this->_statuscode_test($check, $client);
+		
+		echo '<p>fan/status/[contentid]..........';
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$check = $client->get("v1/fan/status/$id");
+		$this->_statuscode_test($check, $client);
+		
+		echo '<p>fan/remove..........';
+        $postdata = array("idcontent"=>$contentid);
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$client->set_post_data($postdata);
+		$check = $client->post("v1/fan/remove/$id");
+		$this->_statuscode_test($check, $client);
+		
+		//deleting content used for tests
+		
+		echo '<p>content/delete/[contentid]..........';
+		$postdata = array(
+			"contentid" => $id
+			);
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$client->set_post_data($postdata);
+		$check = $client->post("v1/content/delete/$id");
 		$this->_statuscode_test($check, $client);
         
         /*
