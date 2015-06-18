@@ -82,6 +82,7 @@ class OCSUser{
 		return OCSUser::$login;
 	}
 	
+	
 	/*
 	 * attempt an authentication trough nickname:password
 	 * and populates object data if successfull

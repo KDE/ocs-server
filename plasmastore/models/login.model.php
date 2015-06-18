@@ -13,7 +13,7 @@ class LoginModel extends EModel {
         EUser::login($login,$password);
         return true;
 } else {
-    return false;
+    return false; //TODO: provide an error messagr
 }
 }
 }
