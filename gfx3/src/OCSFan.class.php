@@ -38,7 +38,7 @@ class OCSFan {
 	}
 	
 	public function isfan($content){
-		$fant = new EData("ocs_fan");
+		$fant = new EModel("ocs_fan");
 		
 		$person = OCSUser::id();
 		$r = $fant->find("*", "where person=$person and content=$content");

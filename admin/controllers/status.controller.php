@@ -49,8 +49,15 @@ class StatusController extends EController
 	
 	private function _statuscode_test($data, $client)
 	{
+		ob_start();
+		var_dump($data);
+		$a=ob_get_contents();
+		ob_end_clean();
 		if(isset($data["ocs"]["meta"]["statuscode"])){
-			echo '<span style="color:green">ok!</span>(statuscode:'.$data["ocs"]["meta"]["statuscode"].')</p>';
+			echo '<span style="color:green">ok!</span>(statuscode:'.$data["ocs"]["meta"]["statuscode"].')';
+			echo '<a onclick="alert(\'';
+			echo str_replace("lkjjjnnh", "\\n", addslashes(htmlspecialchars(str_replace("\n", "lkjjjnnh", $a))));
+			echo '\')">[show full response]</a></p>';
 		} else {
 			echo '<span style="color:red">failed!</span></p>';
 			ELog::pd($client->get_last_raw_result());
@@ -175,16 +182,6 @@ class StatusController extends EController
 		$client->set_post_data($postdata);
 		$check = $client->post("v1/content/edit/$id");
 		$this->_statuscode_test($check, $client);
-        
-        echo '<p>content/delete/[contentid]..........';
-		$postdata = array(
-			"contentid" => $id
-			);
-		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
-		$client->set_auth_info("test","password");
-		$client->set_post_data($postdata);
-		$check = $client->post("v1/content/delete/$id");
-		$this->_statuscode_test($check, $client);
 		
 		echo '<p>[get] activity..........';
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
@@ -200,6 +197,67 @@ class StatusController extends EController
 		$client->set_auth_info("test","password");
 		$client->set_post_data($postdata);
 		$check = $client->post("v1/activity");
+		$this->_statuscode_test($check, $client);
+        
+        echo '<p>fan/add..........';
+        $postdata = array("idcontent"=>$contentid);
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$client->set_post_data($postdata);
+		$check = $client->post("v1/fan/add/$id");
+		$this->_statuscode_test($check, $client);
+		
+		echo '<p>fan/data/[contentid]..........';
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$check = $client->get("v1/fan/data/$id");
+		$this->_statuscode_test($check, $client);
+		
+		echo '<p>fan/status/[contentid]..........';
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$check = $client->get("v1/fan/status/$id");
+		$this->_statuscode_test($check, $client);
+		
+		echo '<p>fan/remove..........';
+        $postdata = array("idcontent"=>$contentid);
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$client->set_post_data($postdata);
+		$check = $client->post("v1/fan/remove/$id");
+		$this->_statuscode_test($check, $client);
+		
+		echo '<p>comments/add..........';
+		$postdata = array(
+			"type" => "1",
+			"content" => $id,
+			"content2" => "1",
+			"parent" => "0",
+			"subject" => "subject",
+			"message" => "message"
+			);
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$client->set_post_data($postdata);
+		$check = $client->post("v1/comments/add");
+		$this->_statuscode_test($check, $client);
+		
+		echo '<p>comments/data/[type]/[contentid1]/[contentid2]..........';
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		//$client->set_auth_info("test","password");
+		$this->_statuscode_test($check, $client);
+		$check = $client->get("v1/comments/data/1/$id/1&page=1&pagesize=10");
+		
+		//deleting content used for tests
+		
+		echo '<p>content/delete/[contentid]..........';
+		$postdata = array(
+			"contentid" => $id
+			);
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$client->set_post_data($postdata);
+		$check = $client->post("v1/content/delete/$id");
 		$this->_statuscode_test($check, $client);
         
         /*

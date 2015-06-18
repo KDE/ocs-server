@@ -1554,6 +1554,109 @@ class V1Controller extends EController
 		}
 		echo($txt);
 	}
+	
+	// COMMENTS API ############################################# TODO: tests
+
+	/**	 
+	 * add a comment
+	 * @param string $format
+	 * @param string $content
+	 * @param string $parent
+	 * @param string $subject
+	 * @param string $message
+	 * @return string xml/json
+	 */
+	private function commentsadd($format,$type,$content,$content2,$parent,$subject,$message) {
+		$user = $this->_checkpassword(true);
+		//$this->checktrafficlimit($user);
+		$data['parent'] = strip_tags(addslashes($parent));
+		$data['subject'] = strip_tags(addslashes($subject));
+		$data['message'] = strip_tags(addslashes($message));
+		$data['content'] = strip_tags(addslashes($content));
+		$data['content2'] = strip_tags(addslashes($content2));
+		$data['type'] = strip_tags(addslashes($type));
+		$data['owner'] = OCSUser::id();
+
+		//types
+		// just 1 is accepted
+		// 1 - content
+		
+		//setting content type as default
+		if(!in_array($data['type'],array(1,4,7,8))) $data['type']=1;
+		
+		if($user<>'') {
+			if($data['message']<>'' and $data['subject']<>'') {
+				if($data['content']<>0) {
+					$comment = new OCSComment(); //creating new object
+					$comment->set_data($data); //loading new data for comment
+					$comment->save_to_db();
+					$id = $comment->id();
+					$xml[0]['id'] = $id;
+					echo(OCSXML::generatexml($format,'ok',100,'',$xml,'comment','',2));
+				} else {
+					echo(OCSXML::generatexml($format,'failed',101,'content must not be empty'));
+				}
+			} else {
+				echo(OCSXML::generatexml($format,'failed',102,'message or subject must not be empty'));
+			}
+		} else {
+			echo(OCSXML::generatexml($format,'failed',103,'no permission to add a comment'));
+		}
+
+	}
+
+
+
+	private  function commentsget($format,$type,$content,$content2,$page,$pagesize) {
+		$user=$this->_checkpassword(false);
+		//$this->checktrafficlimit($user);
+		$type = strip_tags(addslashes($type));
+		$content = strip_tags(addslashes($content));
+		$content2 = strip_tags(addslashes($content2));
+		$page = strip_tags(addslashes($page));
+		$pagesize = strip_tags(addslashes($pagesize));
+
+	 //types
+	 // 1 - content
+	 // 4 - forum
+	 // 7 - knowledgebase
+	 // 8 - event
+
+		if(!in_array($type,array(1,4,7,8))) $type=1;
+		
+		$coml = new OCSCommentLister();
+		$comments = $coml->ocs_comment_list($type,$content,$content2,$page,$pagesize);
+		$totalitems = count($comments);
+		//$txt=$this->generatexml($format,'ok',100,'',$comments,'event','detail',2,$totalitems,$pagesize);
+
+		$txt=OCSXML::generatexml($format,'ok',100,'',$comments,'comment','','dynamic',$totalitems,$pagesize);
+		echo($txt);
+
+
+	}
+
+
+	/**	 
+	 * vote for a comment TODO: IMPLEMENT THIS ONE
+	 * @param string $format
+	 * @param string $id
+	 * @param string $score
+	 * @return string xml/json
+	 */
+	private  function commentvote($format,$id,$score) {
+		$user=$this->_checkpassword(true);
+		//$this->checktrafficlimit($user);
+		
+		$comment = new OCSComment();
+		if($comment->load($id)){
+			
+			$comment->set_score($score);
+			$txt=$this->generatexml($format,'ok',100,'');
+			echo($txt);
+		} else {
+			$txt=$this->generatexml($format,'failed',101,'comment not found');
+		}
+	}
     
 }
 

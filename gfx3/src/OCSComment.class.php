@@ -34,7 +34,7 @@ class OCSComment{
 	 * Enabling main to be on a global context.
 	 */
 	public function __construct(){
-		$this->ocs_comment = new EData("ocs_comment");
+		$this->ocs_comment = new EModel("ocs_comment");
 	}
 	
 	/*
