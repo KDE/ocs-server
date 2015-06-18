@@ -143,13 +143,19 @@
             <div class="tab-pane fade in active" id="reviews">
                 <div class="well">
                     <div class="text-right">
-                        <a class="btn btn-success" href="#reviews-anchor" id="open-review-box"> Leave a Review</a>
+                        <?php
+                        if(OCSUser::is_logged()){
+                        echo "<a class=\"btn btn-success\" href=\"#reviews-anchor\" id=\"open-review-box\"> Leave a Review</a>";
+                        }
+                        else {echo "<h4>Login to leave a review</h4>";}
+                        ?>
                     </div>
                     <div class="row" id="post-review-box" style="display:none">
                         <div class="col-md-12">
-                            <form accept-charset="UTF-8" action="" method="post">
+                            <form accept-charset="UTF-8" action="/plasmastore/app_description/leaveComment" method="post">
                                 <input id="ratings-hidden" name="rating" type="hidden">
-                                <textarea class="form-control animated" cols="50" id="new-review" name="comment" placeholder="Enter your review here..." rows="5"></textarea>
+                                <input type="text" class="form-control" name="inputSubject" placeholder="review subject">
+                                <textarea class="form-control animated" cols="50" id="new-review" name="inputMessage" placeholder="Enter your review here..." rows="5"></textarea>
 
                                 <div class="text-right">
                                     <div class="stars starrr" data-rating="0">
@@ -170,6 +176,7 @@
                         <div class=\"col-md-12\">
                         <b>".$comment["subject"]."</b>
                         <p>".$comment["text"]."
+                        <p>left by".$comment["user"]."
                         <span class=\"pull-right\">".$comment["date"]."</span>
                         <hr>";
                     }
