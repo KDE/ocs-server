@@ -170,16 +170,18 @@
 
                     <hr>
                     <?php
-                    foreach($data[2]["ocs"]["data"]["comment"] as $comment){
-                        echo "
-                        <div class=\"row\">
-                        <div class=\"col-md-12\">
-                        <b>".$comment["subject"]."</b>
-                        <p>".$comment["text"]."
-                        <p>left by".$comment["user"]."
-                        <span class=\"pull-right\">".$comment["date"]."</span>
-                        <hr>";
-                    }
+                    if(isset($data[2]["ocs"]["data"]["comment"])){
+                        foreach($data[2]["ocs"]["data"]["comment"] as $comment){
+                            echo "
+                            <div class=\"row\">
+                            <div class=\"col-md-12\">
+                            <b>".$comment["subject"]."</b>
+                            <p>".$comment["text"]."
+                            <p>left by".$comment["user"]."
+                            <span class=\"pull-right\">".$comment["date"]."</span>
+                            <hr>";
+                        }
+                    } else {echo "no comments found";}
                     ?>
                     <div class="row">
                         <div class="col-md-12">
