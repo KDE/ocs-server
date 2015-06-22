@@ -5,5 +5,9 @@ class HomeController extends EController {
 		EStructure::view("category_showcase", $cat->getCategories(), $cat->getData());
 
 	}
+	public function delData ($args) {
+		$dat = new RetrieveModel(); 
+		$dat->delData($args[0]);
+	}
 }
 ?>

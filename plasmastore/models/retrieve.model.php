@@ -1,7 +1,7 @@
 <?php
 class RetrieveModel extends EModel {
-
-public function getCategories() {
+//if i use this model also to delete data i should consider to change its name
+public function getCategories() { 
 	$client = new OCSClient();
 	return $client->get("v1/content/categories");
 }
@@ -9,6 +9,14 @@ public function getCategories() {
 public function getData() {
 	$client = new OCSClient();
 	return $client->get("v1/content/data");
+}
+
+public function delData($id) {
+	$client = new OCSClient();
+	$client->set_auth_info(EHeaderDataParser::get_cookie("login"),EHeaderDataParser::get_cookie("password"));
+	$client->post("v1/content/delete/$id");
+	$prevpage = EPageProperties::get_previous_page();
+        header("Location: $prevpage");
 }
 public function getSingleContentData($id) {
 	$client = new OCSClient();
