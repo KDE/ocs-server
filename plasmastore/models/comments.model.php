@@ -2,16 +2,16 @@
 class CommentsModel extends EModel {
     public function leaveComment ($id) {
         $type = "1";
-        $contentid = $id;
-        $contentid2 = "1";
+        $content = $id;
+        $content2 = "1";
         $parent = "";
         $subject = EHeaderDataParser::secure_post("inputSubject");
         $message = EHeaderDataParser::secure_post("inputMessage");
 
         $postdata = array(
             "type" => $type,
-            "contentid" => $contentid,
-            "contentid2" => $contentid2,
+            "content" => $content,
+            "content2" => $content2,
             "parent" => $parent,
             "subject" => $subject,
             "message" => $message,
@@ -27,7 +27,7 @@ class CommentsModel extends EModel {
             //cosa fare se va a buon fine
             header("Location: /plasmastore/app_description/show/$id");
         }
-        else {echo "ERROR";}
+        else {echo $check["ocs"]["meta"]["statuscode"];}
     }
 }
 

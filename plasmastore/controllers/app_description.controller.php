@@ -1,6 +1,5 @@
 <?php
 class App_descriptionController extends EController {
-	private static $id;
 	public function show ($args) {
 		$cat = new RetrieveModel();
 		EStructure::view("app_description",
@@ -8,11 +7,10 @@ class App_descriptionController extends EController {
 		 $cat->getSingleContentData($args[0]),
 		 $cat->getComments($args[0])
 		 );
-		self::$id=$args[0];
 	}
-	public function leaveComment () {
+	public function leaveComment ($args) {
 		$dat = new CommentsModel();
-		$dat->leaveComment(self::$id);
+		$dat->leaveComment($args[0]);
 	}	
 }
 ?>

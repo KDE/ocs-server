@@ -152,7 +152,9 @@
                     </div>
                     <div class="row" id="post-review-box" style="display:none">
                         <div class="col-md-12">
-                            <form accept-charset="UTF-8" action="/plasmastore/app_description/leaveComment" method="post">
+                            <?php 
+                            echo "<form accept-charset=\"UTF-8\" action=\"/plasmastore/app_description/leaveComment/".$data[1]["ocs"]["data"]["content"]["id"]."\" method=\"post\">";
+                            ?>
                                 <input id="ratings-hidden" name="rating" type="hidden">
                                 <input type="text" class="form-control" name="inputSubject" placeholder="review subject">
                                 <textarea class="form-control animated" cols="50" id="new-review" name="inputMessage" placeholder="Enter your review here..." rows="5"></textarea>
