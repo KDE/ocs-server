@@ -93,6 +93,12 @@ class StatusController extends EController
 		$check = $client->post("v1/person/add",$postdata);
 		$this->_statuscode_test($check, $client);
 		
+		echo '<p>person/data..........';
+		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
+		$client->set_auth_info("test","password");
+		$check = $client->get("v1/person/data");
+		$this->_statuscode_test($check, $client);
+		
 		echo '<p>person/data?name=cavol&page=1&pagesize=10..........';
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		$client->set_auth_info("test","password");
@@ -126,7 +132,7 @@ class StatusController extends EController
 			);
 		$client->set_auth_info("test","password");
 		$check = $client->post("v1/content/add",$postdata);
-		$contentid = $this->example_contentid = $check['ocs']['data']['content']['id'];
+		$contentid = $this->example_contentid = $check['ocs']['data']['content'][0]['id'];
         $this->_statuscode_test($check, $client);
         
         echo '<p>content/categories..........';

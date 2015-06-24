@@ -1657,6 +1657,234 @@ class V1Controller extends EController
 			$txt=$this->generatexml($format,'failed',101,'comment not found');
 		}
 	}
+	
+	// FRIEND API #############################################
+
+	/**	 
+	 * get the list of sent invitations
+	 * @param string $format
+	 * @param string $page
+	 * @param string $pagesize
+	 * @return string xml/json
+	 */
+	private  function friendsentinvitations($format,$page,$pagesize) {
+		$user=$this->_checkpassword();
+		//$this->checktrafficlimit($user);
+        
+        $friend = new OCSFriendsLister;
+        $xml = $friend->ocs_sentinvitations($page,$pagesize);
+        $friendcount = count($xml);
+        $txt=OCSXML::generatexml($format,'ok',100,'',$xml,'person','id',2,$friendcount,$pagesize);
+        
+        echo $txt;
+	}
+
+	/**	 
+	 * get the list of received invitations
+	 * @param string $format
+	 * @param string $page
+	 * @param string $pagesize
+	 * @return string xml/json
+	 */
+	private  function friendreceivedinvitations($format,$page,$pagesize) {
+		$user=$this->_checkpassword();
+		//$this->checktrafficlimit($user);
+
+        $friend = new OCSFriendsLister;
+        $xml = $friend->ocs_receivedinvitations($page,$pagesize);
+        $friendcount = count($xml);
+        $txt=OCSXML::generatexml($format,'ok',100,'',$xml,'person','id',2,$friendcount,$pagesize);
+        
+        echo $txt;
+	}
+
+	/**	 
+	 * get the list of friends from a person
+	 * @param string $format
+	 * @param string $fromuser user which called the query
+	 * @param string $page
+	 * @param string $pagesize
+	 * @return string xml/json
+	 */
+	private  function friendget($format,$fromuser,$page,$pagesize) { //example params: (,snizzo,0,10);
+		$user=$this->_checkpassword();
+		//$this->checktrafficlimit($user);
+		
+		$fromuser=strip_tags(addslashes($fromuser));
+        
+        /*
+		$cache = new H01_CACHE('apifriends',array($fromuser,CONFIG_USERDB,$page,$pagesize,$format));
+		if ($cache->exist()) {
+			$cache->get();
+			unset($cache);
+		} else {
+
+			$DBuser=H01_USER::getuser($fromuser,CONFIG_USERDB);
+			if(isset($DBuser['login'])) {
+				if($DBuser['privacyrelations']==0) {
+					$visible=true;
+				}elseif($DBuser['privacyrelations']==1){
+					if($user<>'') $visible=true; else $visible=false;
+				}elseif($DBuser['privacyrelations']==2){
+					if(($fromuser==$user) or (H01_RELATION::isrelation(1,$fromuser,CONFIG_USERDB,$user))) $visible=true; else $visible=false;
+				}elseif($DBuser['privacyrelations']==3){
+					if($fromuser==$user) $visible=true; else $visible=false;
+				}
+
+			 if($visible){
+					$countapprovedrelations=H01_RELATION::countapprovedrelations(1,$fromuser,CONFIG_USERDB);
+					$relations=H01_RELATION::getapprovedrelations(1,$fromuser,CONFIG_USERDB,$start,$count,true);
+					$itemscount=count($relations);
+					$xml=array();
+					for ($i=0; $i < $itemscount;$i++) {
+						$xml[$i]['personid']=$relations[$i]['user'];
+						$xml[$i]['firstname']=$relations[$i]['firstname'];
+						$xml[$i]['lastname']=$relations[$i]['lastname'];
+
+
+						if		 (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$relations[$i]['user'].'.jpg')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$relations[$i]['user'].'.jpg'; $found=true; }
+						elseif (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$relations[$i]['user'].'.png')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$relations[$i]['user'].'.png'; $found=true; }
+						elseif (file_exists(CONFIG_DOCUMENT_ROOT.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$relations[$i]['user'].'.gif')) { $pic='http://'.CONFIG_WEBSITEHOST.'/CONTENT/user-pics/'.CONFIG_USERDB.'/'.$relations[$i]['user'].'.gif'; $found=true; }
+						else	{	$pic=HOST.'/usermanager/nopic.png'; $found=false ;}
+						$xml[$i]['avatarpic']=$pic;
+						$xml[$i]['avatarpicfound']=$found;
+					}
+					$txt=$this->generatexml($format,'ok',100,'',$xml,'user','id',2,$countapprovedrelations,$pagesize);
+				}else{
+					$txt=$this->generatexml($format,'failed',101,'data is private');
+				}
+			}else{
+				$txt=$this->generatexml($format,'failed',102,'user not found');
+			}
+
+			$cache->put($txt);
+			unset($cache);
+			echo($txt);
+		}
+		*/
+        $fan = new OCSFriendsLister;
+        $xml = $fan->ocs_friend_list($fromuser,$page,$pagesize);
+        $friendcount = count($xml);
+        $txt=OCSXML::generatexml($format,'ok',100,'',$xml,'person','id',2,$friendcount,$pagesize);
+        
+        echo $txt;
+	}
+
+
+
+
+	/**	 
+	 * invite a person as a friend
+	 * @param string $format
+	 * @param string $inviteuser
+	 * @param string $message
+	 * @return string xml/json
+	 */
+	private  function friendinvite($format,$inviteuser,$message) {
+		$user=$this->_checkpassword();
+		//$this->checktrafficlimit($user);
+		$inviteuser = strip_tags(addslashes($inviteuser));
+		$message = strip_tags(addslashes($message));
+
+		if($user<>'' and $inviteuser<>'' and $inviteuser<>false) {
+			if($user<>$inviteuser) {
+				if($message<>'') {
+					OCSFriend::send_invitation($inviteuser, $message);
+					echo(OCSXML::generatexml($format,'ok',100,''));
+				} else {
+					echo(OCSXML::generatexml($format,'failed',101,'message must not be empty'));
+				}
+			}else{
+				echo(OCSXML::generatexml($format,'failed',102,'you can\´t invite yourself'));
+			}
+		} else {
+			echo(OCSXML::generatexml($format,'failed',103,'user not found'));
+		}
+		
+	}
+
+	/**	 
+	 * approve a friendsship invitation
+	 * @param string $format
+	 * @param string $inviteuser
+	 * @return string xml/json
+	 */
+	private  function friendapprove($format,$inviteuser) {
+		$user=$this->_checkpassword();
+		//$this->checktrafficlimit($user);
+		$inviteuser = strip_tags(addslashes($inviteuser));
+
+		if($user<>'' and $inviteuser<>'') {
+			OCSFriend::approve_invitation($inviteuser);
+			echo(OCSXML::generatexml($format,'ok',100,''));
+		} else {
+			echo(OCSXML::generatexml($format,'failed',101,'user not found'));
+		}
+
+	}
+
+
+	/**	 
+	 * decline a friendsship invitation
+	 * @param string $format
+	 * @param string $inviteuser
+	 * @return string xml/json
+	 */
+	private  function frienddecline($format,$inviteuser) {
+		$user=$this->_checkpassword();
+		//$this->checktrafficlimit($user);
+		$inviteuser = strip_tags(addslashes($inviteuser));
+
+		if($user<>'' and $inviteuser<>'') {
+			OCSFriend::decline_invitation($inviteuser);
+			echo(OCSXML::generatexml($format,'ok',100,''));
+		} else {
+			echo(OCSXML::generatexml($format,'failed',101,'user not found'));
+		}
+
+	}
+
+
+	/**	 
+	 * cancel a friendsship
+	 * @param string $format
+	 * @param string $inviteuser
+	 * @return string xml/json
+	 */
+	private  function friendcancel($format,$inviteuser) {
+		$user=$this->_checkpassword();
+		//$this->checktrafficlimit($user);
+		$inviteuser = strip_tags(addslashes($inviteuser));
+
+		if($user<>'' and $inviteuser<>'') {
+			OCSFriend::cancel_friendship($inviteuser);
+			echo(OCSXML::generatexml($format,'ok',100,''));
+		} else {
+			echo(OCSXML::generatexml($format,'failed',101,'user not found'));
+		}
+
+	}
+
+
+	/**	 
+	 * cancel a friendsship invitation
+	 * @param string $format
+	 * @param string $inviteuser
+	 * @return string xml/json
+	 */
+	private  function friendcancelrequest($format,$inviteuser) {
+		$user=$this->_checkpassword();
+		//$this->checktrafficlimit($user);
+		$inviteuser = strip_tags(addslashes($inviteuser));
+
+		if($user<>'' and $inviteuser<>'') {
+			H01_RELATION::deleterelationrequest(1,$user,$inviteuser,CONFIG_USERDB);
+			echo(OCSXML::generatexml($format,'ok',100,''));
+		} else {
+			echo(OCSXML::generatexml($format,'failed',101,'user not found'));
+		}
+
+	}
     
 }
 

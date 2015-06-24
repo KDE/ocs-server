@@ -25,8 +25,18 @@ class OCSClient{
 	private $postdata = 0;
 	private $use_auth = false;
 	private $last_raw_result = 0;
+	private $ocs_data_fields;
 	
 	public function __construct($srv="default"){
+		
+		//setting manually fields that will be parsed as multiple when
+		//converting from xml to array
+		$this->ocs_data_fields = array();
+		$this->ocs_data_fields[] = "person";
+		$this->ocs_data_fields[] = "content";
+		$this->ocs_data_fields[] = "comment";
+		$this->ocs_data_fields[] = "activity";
+		
 		if($srv=="default"){
 			if(isset(EConfig::$data["ocs"])){
 				$this->set_target_server(EConfig::$data["ocs"]["host"]);
@@ -77,7 +87,7 @@ class OCSClient{
 		if($this->is_json_encoded($raw_data)){
 			return json_decode($raw_data);
 		} else {
-			$data = EXmlParser::to_array($raw_data);
+			$data = EXmlParser::to_array($raw_data, $this->ocs_data_fields);
 			return $data;
 		}
 	}
@@ -125,7 +135,7 @@ class OCSClient{
 			return json_decode($raw_data);
 		} else {
 			$this->last_raw_result = $raw_data;
-			$data = EXmlParser::to_array($raw_data);
+			$data = EXmlParser::to_array($raw_data, $this->ocs_data_fields);
 			return $data;
 		}
 	}

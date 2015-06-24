@@ -1,7 +1,7 @@
 <?php
 
 /*
- *   TRT GFX 3.0.1 (beta build) BackToSlash
+ *   GFX 4
  * 
  *   support:	happy.snizzo@gmail.com
  *   website:	http://trt-gfx.googlecode.com
@@ -12,12 +12,12 @@
  */ 
 
 /**
- * xml2array() will convert the given XML text to an array in the XML structure
+ * to_array() will convert the given XML text to an array in the XML structure
  */
 
 class EXmlParser{
-
-	public static function to_array($contents, $get_attributes=0, $priority = 'tag') {
+	
+	public static function to_array($contents, $force_multiple=array()) {
 		if(!$contents) return array();
 
 		if(!function_exists('xml_parser_create')) {
@@ -35,7 +35,7 @@ class EXmlParser{
 		
 		if(!$xml_values) return;
 		
-		$data = EXmlParser::parse_array(array(),$xml_values);
+		$data = EXmlParser::parse_array(array(),$xml_values,$force_multiple);
 		
 		return $data;
 	}
@@ -47,7 +47,7 @@ class EXmlParser{
 	* @input	&$tags		declarative array generated from xml_parse_into_struct()
 	* @returns	$data		associative array
 	*/
-	public static function parse_array($data,&$tags){
+	public static function parse_array($data,&$tags,$force_multiple=array()){
 		do{
 			if(is_array($tags)){
 				$entry = array_shift($tags);
@@ -70,18 +70,23 @@ class EXmlParser{
 					//if array is associative, it means it's not a collection of nodes with the same name
 					if(EXmlParser::is_assoc($data[$tag])){
 						$prev = $data[$tag];
-						$new = EXmlParser::parse_array(array(),$tags);
+						$new = EXmlParser::parse_array(array(),$tags,$force_multiple);
 						$data[$tag] = array();
 						$data[$tag][] = $prev;
 						$data[$tag][] = $new;
 					} else { //it's already a collection
-						$new = EXmlParser::parse_array(array(),$tags);
+						$new = EXmlParser::parse_array(array(),$tags,$force_multiple);
 						$data[$tag][] = $new;
 					}
 					
 				} else {
-					$data[$tag] = array();
-					$data[$tag] = EXmlParser::parse_array($data[$tag],$tags);
+					if (is_array($force_multiple) and in_array($tag, $force_multiple)) {
+						$data[$tag] = array();
+						$data[$tag][] = EXmlParser::parse_array($data[$tag],$tags,$force_multiple);
+					} else {
+						$data[$tag] = array();
+						$data[$tag] = EXmlParser::parse_array($data[$tag],$tags,$force_multiple);
+					}
 				}
 			}
 		

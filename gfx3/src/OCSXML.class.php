@@ -131,11 +131,11 @@ class OCSXML{
 	
 	/**
 	 * Take an array of any size, and make it into xml
-	 * @param xmlwriter	An xmlwriter instance
+	 * @param xmlwriter		An xmlwriter instance
 	 * @param array			The array which is to be transformed
 	 * @param mixed			Either a string, or an array of elements defining element names for each level in the XML hierarchy
-	 *									 In the case of multiple lists of differently titled items at the same level, adding an array inside the array will allow for this to be constructed.
-	 * @param int				Internal use (the index of the child item in question - corresponds to the index in the second level array above)
+	 *						In the case of multiple lists of differently titled items at the same level, adding an array inside the array will allow for this to be constructed.
+	 * @param int			Internal use (the index of the child item in question - corresponds to the index in the second level array above)
 	 */
 	static public function toxml($writer,$data,$node,$childindex=0) {
 		$nodename=$node;
