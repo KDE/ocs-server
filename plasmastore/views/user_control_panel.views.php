@@ -26,7 +26,7 @@
             echo "
             <h1 class=\"page-header\">Hi ".$data[0]["ocs"]["data"]["person"]["firstname"]."</h1>
             <h3>These are your account info:</h2>
-            <h4>First Name: ".$data[0]["ocs"]["data"]["person"]["firstname"]."</h4>
+            <h4>First Name: ".$data[0]["ocs"]["data"]["person"][0]["firstname"]."</h4>
             <h4>Last Name:  ".$data[0]["ocs"]["data"]["person"]["lastname"]."</h4>
             <h4>User Name:  ".$data[0]["ocs"]["data"]["person"]["personid"]."</h4>
             <h4>Email: ".$data[0]["ocs"]["data"]["person"]["email"]."</h4> ";
@@ -44,11 +44,15 @@
         <div class="tab-pane fade in active" id="my_apps">
             <div class="well">
                 <div class="text-right">
-                    <a class="btn btn-success" href="#" id="open-uploadapp-box">Upload a new app</a>
+                    <a class="btn btn-success" id="open-uploadapp-box">Upload a new app</a>
                 </div>
                 <div class="row" id="post-uploadapp-box" style="display:none">
                     <div class="col-md-12">
                         <form class="form-horizontal" accept-charset="UTF-8" action="/plasmastore/userpanel/upload" method="post">
+                            <div class="text-right">
+                                <a class="btn btn-danger btn-sm" href="#" id="close-uploadapp-box" style="display:none; margin-right: 10px;">Cancel</a>
+                            </div>
+                            <br>
                             <div class="form-group">
                                 <label for="inputTitle" class="col-sm-2 control-label">Title</label>
                                 <div class="col-sm-10">
@@ -91,11 +95,90 @@
                                     <textarea class="form-control" rows="3" name="inputChangelog" placeholder="list the new changes/fixes have you made"></textarea>
                                 </div>
                             </div>
-                            <a class="btn btn-danger btn-sm" href="#" id="close-uploadapp-box" style="display:none; margin-right: 10px;">Cancel</a>
                             <button class="btn btn-success btn-sm" type="submit">Upload!</button>
                         </form>
                     </div>
-                </div>
+                </div> <!-- .div class="row" id="post-uploadapp-box" style="display:none" -->
+                <?php 
+                    $number="0";
+                        echo "<table class=\"table table-striped\">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Delete</th>
+                                <th>Edit</th>
+                            </tr>
+                        </thead>
+                        <tbody>";
+                    
+                    foreach($data[1]["ocs"]["data"]["content"] as $content){
+                        if(OCSUser::login()==$content["personid"]){
+                                    $number=$number+1;
+                                    echo "
+                            <tr>
+                              <td>$number</td>
+                              <td><a href=\"/plasmastore/app_description/show/".$content["id"]."/".ERewriter::prettify($content["name"])."\">".$content["name"]."</td>
+                              <td><a class=\"btn-sm btn-danger\" href=\"/plasmastore/home/delData/".$content["id"]."\">Delete <span class=\"glyphicon glyphicon-trash\"></span></a></td>
+                              <td><a class=\"btn-sm btn-success open-editapp-box\" href=\"#\">Edit</a>
+
+                                <div class=\"row post-editapp-box\" style=\"display:none\">
+                                    <div class=\"col-md-12\">
+                                        <form class=\"form-horizontal\" accept-charset=\"UTF-8\" action=\"/plasmastore/userpanel/edit/".$content["id"]."\" method=\"post\">
+                                            <div class=\"form-group\">
+                                                <label for=\"inputTitle\" class=\"col-sm-2 control-label\">Title</label>
+                                                <div class=\"col-sm-10\">
+                                                    <input type=\"text\" class=\"form-control\" name=\"inputTitle\" value=\"".$content["name"]."\">
+                                                </div>
+                                            </div>
+                                            <div class=\"form-group\">
+                                                <label for=\"inputDownloadName\" class=\"col-sm-2 control-label\">Download name</label>
+                                                <div class=\"col-sm-10\">
+                                                    <input type=\"text\" class=\"form-control\" name=\"inputDownloadName\" value=\"".$content["downloadname1"]."\">
+                                                </div>
+                                            </div>
+                                            <div class=\"form-group\">
+                                                <label for=\"inputDownloadLink\" class=\"col-sm-2 control-label\">Download link</label>
+                                                <div class=\"col-sm-10\">
+                                                    <input type=\"text\" class=\"form-control\" name=\"inputDownloadLink\" value=\"".$content["downloadlink1"]."\">
+                                                </div>
+                                            </div>
+                                            <div class=\"form-group\">
+                                                <label for=\"inputSummary\" class=\"col-sm-2 control-label\">Summary</label>
+                                                <div class=\"col-sm-10\">
+                                                    <input type=\"text\" class=\"form-control\" name=\"inputSummary\" value=\"".$content["summary"]."\">
+                                                </div>
+                                            </div>
+                                            <div class=\"form-group\">
+                                                <label for=\"inputDescription\" class=\"col-sm-2 control-label\">Description</label>
+                                                <div class=\"col-sm-10\">
+                                                    <textarea rows=\"5\" class=\"form-control\" name=\"inputDescription\" value=\"".$content["description"]."\"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class=\"form-group\">
+                                                <label for=\"inputVersion\" class=\"col-sm-2 control-label\">Version</label>
+                                                <div class=\"col-sm-10\">
+                                                    <input type=\"text\" class=\"form-control\" name=\"inputVersion\" value=\"".$content["version"]."\">
+                                                </div>
+                                            </div>
+                                            <div class=\"form-group\">
+                                                <label for=\"inputChangelog\" class=\"col-sm-2 control-label\">Changelog</label>
+                                                <div class=\"col-sm-10\">
+                                                    <textarea class=\"form-control\" rows=\"3\" name=\"inputChangelog\" value=\"".$content["changelog"]."\"></textarea>
+                                                </div>
+                                            </div>
+                                            <a class=\"btn btn-danger btn-sm close-editapp-box\" href=\"#\" style=\"display:none; margin-right: 10px;\">Cancel</a>
+                                            <button class=\"btn btn-success btn-sm\" type=\"submit\">Save changes</button>
+                                        </form>
+                                    </div>
+                                </div> 
+                                </td>
+                        </tr>";
+                        }
+                    }
+                echo"</tbody>";
+            ?>
+                </table>
             </div>
         </div>
     </div>
@@ -112,6 +195,7 @@
     <script src="../js/bootstrap.js"></script>
     <script src="../js/sidebuttons.js"></script>
     <script src="../js/uploadbox.js"></script>
+    <script src="../js/editbox.js"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <script src="../js/ie10-viewport-bug-workaround.js"></script>
 </body>

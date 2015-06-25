@@ -204,7 +204,7 @@
     <script src="../js/jquery.js"></script>
     <script src="../js/bootstrap.js"></script>
     <script src="../js/sidebuttons.js"></script>
-    <script src="../js/reviewbox.js"></script>
+    <script src="../js/uploadbox.js"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <script src="../js/ie10-viewport-bug-workaround.js"></script>
 </body>
