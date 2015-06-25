@@ -65,7 +65,7 @@
         echo "
         <li><a href=\"#\">Category 1</a></li>
         <li><a href=\"#\">Subcategory a</a></li>
-        <li class=\"active\">".$data[1]["ocs"]["data"]["content"]["name"]."</li>
+        <li class=\"active\">".$data[1]["ocs"]["data"]["content"][0]["name"]."</li>
         ";
         ?>
 </ol>
@@ -109,8 +109,8 @@
         <div class="caption-full">
             <h4 class="pull-right">Free</h4>
             <?php
-            echo "<h4><a href=\"#\">".$data[1]["ocs"]["data"]["content"]["name"]."</a></h4>";
-            echo "<p>".$data[1]["ocs"]["data"]["content"]["description"]."</p>";
+            echo "<h4><a href=\"#\">".$data[1]["ocs"]["data"]["content"][0]["name"]."</a></h4>";
+            echo "<p>".$data[1]["ocs"]["data"]["content"][0]["description"]."</p>";
             ?>
         </div> <!-- .App description -->
         <div class="ratings">
@@ -126,7 +126,7 @@
         </div> <!-- .ratings -->
         <div class="text-left">
             <?php
-            echo "<a class=\"btn btn-success\" href=\"".$data[1]["ocs"]["data"]["content"]["downloadlink1"]."\"><span class=\"glyphicon glyphicon-download-alt\"></span> Download it!</a>";
+            echo "<a class=\"btn btn-success\" href=\"".$data[1]["ocs"]["data"]["content"][0]["downloadlink1"]."\"><span class=\"glyphicon glyphicon-download-alt\"></span> Download it!</a>";
             ?>
         </div>
         <br>
@@ -153,7 +153,7 @@
                     <div class="row" id="post-review-box" style="display:none">
                         <div class="col-md-12">
                             <?php 
-                            echo "<form accept-charset=\"UTF-8\" action=\"/plasmastore/app_description/leaveComment/".$data[1]["ocs"]["data"]["content"]["id"]."\" method=\"post\">";
+                            echo "<form accept-charset=\"UTF-8\" action=\"/plasmastore/app_description/leaveComment/".$data[1]["ocs"]["data"]["content"][0]["id"]."\" method=\"post\">";
                             ?>
                                 <input id="ratings-hidden" name="rating" type="hidden">
                                 <input type="text" class="form-control" name="inputSubject" placeholder="review subject">
