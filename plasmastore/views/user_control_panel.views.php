@@ -24,12 +24,12 @@
         <div class="panel-body">
             <?php
             echo "
-            <h1 class=\"page-header\">Hi ".$data[0]["ocs"]["data"]["person"]["firstname"]."</h1>
+            <h1 class=\"page-header\">Hi ".$data[0]["ocs"]["data"]["person"][0]["firstname"]."</h1>
             <h3>These are your account info:</h2>
             <h4>First Name: ".$data[0]["ocs"]["data"]["person"][0]["firstname"]."</h4>
-            <h4>Last Name:  ".$data[0]["ocs"]["data"]["person"]["lastname"]."</h4>
-            <h4>User Name:  ".$data[0]["ocs"]["data"]["person"]["personid"]."</h4>
-            <h4>Email: ".$data[0]["ocs"]["data"]["person"]["email"]."</h4> ";
+            <h4>Last Name:  ".$data[0]["ocs"]["data"]["person"][0]["lastname"]."</h4>
+            <h4>User Name:  ".$data[0]["ocs"]["data"]["person"][0]["personid"]."</h4>
+            <h4>Email: ".$data[0]["ocs"]["data"]["person"][0]["email"]."</h4> ";
             ?>
             
         </div>
@@ -120,9 +120,9 @@
                               <td>$number</td>
                               <td><a href=\"/plasmastore/app_description/show/".$content["id"]."/".ERewriter::prettify($content["name"])."\">".$content["name"]."</td>
                               <td><a class=\"btn-sm btn-danger\" href=\"/plasmastore/home/delData/".$content["id"]."\">Delete <span class=\"glyphicon glyphicon-trash\"></span></a></td>
-                              <td><a class=\"btn-sm btn-success open-editapp-box\" href=\"#\">Edit</a>
+                              <td><a class=\"btn-sm btn-success open-editapp-box".$content["id"]."\" onclick=\"$(this).openEditBox(".$content["id"].");\" href=\"#\">Edit</a>
 
-                                <div class=\"row post-editapp-box\" style=\"display:none\">
+                                <div class=\"row post-editapp-box".$content["id"]."\" style=\"display:none\">
                                     <div class=\"col-md-12\">
                                         <form class=\"form-horizontal\" accept-charset=\"UTF-8\" action=\"/plasmastore/userpanel/edit/".$content["id"]."\" method=\"post\">
                                             <div class=\"form-group\">
@@ -167,7 +167,7 @@
                                                     <textarea class=\"form-control\" rows=\"3\" name=\"inputChangelog\" value=\"".$content["changelog"]."\"></textarea>
                                                 </div>
                                             </div>
-                                            <a class=\"btn btn-danger btn-sm close-editapp-box\" href=\"#\" style=\"display:none; margin-right: 10px;\">Cancel</a>
+                                            <a class=\"btn btn-danger btn-sm close-editapp-box".$content["id"]."\" onclick=\"$(this).closeEditBox(".$content["id"].");\" href=\"#\" style=\"display:none; margin-right: 10px;\">Cancel</a>
                                             <button class=\"btn btn-success btn-sm\" type=\"submit\">Save changes</button>
                                         </form>
                                     </div>
