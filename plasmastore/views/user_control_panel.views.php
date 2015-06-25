@@ -152,7 +152,7 @@
                                             <div class=\"form-group\">
                                                 <label for=\"inputDescription\" class=\"col-sm-2 control-label\">Description</label>
                                                 <div class=\"col-sm-10\">
-                                                    <textarea rows=\"5\" class=\"form-control\" name=\"inputDescription\" value=\"".$content["description"]."\"></textarea>
+                                                    <textarea rows=\"5\" class=\"form-control\" name=\"inputDescription\">".$content["description"]."</textarea>
                                                 </div>
                                             </div>
                                             <div class=\"form-group\">
@@ -164,7 +164,7 @@
                                             <div class=\"form-group\">
                                                 <label for=\"inputChangelog\" class=\"col-sm-2 control-label\">Changelog</label>
                                                 <div class=\"col-sm-10\">
-                                                    <textarea class=\"form-control\" rows=\"3\" name=\"inputChangelog\" value=\"".$content["changelog"]."\"></textarea>
+                                                    <textarea class=\"form-control\" rows=\"3\" name=\"inputChangelog\">".$content["changelog"]."</textarea>
                                                 </div>
                                             </div>
                                             <a class=\"btn btn-danger btn-sm close-editapp-box".$content["id"]."\" onclick=\"$(this).closeEditBox(".$content["id"].");\" href=\"#\" style=\"display:none; margin-right: 10px;\">Cancel</a>
