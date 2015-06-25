@@ -29,9 +29,9 @@ class UserPanelModel extends EModel {
 
     if($check["ocs"]["meta"]["statuscode"]=="100"){
         
-        $id = $check["ocs"]["data"]["content"]["id"];
+        $id = $check["ocs"]["data"]["content"][0]["id"];
         //cosa fare se va a buon fine
-        header("Location: /plasmastore/app_description/show/$id");
+        header("Location: /plasmastore/app_description/show/$id/$name");
     }
 }
     public function edit ($args) {
