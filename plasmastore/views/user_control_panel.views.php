@@ -24,12 +24,12 @@
         <div class="panel-body">
             <?php
             echo "
-            <h1 class=\"page-header\">Hi ".$data[0]["ocs"]["data"]["person"]["firstname"]."</h1>
+            <h1 class=\"page-header\">Hi ".$data[0]["ocs"]["data"]["person"][0]["firstname"]."</h1>
             <h3>These are your account info:</h2>
             <h4>First Name: ".$data[0]["ocs"]["data"]["person"][0]["firstname"]."</h4>
-            <h4>Last Name:  ".$data[0]["ocs"]["data"]["person"]["lastname"]."</h4>
-            <h4>User Name:  ".$data[0]["ocs"]["data"]["person"]["personid"]."</h4>
-            <h4>Email: ".$data[0]["ocs"]["data"]["person"]["email"]."</h4> ";
+            <h4>Last Name:  ".$data[0]["ocs"]["data"]["person"][0]["lastname"]."</h4>
+            <h4>User Name:  ".$data[0]["ocs"]["data"]["person"][0]["personid"]."</h4>
+            <h4>Email: ".$data[0]["ocs"]["data"]["person"][0]["email"]."</h4> ";
             ?>
             
         </div>
@@ -152,7 +152,7 @@
                                             <div class=\"form-group\">
                                                 <label for=\"inputDescription\" class=\"col-sm-2 control-label\">Description</label>
                                                 <div class=\"col-sm-10\">
-                                                    <textarea rows=\"5\" class=\"form-control\" name=\"inputDescription\" value=\"".$content["description"]."\"></textarea>
+                                                    <textarea rows=\"5\" class=\"form-control\" name=\"inputDescription\">".$content["description"]."</textarea>
                                                 </div>
                                             </div>
                                             <div class=\"form-group\">
@@ -164,7 +164,7 @@
                                             <div class=\"form-group\">
                                                 <label for=\"inputChangelog\" class=\"col-sm-2 control-label\">Changelog</label>
                                                 <div class=\"col-sm-10\">
-                                                    <textarea class=\"form-control\" rows=\"3\" name=\"inputChangelog\" value=\"".$content["changelog"]."\"></textarea>
+                                                    <textarea class=\"form-control\" rows=\"3\" name=\"inputChangelog\">".$content["changelog"]."</textarea>
                                                 </div>
                                             </div>
                                             <a class=\"btn btn-danger btn-sm close-editapp-box\" href=\"#\" style=\"display:none; margin-right: 10px;\">Cancel</a>
