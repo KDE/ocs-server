@@ -253,7 +253,7 @@ class OCSFriendsLister extends OCSLister {
         //setting initial value for table
         if(!empty($data)){
             $this->table = $data;
-            $this->datatable = new EData($this->table);
+            $this->datatable = new EModel($this->table);
         } else {
             $this->set_table_search($this->table);
         }

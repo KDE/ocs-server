@@ -26,10 +26,12 @@ class ELoader{
 	public static $root_path;
 	public static $source_path = "gfx3/src";
 	public static $cache_path = "gfx3/cache";
+	public static $libs_path = "gfx3/libs";
 	public static $config_path = "config";
 	public static $controllers_path = "controllers";
 	public static $models_path = "models";
 	public static $views_path = "views";
+	public static $locallibs_path = "libs";
 	
 	//actual website path, containg config, models, views and controllers
 	public static $site_path = "";
@@ -42,10 +44,12 @@ class ELoader{
 			ELoader::$controllers_path = getcwd()."/".ELoader::$controllers_path;
 			ELoader::$models_path = getcwd()."/".ELoader::$models_path;
 			ELoader::$views_path = getcwd()."/".ELoader::$views_path;
+			ELoader::$locallibs_path = getcwd()."/".ELoader::$locallibs_path;
 			ELoader::$setted_config = true;
 		}
 		if(is_dir("gfx3")){
 			ELoader::$cache_path = getcwd()."/".ELoader::$cache_path;
+			ELoader::$libs_path = getcwd()."/".ELoader::$libs_path;
 			return getcwd()."/".ELoader::$source_path;
 		} else {
 			chdir("..");
@@ -114,6 +118,7 @@ class ELoader{
 		} else {
 			ELog::error("critical error including controllers. Path: ".ELoader::$controllers_path);
 		}
+		
 		//include models
 		if(chdir(ELoader::$models_path)){
 			foreach(glob("*.model.php") as $filename){
@@ -121,6 +126,27 @@ class ELoader{
 			}
 		} else {
 			ELog::error("critical error including models. Path: ".ELoader::$models_path);
+		}
+		
+		//include local external libraries
+		//this is optional, if not found nothing happens
+		if(file_exists(ELoader::$locallibs_path)){
+			if(chdir(ELoader::$locallibs_path)){
+				foreach(glob("*.class.php") as $filename){
+					include_once($filename);
+				}
+			} else {
+				ELog::error("critical error including controllers. Path: ".ELoader::$locallibs_path);
+			}
+		}
+		
+		//include global external libraries
+		if(chdir(ELoader::$libs_path)){
+			foreach(glob("*.class.php") as $filename){
+				include_once($filename);
+			}
+		} else {
+			ELog::error("critical error including external libs. Path: ".ELoader::$libs_path);
 		}
 		
 		chdir(ELoader::$prev_path);
