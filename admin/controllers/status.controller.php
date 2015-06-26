@@ -28,6 +28,7 @@ class StatusController extends EController
 			echo '<p>If you want to run sanity tests on your database you should install default data.<br>
 			This is not reccomended on production and generally useful only for developers.<br>
 			<a href="/admin/status/database/testdata">INSTALL TEST DATA</a></p>';
+			
 		}
         
         if(isset($args[0])){
@@ -35,118 +36,17 @@ class StatusController extends EController
 			if($args[0]=='reset'){
 				echo '<h3>Database</h3>';
 				echo 'Resetting...Done!<br>';
-				echo '<a href="/admin/status">Back to database</a>';
+				echo 'Are you willing to execute tests? You better <a href="/admin/status/database/testdata">install default data</a>';
+				echo '<br><a href="/admin/status/database">Back to database panel</a>';
 				
-				EDatabase::q("
-				DROP TABLE IF EXISTS `ocs_apitraffic`;
-				DROP TABLE IF EXISTS `ocs_comment`;
-				DROP TABLE IF EXISTS `ocs_content`;
-				DROP TABLE IF EXISTS `ocs_fan`;
-				DROP TABLE IF EXISTS `ocs_person`;
-				DROP TABLE IF EXISTS `ocs_activity`;
-				DROP TABLE IF EXISTS `ocs_friendship`;
-				DROP TABLE IF EXISTS `ocs_friendinvitation`;
-				");
-				
-				EDatabase::q("
-				CREATE TABLE IF NOT EXISTS `ocs_apitraffic` (
-				  `ip` bigint(20) NOT NULL,
-				  `count` int(11) NOT NULL,
-				  PRIMARY KEY (`ip`)
-				) ENGINE=MyISAM;
-				");
-
-				EDatabase::q("CREATE TABLE IF NOT EXISTS `ocs_comment` (
-				  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-				  `type` tinyint(1) NOT NULL,
-				  `owner` int(11) NOT NULL,
-				  `content` int(11) NOT NULL,
-				  `content2` int(11) NOT NULL,
-				  `parent` int(11) NOT NULL,
-				  `votes` int(11) NOT NULL DEFAULT '0',
-				  `score` int(3) NOT NULL DEFAULT '0',
-				  `subject` varchar(255) NOT NULL,
-				  `date` varchar(50) NOT NULL,
-				  `message` text NOT NULL,
-				  PRIMARY KEY (`id`)
-				) ENGINE=InnoDB;
-				");
-				EDatabase::q("CREATE TABLE IF NOT EXISTS `ocs_content` (
-				  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-				  `owner` int(11) NOT NULL,
-				  `votes` int(11) NOT NULL DEFAULT '1',
-				  `score` int(3) NOT NULL DEFAULT '50',
-				  `downloads` int(11) NOT NULL DEFAULT '0',
-				  `license` tinyint(1) NOT NULL DEFAULT '0',
-				  `name` varchar(255) NOT NULL,
-				  `type` varchar(45) NOT NULL,
-				  `downloadname1` varchar(255) DEFAULT NULL,
-				  `downloadlink1` varchar(255) DEFAULT NULL,
-				  `preview1` varchar(255) NOT NULL DEFAULT 'http://gamingfreedom.org/screenshot-unavailable.png',
-				  `preview2` varchar(255) NOT NULL DEFAULT 'http://gamingfreedom.org/screenshot-unavailable.png',
-				  `preview3` varchar(255) NOT NULL DEFAULT 'http://gamingfreedom.org/screenshot-unavailable.png',
-				  `personid` varchar(255) NOT NULL,
-				  `version` varchar(25) DEFAULT NULL,
-				  `summary` text,
-				  `description` text,
-				  `changelog` text,
-				  PRIMARY KEY (`id`),
-				  KEY `score` (`score`),
-				  KEY `personid` (`personid`)
-				) ENGINE=MyISAM;
-				");
-				EDatabase::q("CREATE TABLE IF NOT EXISTS `ocs_fan` (
-				  `person` int(11) NOT NULL,
-				  `content` int(11) NOT NULL,
-				  KEY `person` (`person`,`content`)
-				) ENGINE=InnoDB;
-				");
-				EDatabase::q("CREATE TABLE IF NOT EXISTS `ocs_person` (
-				  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-				  `login` varchar(45) NOT NULL,
-				  `password` varchar(45) NOT NULL,
-				  `firstname` varchar(45) NOT NULL,
-				  `lastname` varchar(45) NOT NULL,
-				  `email` varchar(100) NOT NULL,
-				  PRIMARY KEY (`id`)
-				) ENGINE=MyISAM;");
-
-				EDatabase::q("DROP TABLE IF EXISTS `ocs_activity`;
-				CREATE TABLE `ocs_activity` (
-				  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-				  `type` int(2) NOT NULL,
-				  `person` int(11) NOT NULL,
-				  `timestamp` int(15) NOT NULL,
-				  `message` text NOT NULL,
-				  PRIMARY KEY (`id`),
-				  KEY `person` (`person`)
-				) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;");
-
-				EDatabase::q("DROP TABLE IF EXISTS `ocs_friendship`;
-				CREATE TABLE `ocs_friendship` (
-				  `id1` int(11) NOT NULL,
-				  `id2` int(11) NOT NULL,
-				  UNIQUE KEY `id1` (`id1`,`id2`)
-				) ENGINE=InnoDB DEFAULT CHARSET=latin1;");
-
-				EDatabase::q("DROP TABLE IF EXISTS `ocs_friendinvitation`;
-				CREATE TABLE `ocs_friendinvitation` (
-				  `fromuser` varchar(255) NOT NULL,
-				  `touser` varchar(255) NOT NULL,
-				  `message` text NOT NULL,
-				  UNIQUE KEY `from` (`fromuser`,`touser`),
-				  KEY `fromuser` (`fromuser`),
-				  KEY `touser` (`touser`),
-				  KEY `fromuser_2` (`fromuser`),
-				  KEY `touser_2` (`touser`),
-				  KEY `fromuser_3` (`fromuser`)
-				) ENGINE=InnoDB DEFAULT CHARSET=latin1;");
+				//using ocstest external library in /admin/libs
+				OCSTest::reset_ocs_database();
 				
 			} else if($args[0]=='testdata'){
 				echo '<p>adding test/password user..........';
 				$postdata = array(
-					"login" => "cavolfiore",
-					"password" => "cavolfiore",
+					"login" => "test",
+					"password" => "password",
 					"email" => "bababa@bebebe.bu",
 					"firstname" => "cavolf",
 					"lastname" => "chiappe"
@@ -154,6 +54,7 @@ class StatusController extends EController
 				$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 				$check = $client->post("v1/person/add",$postdata);
 				$this->_statuscode_test($check, $client);
+				echo '<a href="/admin/status/database">Back to database panel</a>';
 			}
 		}
         
@@ -190,8 +91,11 @@ class StatusController extends EController
 	
 	public function test()
 	{
+		$total_time = 0;
+		
 		EStructure::view("header");
 		
+		ETime::measure_from();
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
         
         echo '<h3>Sanity OCS test</h3>';
@@ -199,12 +103,18 @@ class StatusController extends EController
         echo '<p>config..........';
         $check = $client->get("v1/config");
 		$this->_statuscode_test($check, $client);
+        $time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
         
+        ETime::measure_from();
         echo '<p>person/check..........';
         $postdata = array( "login" => "test", "password" => "password" );
         $check = $client->post("v1/person/check",$postdata);
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
         
+        ETime::measure_from();
         echo '<p>person/add..........';        
 		$postdata = array(
 			"login" => "cavolfiore",
@@ -216,31 +126,46 @@ class StatusController extends EController
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		$check = $client->post("v1/person/add",$postdata);
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
 		
+		ETime::measure_from();
 		echo '<p>person/data..........';
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		$client->set_auth_info("test","password");
 		$check = $client->get("v1/person/data");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
 		
+		ETime::measure_from();
 		echo '<p>person/data?name=cavol&page=1&pagesize=10..........';
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		$client->set_auth_info("test","password");
 		$check = $client->get("v1/person/data?name=cavol&page=1&pagesize=10");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
 		
+		ETime::measure_from();
 		echo '<p>person/data/[login]..........';
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		$client->set_auth_info("test","password");
 		$check = $client->get("v1/person/data/cavolfiore");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
 		
+		ETime::measure_from();
 		echo '<p>person/self..........';
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		$client->set_auth_info("test","password");
 		$check = $client->get("v1/person/self");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
 		
+		ETime::measure_from();
 		echo '<p>content/add..........';
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		$postdata = array(
@@ -258,31 +183,52 @@ class StatusController extends EController
 		$check = $client->post("v1/content/add",$postdata);
 		$contentid = $this->example_contentid = $check['ocs']['data']['content'][0]['id'];
         $this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
         
+        ETime::measure_from();
         echo '<p>content/categories..........';
         $check = $client->get("v1/content/categories");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
 		
+		ETime::measure_from();
 		echo '<p>content/licenses..........';
         $check = $client->get("v1/content/licenses");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
 		
+		ETime::measure_from();
 		echo '<p>content/data..........';
         $check = $client->get("v1/content/data");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
         
+        ETime::measure_from();
         echo '<p>content/data?search=esem..........';
         $check = $client->get("v1/content/data?search=esem");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
         
+        ETime::measure_from();
         echo '<p>content/data/[contentid]..........';
         $check = $client->get("v1/content/data/$contentid");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
         
+        ETime::measure_from();
         echo '<p>content/download/[contentid]/1..........';
         $check = $client->get("v1/content/download/$contentid/1");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
 		
+		ETime::measure_from();
 		echo '<p>content/vote/[contentid]..........';
 		$id = intval($contentid);
 		$rate = floatval(1);
@@ -295,7 +241,10 @@ class StatusController extends EController
 		$client->set_post_data($postdata);
 		$check = $client->post("v1/content/vote/$id");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
         
+        ETime::measure_from();
         echo '<p>content/edit/[contentid]..........';
 		$postdata = array(
 			"name" => "esempiomod",
@@ -312,13 +261,19 @@ class StatusController extends EController
 		$client->set_post_data($postdata);
 		$check = $client->post("v1/content/edit/$id");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
 		
+		ETime::measure_from();
 		echo '<p>[get] activity..........';
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		$client->set_auth_info("test","password");
 		$check = $client->get("v1/activity");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
         
+        ETime::measure_from();
         echo '<p>[post] activity..........';
         $postdata = array(
 			"message" => "coding is fun"
@@ -328,7 +283,10 @@ class StatusController extends EController
 		$client->set_post_data($postdata);
 		$check = $client->post("v1/activity");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
         
+        ETime::measure_from();
         echo '<p>fan/add..........';
         $postdata = array("idcontent"=>$contentid);
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
@@ -336,18 +294,25 @@ class StatusController extends EController
 		$client->set_post_data($postdata);
 		$check = $client->post("v1/fan/add/$id");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
 		
+		ETime::measure_from();
 		echo '<p>fan/data/[contentid]..........';
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		$client->set_auth_info("test","password");
 		$check = $client->get("v1/fan/data/$id");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
 		
 		echo '<p>fan/status/[contentid]..........';
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		$client->set_auth_info("test","password");
 		$check = $client->get("v1/fan/status/$id");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
 		
 		echo '<p>fan/remove..........';
         $postdata = array("idcontent"=>$contentid);
@@ -356,6 +321,8 @@ class StatusController extends EController
 		$client->set_post_data($postdata);
 		$check = $client->post("v1/fan/remove/$id");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
 		
 		echo '<p>comments/add..........';
 		$postdata = array(
@@ -371,12 +338,16 @@ class StatusController extends EController
 		$client->set_post_data($postdata);
 		$check = $client->post("v1/comments/add");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
 		
 		echo '<p>comments/data/[type]/[contentid1]/[contentid2]..........';
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		//$client->set_auth_info("test","password");
-		$this->_statuscode_test($check, $client);
 		$check = $client->get("v1/comments/data/1/$id/1&page=1&pagesize=10");
+		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
 		
 		//deleting content used for tests
 		
@@ -389,6 +360,8 @@ class StatusController extends EController
 		$client->set_post_data($postdata);
 		$check = $client->post("v1/content/delete/$id");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
         
         /*
          * TODO: add to OCS specs more returncodes than just 100
@@ -398,6 +371,8 @@ class StatusController extends EController
 		$client->set_auth_info("test","password");
 		$check = $client->get("v1/friend/data/cavolfiore");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
         
         /*
          * TODO: add to OCS specs more returncodes than just 100
@@ -407,6 +382,8 @@ class StatusController extends EController
 		$client->set_auth_info("test","password");
 		$check = $client->get("v1/friend/receivedinvitations");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
 		
         /*
          * TODO: add to OCS specs more returncodes than just 100
@@ -420,6 +397,8 @@ class StatusController extends EController
 		$client->set_post_data($postdata);
 		$check = $client->post("v1/friend/invite/cavolfiore ");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
         
         echo '<p>friend/approve/[personid]..........';
         $postdata = array(
@@ -430,22 +409,26 @@ class StatusController extends EController
 		$client->set_post_data($postdata);
 		$check = $client->post("v1/friend/approve/test");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
         
         echo '<p>friend/decline/[personid]..........';
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		$client->set_auth_info("cavolfiore","cavolfiore");
 		$check = $client->post("v1/friend/decline/test");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )";
 		
 		echo '<p>friend/cancel/[personid]..........';
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 		$client->set_auth_info("cavolfiore","cavolfiore");
 		$check = $client->post("v1/friend/cancel/test");
 		$this->_statuscode_test($check, $client);
+		$time = ETime::measure_to(); $total_time += $time;
+        echo "( $time )<br>";
         
-        /*
-         * 
-        */
+        echo "This OCS test took: $total_time";
         
         EStructure::view("footer");
 	}
