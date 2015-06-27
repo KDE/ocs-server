@@ -6,3 +6,5 @@ rewrite|yes
 users|no
 mvc|yes
 errormode|normal
+enabled|yes
+password|password
