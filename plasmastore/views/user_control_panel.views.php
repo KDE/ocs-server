@@ -107,7 +107,6 @@
                 </div> <!-- .div class="row" id="post-uploadapp-box" style="display:none" -->
                 <?php 
                     $number="0";
-                     if (array_key_exists("content", $data[1]["ocs"]["data"]["content"])){
                         echo "<table class=\"table table-striped\">
                         <thead>
                             <tr>
@@ -183,7 +182,6 @@
                         }
                     }
                 echo"</tbody>";
-            }
             ?>
                 </table>
             </div>
