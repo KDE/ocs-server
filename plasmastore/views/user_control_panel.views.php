@@ -48,7 +48,7 @@
                 </div>
                 <div class="row" id="post-uploadapp-box" style="display:none">
                     <div class="col-md-12">
-                        <form class="form-horizontal" accept-charset="UTF-8" action="/plasmastore/userpanel/upload" method="post">
+                        <form class="form-horizontal" enctype="multipart/form-data" action="/plasmastore/userpanel/upload" method="post">
                             <div class="text-right">
                                 <a class="btn btn-danger btn-sm" href="#" id="close-uploadapp-box" style="display:none; margin-right: 10px;">Cancel</a>
                             </div>

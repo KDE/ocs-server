@@ -11,9 +11,6 @@ class UserPanelModel extends EModel {
         $changelog = EHeaderDataParser::secure_post("inputChangelog");
         $personid = EHeaderDataParser::get_cookie("login");
 
-        $screenshot1 = EHeaderDataParser::secure_post("inputScreenshot1");
-        $postscreenshots = array("file" => $screenshot1);
-
         $postdata = array(
             "name" => $name,
             "type" => $type,

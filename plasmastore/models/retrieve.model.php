@@ -11,6 +11,11 @@ public function getData() {
 	return $client->get("v1/content/data");
 }
 
+public function getDataPerPage($pagenumber) {
+	$client = new OCSClient();
+	return $client->get("v1/content/data/?page=$pagenumber");
+}
+
 public function delData($id) {
 	$client = new OCSClient();
 	$client->set_auth_info(EHeaderDataParser::get_cookie("login"),EHeaderDataParser::get_cookie("password"));

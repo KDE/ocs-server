@@ -9,5 +9,10 @@ class HomeController extends EController {
 		$dat = new RetrieveModel(); 
 		$dat->delData($args[0]);
 	}
+
+	public function page ($args) {
+		$pag = new RetrieveModel();
+		EStructure::view("category_showcase", $pag->getCategories(), $pag->getDataPerPage($args[0]));
+	}
 }
 ?>
