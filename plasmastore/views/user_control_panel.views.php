@@ -107,6 +107,7 @@
                 </div> <!-- .div class="row" id="post-uploadapp-box" style="display:none" -->
                 <?php 
                     $number="0";
+                     if (array_key_exists("content", $data[1]["ocs"]["data"]["content"])){
                         echo "<table class=\"table table-striped\">
                         <thead>
                             <tr>
@@ -117,7 +118,6 @@
                             </tr>
                         </thead>
                         <tbody>";
-                    
                     foreach($data[1]["ocs"]["data"]["content"] as $content){
                         if(OCSUser::login()==$content["personid"]){
                                     $number=$number+1;
@@ -183,6 +183,7 @@
                         }
                     }
                 echo"</tbody>";
+            }
             ?>
                 </table>
             </div>
