@@ -1059,7 +1059,7 @@ class V1Controller extends EController
 		
 		$conl = new OCSContentLister("ocs_content");
 		$xml = $conl->ocs_content_list($searchstr,$sortmode,$page,$pagesize,$searchuser);
-		$totalitems = count($xml);
+		$totalitems = $conl->get_totalitems();
 		/*
 		 * test page: http://localhost/v1/content/data?search=lolol
 		 */

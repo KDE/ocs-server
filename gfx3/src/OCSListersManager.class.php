@@ -51,6 +51,8 @@ class OCSContentLister extends OCSLister {
 	private $table;
 	private $datatable;
 	
+	private $totalitems=0;
+	
 	//inheriting constructor
 	public function __construct($data="ocs_content"){
 		parent::__construct($data);
@@ -92,7 +94,14 @@ class OCSContentLister extends OCSLister {
 		}
 		
 		$r = $this->datatable->find("id,owner,personid,description,changelog,preview1,votes,score,name,type,downloadname1,downloadlink1,version,summary,license","WHERE name LIKE '%$searchstr%' $whereuser $where");
+		$this->totalitems = EDatabase::sq("SELECT COUNT(*) FROM ocs_content WHERE name LIKE '%$searchstr%' $whereuser");
+		
 		return $r;
+	}
+	
+	public function get_totalitems()
+	{
+		return $this->totalitems;
 	}
 }
 
