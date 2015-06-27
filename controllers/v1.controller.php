@@ -1058,7 +1058,7 @@ class V1Controller extends EController
 		//$this->checktrafficlimit($user);
 		
 		$conl = new OCSContentLister("ocs_content");
-		$xml = $conl->ocs_content_list($searchstr,$sortmode,$page,$pagesize);
+		$xml = $conl->ocs_content_list($searchstr,$sortmode,$page,$pagesize,$searchuser);
 		$totalitems = count($xml);
 		/*
 		 * test page: http://localhost/v1/content/data?search=lolol

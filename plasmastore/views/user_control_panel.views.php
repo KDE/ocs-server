@@ -117,7 +117,6 @@
                             </tr>
                         </thead>
                         <tbody>";
-                    
                     foreach($data[1]["ocs"]["data"]["content"] as $content){
                         if(OCSUser::login()==$content["personid"]){
                                     $number=$number+1;

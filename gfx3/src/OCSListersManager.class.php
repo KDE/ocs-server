@@ -80,7 +80,7 @@ class OCSContentLister extends OCSLister {
 		}
 		
 		if(!empty($user)){
-			$whereuser = " AND user = '$user' ";
+			$whereuser = " AND personid = '$user' ";
 		} else {
 			$whereuser = "";
 		}
