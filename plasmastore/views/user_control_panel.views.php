@@ -72,6 +72,12 @@
                                 </div>
                             </div>
                             <div class="form-group">
+                                <label for="inputScreenshot1" class="col-sm-2 control-label">Screenshot 1</label>
+                                <div class="col-sm-10">
+                                    <input type="file" class="form-control" name="inputScreenshot1" id="inputScreenshot1">
+                                </div>
+                            </div>
+                            <div class="form-group">
                                 <label for="inputSummary" class="col-sm-2 control-label">Summary</label>
                                 <div class="col-sm-10">
                                     <input type="text" class="form-control" name="inputSummary" placeholder="a very short description of your app to be shown in previews">

@@ -11,6 +11,9 @@ class UserPanelModel extends EModel {
         $changelog = EHeaderDataParser::secure_post("inputChangelog");
         $personid = EHeaderDataParser::get_cookie("login");
 
+        $screenshot1 = EHeaderDataParser::secure_post("inputScreenshot1");
+        $postscreenshots = array("file" => $screenshot1);
+
         $postdata = array(
             "name" => $name,
             "type" => $type,
@@ -30,10 +33,15 @@ class UserPanelModel extends EModel {
     if($check["ocs"]["meta"]["statuscode"]=="100"){
         
         $id = $check["ocs"]["data"]["content"][0]["id"];
-        //cosa fare se va a buon fine
-        header("Location: /plasmastore/app_description/show/$id/$name");
+        $client->set_upload_file($_FILES['inputScreenshot1']['tmp_name']);
+        $check2 = $client->post("v1/content/uploadpreview/$id/1");
+        if($check2["ocs"]["meta"]["statuscode"]=="100"){
+            //cosa fare se va a buon fine
+            header("Location: /plasmastore/app_description/show/$id/$name");
+        } else {echo $check2["ocs"]["meta"]["statuscode"];}
     }
 }
+
     public function edit ($args) {
         $id=$args;
         $name = EHeaderDataParser::secure_post("inputTitle");
