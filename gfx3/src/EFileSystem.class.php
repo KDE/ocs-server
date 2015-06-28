@@ -70,6 +70,7 @@ class EFileSystem{
 	
 	/*
 	 * Get an uploaded file and moves it to $path with $newname
+	 * mantaining file extension.
 	 */
 	public static function move_uploaded_file_in_ext($path,$newname=false){
 		$nfile = $_FILES['localfile']['name'];
@@ -85,6 +86,7 @@ class EFileSystem{
 	
 	/*
 	 * Get an uploaded file and moves it to $path with $newname
+	 * without mantainig file extension (you have to specify it).
 	 */
 	public static function move_uploaded_file_in($path,$newname=false){
 		$nfile = $_FILES['localfile']['name'];

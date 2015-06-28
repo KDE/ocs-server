@@ -1,4 +1,4 @@
-<?php die("You cannot see config in here."); ?>
+<?php die(); ?>
 render|yes
 protectheaders|yes
 database|yes

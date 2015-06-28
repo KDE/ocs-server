@@ -1,2 +1,3 @@
 <?php die(); ?>
-host|localhost
+host|www.gamingfreedom.org
+bella|chicco

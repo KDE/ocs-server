@@ -1,7 +1,7 @@
 <?php
 
 /*
- *   TRT GFX 3.0.1 (beta build) BackToSlash
+ *   GFX 4
  * 
  *   support:	happy.snizzo@gmail.com
  *   website:	http://trt-gfx.googlecode.com

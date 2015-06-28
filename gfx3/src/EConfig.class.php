@@ -1,7 +1,7 @@
 <?php
 
 /*
- *   TRT GFX 3.0.1 (beta build) BackToSlash
+ *   GFX 4
  * 
  *   support:	happy.snizzo@gmail.com
  *   website:	http://www.gfx3.org
@@ -13,7 +13,6 @@
  
 /*
  * This class aims to manage all the gfx config in general contained in gfx3/config.
- * 
  */
 
 class EConfig{

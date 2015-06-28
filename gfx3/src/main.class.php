@@ -21,9 +21,9 @@ session_start();
 
 class ELoader{
 	
-	public static $prev_path;
-	public static $abs_path;
-	public static $root_path;
+	public static $prev_path; // /var/www/html
+	public static $abs_path; // /var/www/html/gfx/src
+	public static $root_path; // localhost
 	public static $source_path = "gfx3/src";
 	public static $cache_path = "gfx3/cache";
 	public static $libs_path = "gfx3/libs";

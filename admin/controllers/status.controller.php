@@ -69,6 +69,14 @@ class StatusController extends EController
         echo '<p>Here you can manage OCS categories:</p>';
         //code that prints database category table
         
+        $categories_path = ELoader::$prev_path.'/config/ocs_categories.conf.php';
+        
+        $cf = new EConfigFile();
+        $cf->set_abs_file($categories_path);
+        $cf->del('4');
+        //var_dump($cf->get_data());
+        $cf->save();
+        
         EStructure::view("footer");
 	}
 	
