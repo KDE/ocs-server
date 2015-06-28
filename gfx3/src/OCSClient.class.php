@@ -118,6 +118,7 @@ class OCSClient{
 	public function post($url,$data=""){
 		$server = $this->generate_server();
 		$socket = new ENetworkSocket($server);
+		echo "uploaded file value is: ".$this->uploaded_file;
 		
 		//deprecated. use OCSClient->set_post_data($data) instead
 		if(!empty($data)){ $socket->set_post_data($data); }
