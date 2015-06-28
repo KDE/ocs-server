@@ -61,21 +61,53 @@ class StatusController extends EController
         EStructure::view("footer");
 	}
 	
-	public function categories()
+	public function categories($args)
     {
 		EStructure::view("header");
-        
-        echo '<h3>Categories</h3>';
-        echo '<p>Here you can manage OCS categories:</p>';
-        //code that prints database category table
         
         $categories_path = ELoader::$prev_path.'/config/ocs_categories.conf.php';
         
         $cf = new EConfigFile();
         $cf->set_abs_file($categories_path);
-        $cf->del('4');
-        //var_dump($cf->get_data());
-        $cf->save();
+        //$cf->del('4');
+        //$cf->save();
+        
+        if(isset($args[0])){
+			$key = EHeaderDataParser::get('key');
+			$value = EHeaderDataParser::get('value');
+			
+			if(!empty($key)){
+				if($args[0]=='mod'){
+					$cf->set($key,$value);
+					$cf->save();
+					header("location: /admin/status/categories");
+				}
+				if($args[0]=='del'){
+					$cf->del($key);
+					$cf->save();
+					header("location: /admin/status/categories");
+				}
+			}
+		}
+        
+        echo '<h3>Categories</h3>';
+        echo '<p>Current OCS categories on server:</p>';
+        
+        $data = $cf->get_data();
+        
+        echo "<ul>";
+        foreach($data as $key => $value){
+			echo "<li>$key | $value</li>";
+		}
+        echo "</ul>";
+        
+        echo ' <form action="/admin/status/categories/mod" method="get">
+				<input type="text" name="key" placeholder="key"><input type="text" name="value" placeholder="value">
+				<input type="submit" value="modify/add category"></form> ';
+        
+        echo ' <form action="/admin/status/categories/del" method="get">
+				<input type="text" name="key" placeholder="key">
+				<input type="submit" value="delete category"></form> ';
         
         EStructure::view("footer");
 	}
