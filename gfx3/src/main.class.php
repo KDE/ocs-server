@@ -141,12 +141,14 @@ class ELoader{
 		}
 		
 		//include global external libraries
-		if(chdir(ELoader::$libs_path)){
-			foreach(glob("*.class.php") as $filename){
-				include_once($filename);
+		if(file_exists(ELoader::$locallibs_path)){
+			if(chdir(ELoader::$libs_path)){
+				foreach(glob("*.class.php") as $filename){
+					include_once($filename);
+				}
+			} else {
+				ELog::error("critical error including external libs. Path: ".ELoader::$libs_path);
 			}
-		} else {
-			ELog::error("critical error including external libs. Path: ".ELoader::$libs_path);
 		}
 		
 		chdir(ELoader::$prev_path);
