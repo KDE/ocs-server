@@ -141,7 +141,7 @@ class ELoader{
 		}
 		
 		//include global external libraries
-		if(file_exists(ELoader::$locallibs_path)){
+		if(file_exists(ELoader::$libs_path)){
 			if(chdir(ELoader::$libs_path)){
 				foreach(glob("*.class.php") as $filename){
 					include_once($filename);
