@@ -1,2 +1,2 @@
 <?php die(); ?>
-host|www.gamingfreedom.org
+host|localhost

@@ -2,4 +2,4 @@
 name|test
 host|localhost
 user|root
-password|gsoc
+password|asd
