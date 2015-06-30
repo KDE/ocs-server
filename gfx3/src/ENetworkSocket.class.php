@@ -58,9 +58,12 @@ class ENetworkSocket{
 	 */
 	public function post ($string){
 		if($this->uploaded_file){
-			$this->postdata['localfile'] = "@".$this->uploaded_file;
-
+			
+			
 			$ch = curl_init();
+			
+			// Assign POST data
+            $this->postdata['localfile'] = new CurlFile($this->uploaded_file, 'application/octet-stream', $this->uploaded_file);
 			
 			curl_setopt($ch, CURLOPT_URL, $this->target_server.$string ); // imposto l'URL dello script destinatario
 			curl_setopt($ch, CURLOPT_POST, true ); // indico il tipo di comunicazione da effettuare (POST)
