@@ -79,12 +79,5 @@ class UserPanelModel extends EModel {
         header("Location: /plasmastore/app_description/show/$id");
     }
 }
-    public function getUserData() {
-    $user = new OCSClient;
-    $pw = $_COOKIE["password"];
-    $name = $_COOKIE["login"];
-    $user->set_auth_info($name, $pw);
-    return $user->get ("v1/person/self");
-    }
 } 
 ?>
