@@ -47,14 +47,30 @@ class EDatabase {
 		EDatabase::$db_user = EConfig::$data["database"]["user"];
 		EDatabase::$db_pass = EConfig::$data["database"]["password"];
 		
+		EDatabase::open_session();
+	}
+	
+	public static function open_session()
+	{
 		//opening session
-		$db = mysqli_connect(EDatabase::$db_host, EDatabase::$db_user, EDatabase::$db_pass) or EDatabase::$status = 2;
-		$db_select = mysqli_select_db($db, EDatabase::$db_name) or EDatabase::$status = 1;
+		$db = mysqli_connect(EDatabase::$db_host, EDatabase::$db_user, EDatabase::$db_pass); //EDatabase::$status = 2;
+		/* check connection */
+		if (!mysqli_connect_errno()) {
+			return false;
+			$db_select = mysqli_select_db($db, EDatabase::$db_name); //EDatabase::$status = 1;
+			/* check if server is alive */
+			if (!mysqli_ping($link)) {
+				return false;
+			}
+		
+		}
 		EDatabase::$db_link = $db;
 		if(EDatabase::$status==0){
 			EDatabase::$opened = true;
+		} else {
+			EDatabase::$opened = false;
 		}
-		
+		return EDatabase::$opened;
 	}
 	
 	public static function set_db_info($name,$host,$user,$pass){

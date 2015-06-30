@@ -77,6 +77,8 @@ class ELog {
 		echo "<pre>$s</pre>";
 	}
 	
+	//TODO: implement print of arrays indepenent from var_dump
+	
 	public static function pd($q){
 		echo "<pre>";
 		var_dump($q);

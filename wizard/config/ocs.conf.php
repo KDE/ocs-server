@@ -1,0 +1,2 @@
+<?php die(); ?>
+host|localhost
