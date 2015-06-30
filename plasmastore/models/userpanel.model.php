@@ -26,15 +26,17 @@ class UserPanelModel extends EModel {
     $client = new OCSClient(EConfig::$data["ocs"]["host"]);
     $client->set_auth_info(EHeaderDataParser::get_cookie("login"),EHeaderDataParser::get_cookie("password"));
     $check = $client->post("v1/content/add",$postdata);
+    $img = new OCSClient(EConfig::$data["ocs"]["host"]);
+    $img->set_auth_info(EHeaderDataParser::get_cookie("login"),EHeaderDataParser::get_cookie("password"));
      //print_r($_FILES);
      //print_r($_FILES['localfile']['tmp_name']);
 
     if($check["ocs"]["meta"]["statuscode"]=="100"){
         
         $id = $check["ocs"]["data"]["content"][0]["id"];
-        $client->set_auth_info(EHeaderDataParser::get_cookie("login"),EHeaderDataParser::get_cookie("password"));
-        $client->set_upload_file($_FILES['localfile']['tmp_name']);
-        $result = $client->post("v1/content/uploadpreview/$id/1");
+        $mv = move_uploaded_file($_FILES['localfile']['tmp_name'], "/var/www/testimg.jpg");
+        $img->set_upload_file("/var/www/testimg.png");
+        $result = $img->post("v1/content/uploadpreview/$id/1");
         if($result["ocs"]["meta"]["statuscode"]=="100"){
             //cosa fare se va a buon fine
             header("Location: /plasmastore/app_description/show/$id/$name");
@@ -77,12 +79,5 @@ class UserPanelModel extends EModel {
         header("Location: /plasmastore/app_description/show/$id");
     }
 }
-    public function getUserData() {
-    $user = new OCSClient;
-    $pw = $_COOKIE["password"];
-    $name = $_COOKIE["login"];
-    $user->set_auth_info($name, $pw);
-    return $user->get ("v1/person/self");
-    }
 } 
 ?>

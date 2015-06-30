@@ -31,13 +31,20 @@ public function getComments($id) {
 	$client = new OCSClient();
 	return $client->get("v1/comments/data/1/$id/1");
 }
-public function getUserData() {
+public function getUserInfo() {
 	$user = new OCSClient;
 	$pw = $_COOKIE["password"];
 	$name = $_COOKIE["login"];
 	$user->set_auth_info($name, $pw);
 	return $user->get ("v1/person/self");
 }
+
+public function getUserData() {
+	$user = new OCSClient;
+	$name = $_COOKIE["login"];
+	return $user->get("v1/content/data/?user=$name");
+}
+
 }
 
 ?>
