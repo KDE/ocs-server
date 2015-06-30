@@ -56,13 +56,14 @@ class EDatabase {
 		$db = mysqli_connect(EDatabase::$db_host, EDatabase::$db_user, EDatabase::$db_pass); //EDatabase::$status = 2;
 		/* check connection */
 		if (!mysqli_connect_errno()) {
-			return false;
 			$db_select = mysqli_select_db($db, EDatabase::$db_name); //EDatabase::$status = 1;
 			/* check if server is alive */
-			if (!mysqli_ping($link)) {
+			if (!mysqli_ping($db)) {
 				return false;
 			}
 		
+		} else {
+			return false;
 		}
 		EDatabase::$db_link = $db;
 		if(EDatabase::$status==0){
