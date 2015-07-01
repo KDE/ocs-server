@@ -69,7 +69,13 @@
                             <div class="form-group">
                                 <label for="inputDownloadLink" class="col-sm-2 control-label">Download link</label>
                                 <div class="col-sm-10">
-                                    <input type="text" class="form-control" name="inputDownloadLink" placeholder="direct link to your app">
+                                    <input type="text" class="form-control" name="inputDownloadLink" placeholder="fill this only if you don't want to host your app on this website">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="inputDownloadFile" class="col-sm-2 control-label">Download File</label>
+                                <div class="col-sm-10">
+                                    <input type="file" class="form-control" name="inputDownloadFile" id="inputDownloadFile">
                                 </div>
                             </div>
                             <div class="form-group">

@@ -35,6 +35,10 @@ class UserPanelModel extends EModel {
 			
 			$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 			$client->set_auth_info(EHeaderDataParser::get_cookie("login"),EHeaderDataParser::get_cookie("password"));
+            if(!empty($_FILES['inputDownloadFile'])){
+                $client->set_upload_file($_FILES['inputDownloadFile']['tmp_name']);
+                $result = $client->post("v1/content/uploaddownload/$id");
+            }
             if(!empty($_FILES['inputScreenshot1'])){
     			$client->set_upload_file($_FILES['inputScreenshot1']['tmp_name']);
     			$result = $client->post("v1/content/uploadpreview/$id/1");
@@ -49,10 +53,10 @@ class UserPanelModel extends EModel {
                         if($result["ocs"]["meta"]["statuscode"]=="100"){
                             //cosa fare se va a buon fine
                             header("Location: /plasmastore/app_description/show/$id/$name");
-                        } else {ELog::pd($result);}
+                        } 
                     }
                 }
-            }
+            } else {ELog::pd($result);}
 		}
 	}
 

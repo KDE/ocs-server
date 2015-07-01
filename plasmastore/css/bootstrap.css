@@ -4398,6 +4398,7 @@ select[multiple].input-group-sm > .input-group-btn > .btn {
     *display:inline; /* ie7 fix */
     *zoom:1; /* hasLayout ie7 trigger */
     vertical-align: top;
+  }
   .navbar-right ~ .navbar-right {
     margin-right: 0;
   }

@@ -17,44 +17,7 @@
   </head>
 
 <body>
- <nav class="navbar navbar-default navbar-fixed-top">
-  <div class="container-fluid">
-    <!-- Brand and toggle get grouped for better mobile display -->
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="#"><span><img class="logo" src="/plasmastore/img/plasma.png"/></span> PlasmaStore</a>
-    </div>
-
-    <!-- Collect the nav links, forms, and other content for toggling -->
-    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-      <ul class="nav navbar-nav">
-        <li><a href="#">Link <span class="sr-only">(current)</span></a></li>
-        <li><a href="#">Link</a></li>
-        </ul>
-
-
-
-        <div class="col-md-3 col-md-offset-2 col-sm-2">
-          <form class="navbar-form navbar-left" role="search">
-            <div class="form-group">
-              <input type="text" class="form-control" placeholder="Search">
-            </div>
-            <button type="submit" class="btn btn-default"><span class="glyphicon glyphicon-search"></span>  Go!</button>
-          </form>
-        </div>
-    
-
-      <ul class="nav navbar-nav navbar-right">
-        <?php EStructure::view("login")?>
-      </ul>
-    </div><!-- /.navbar-collapse -->
-  </div><!-- /.container-fluid -->
-</nav>
+ <?php EStructure::view("topbar"); ?>
 
 <div class="container-fluid">
       <?php EStructure::view("categories_sidebar", $data[0]) ?>
@@ -72,6 +35,7 @@
 
 </div>
  <div class="col-md-7 col-md-offset-2 col-sm-offset-3">
+    <?php  if (!empty($data[1]["ocs"]["data"]["content"][0]["preview2"])){ echo"D'OH";}?>
     <div class="thumbnail">
         
     <div id="img_carousel" class="carousel slide" data-ride="carousel">
@@ -99,7 +63,7 @@
                         <div class=\"item\">
                             <img src=\"".$data[1]["ocs"]["data"]["content"][0]["preview2"]."\">
                         </div>";
-                    if (!empty($data[1]["ocs"]["data"]["content"][0]["preview2"])){
+                    if (!empty($data[1]["ocs"]["data"]["content"][0]["preview3"])){
                         echo "
                             <div class=\"item\">
                                 <img src=\"".$data[1]["ocs"]["data"]["content"][0]["preview3"]."\">
