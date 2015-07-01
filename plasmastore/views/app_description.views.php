@@ -35,7 +35,6 @@
 
 </div>
  <div class="col-md-7 col-md-offset-2 col-sm-offset-3">
-    <?php  if (!empty($data[1]["ocs"]["data"]["content"][0]["preview2"])){ echo"D'OH";}?>
     <div class="thumbnail">
         
     <div id="img_carousel" class="carousel slide" data-ride="carousel">
@@ -43,7 +42,7 @@
             <ol class="carousel-indicators">
                 <li data-target="#img_carousel" data-slide="0" class="active"></li>
                 <?php
-                if (isset($data[1]["ocs"]["data"]["content"][0]["preview2"])){
+                if (!empty($data[1]["ocs"]["data"]["content"][0]["preview2"])){
                     echo "<li data-target=\"#img_carousel\" data-slide=\"1\" class=\"active\"></li>";
                     if (!empty($data[1]["ocs"]["data"]["content"][0]["preview3"])){
                         echo "<li data-target=\"#img_carousel\" data-slide=\"2\" class=\"active\"></li>";
@@ -58,7 +57,7 @@
                 <div class=\"item active\">
                     <img src=\"".$data[1]["ocs"]["data"]["content"][0]["preview1"]."\">
                 </div>";
-                if (isset($data[1]["ocs"]["data"]["content"][0]["preview2"])){
+                if (!empty($data[1]["ocs"]["data"]["content"][0]["preview2"])){
                     echo "
                         <div class=\"item\">
                             <img src=\"".$data[1]["ocs"]["data"]["content"][0]["preview2"]."\">
@@ -73,15 +72,19 @@
                 ?>
             </div>
             <!-- carousel arrows -->
-            <a class="left carousel-control" href="#img_carousel" role="button" data-slide="prev">
-                <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"> </span>
-                <span class="sr-only">Previous</span>
+            <?php
+            if (!empty($data[1]["ocs"]["data"]["content"][0]["preview2"])){
+                echo "
+            <a class=\"left carousel-control\" href=\"#img_carousel\" role=\"button\" data-slide=\"prev\">
+                <span class=\"glyphicon glyphicon-chevron-left\" aria-hidden=\"true\"> </span>
+                <span class=\"sr-only\">Previous</span>
             </a>
-            <a class="right carousel-control" href="#img_carousel" role="button" data-slide="next">
-                <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"> </span>
-                <span class="sr-only">Next</span>
+            <a class=\"right carousel-control\" href=\"#img_carousel\" role=\"button\" data-slide=\"next\">
+                <span class=\"glyphicon glyphicon-chevron-right\" aria-hidden=\"true\"> </span>
+                <span class=\"sr-only\">Next</span>
             </a>
-        </div> <!-- .carousel-->
+        </div>";}
+        ?>
 
 
         <!-- App description -->
