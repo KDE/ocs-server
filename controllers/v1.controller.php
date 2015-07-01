@@ -1306,9 +1306,14 @@ class V1Controller extends EController
 			//if($this->readdata('personid','text')<>'')			$data['personid']=$this->readdata('personid','text');
 			if($this->readdata('license','int') >=0 or $this->readdata('license','int')<5)  $data['license']=$this->readdata('license','int');
 			
+			/*
 			$data['preview1'] = "http://".EConfig::$data["ocs"]["host"]."/template/img/screenshot-unavailable.png";
 			$data['preview2'] = "http://".EConfig::$data["ocs"]["host"]."/template/img/screenshot-unavailable.png";
 			$data['preview3'] = "http://".EConfig::$data["ocs"]["host"]."/template/img/screenshot-unavailable.png";
+			*/
+			$data['preview1'] = "";
+			$data['preview2'] = "";
+			$data['preview3'] = "";
 			$data['personid'] = $user;
 			
 			if( ($data['name']<>'') or ($data['type']<0) or ($data['type']>$numcats) ) {
