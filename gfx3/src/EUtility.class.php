@@ -59,6 +59,20 @@ class EUtility {
 		}
 	}
 	
+	/*
+	 * TODOC
+	 */
+	public static function hide_output()
+	{
+		ob_start();
+	}
+	
+	public static function show_output()
+	{
+		return ob_get_clean();
+	}
+	
+	
 }
 
 ?>
