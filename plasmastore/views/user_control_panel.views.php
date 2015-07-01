@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="../css/dashboard.css">
     <link rel="stylesheet" href="../css/logo.css">
     <link rel="stylesheet" href="../css/app.css">
+    <link rel="stylesheet" href="../css/navbar-center.css">
     <!--<link rel="stylesheet" href="css/responsive_preview.css">-->
   </head>
 

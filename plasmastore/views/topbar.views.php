@@ -8,7 +8,7 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="/plasmastore/home/"><span><img class="logo" src="../img/plasma.png"/></span> PlasmaStore</a>
+      <a class="navbar-brand" href="/plasmastore/home/"><span><img class="logo" src="/plasmastore/img/plasma.png"/></span> PlasmaStore</a>
     </div>
 
     <!-- Collect the nav links, forms, and other content for toggling -->
@@ -20,15 +20,15 @@
 
 
 
-        <div class="col-md-3 col-md-offset-2 col-sm-2">
-          <form class="navbar-form navbar-left" accept-charset="UTF-8" action="/plasmastore/search/search" method="post">
+        <!--div class="col-md-4 col-md-offset-2 col-sm-3" !-->
+          <form class="navbar-form navbar-center navbar-input-group" accept-charset="UTF-8" action="/plasmastore/search/search" method="post">
               <input type="text" class="form-control" name="searchInput" placeholder="Search">
             <button type="submit" class="btn btn-default"><span class="glyphicon glyphicon-search"></span>  Go!</button>
+            
           </form>
-        </div>
-    
-<?php EStructure::view("login")
-      ?>
+        <!--/div!-->
+    <?php EStructure::view("login")?>
+
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
 </nav>

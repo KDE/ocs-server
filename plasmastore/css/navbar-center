@@ -1,0 +1,10 @@
+@media (min-width: 768px) {
+    .navbar-center {
+    float:none;
+    display:inline-block;
+    margin-left: 150px;
+    *display:inline; /* ie7 fix */
+    *zoom:1; /* hasLayout ie7 trigger */
+    vertical-align: top;
+  }
+}

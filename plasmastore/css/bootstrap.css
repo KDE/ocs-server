@@ -4391,6 +4391,13 @@ select[multiple].input-group-sm > .input-group-btn > .btn {
     float: right !important;
     margin-right: -15px;
   }
+    .navbar-center {
+    float:none;
+    display:inline-block;
+    margin-left: 150px;
+    *display:inline; /* ie7 fix */
+    *zoom:1; /* hasLayout ie7 trigger */
+    vertical-align: top;
   .navbar-right ~ .navbar-right {
     margin-right: 0;
   }
