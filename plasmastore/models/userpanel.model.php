@@ -35,12 +35,24 @@ class UserPanelModel extends EModel {
 			
 			$client = new OCSClient(EConfig::$data["ocs"]["host"]);
 			$client->set_auth_info(EHeaderDataParser::get_cookie("login"),EHeaderDataParser::get_cookie("password"));
-			$client->set_upload_file($_FILES['localfile']['tmp_name']);
-			$result = $client->post("v1/content/uploadpreview/$id/1");
-			if($result["ocs"]["meta"]["statuscode"]=="100"){
-				//cosa fare se va a buon fine
-				header("Location: /plasmastore/app_description/show/$id/$name");
-			} else {ELog::pd($result);}
+            if(!empty($_FILES['inputScreenshot1'])){
+    			$client->set_upload_file($_FILES['inputScreenshot1']['tmp_name']);
+    			$result = $client->post("v1/content/uploadpreview/$id/1");
+            
+                if(!empty($_FILES['inputScreenshot2'])){
+                    $client->set_upload_file($_FILES['inputScreenshot2']['tmp_name']);
+                    $result = $client->post("v1/content/uploadpreview/$id/2");
+                
+                    if(!empty($_FILES['inputScreenshot3'])){
+                        $client->set_upload_file($_FILES['inputScreenshot3']['tmp_name']);
+                        $result = $client->post("v1/content/uploadpreview/$id/3");
+                        if($result["ocs"]["meta"]["statuscode"]=="100"){
+                            //cosa fare se va a buon fine
+                            header("Location: /plasmastore/app_description/show/$id/$name");
+                        } else {ELog::pd($result);}
+                    }
+                }
+            }
 		}
 	}
 
