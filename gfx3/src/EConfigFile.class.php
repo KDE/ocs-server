@@ -64,6 +64,17 @@ class EConfigFile {
 	}
 	
 	/*
+	 * Gets a key value in config file if exists. Else return empty string.
+	 */
+	public function get($var){
+		if(isset($this->data[$var])){
+			return $this->data[$var];
+		} else {
+			return '';
+		}
+	}
+	
+	/*
 	 * Modify or adds (if not present) a key/value pair on a config file
 	 * Change the memory array, not the file on disk.
 	 * In order to have it modified $this->save should be called.

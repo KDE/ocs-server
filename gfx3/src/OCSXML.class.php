@@ -169,45 +169,42 @@ class OCSXML{
 	 * Generate a providers.xml file for clients.
 	 * If arguments are empty data will be auto-generated.
 	 */
-	public static function generate_providers($name='',$location='',$termsofuse='',$register='', $ssl=false)
+	public static function generate_providers($serverid='',$name='',$location='',$termsofuse='',$register='', $ssl=false)
 	{
 		$version = EConfig::$data['ocsserver']['version'];
 		
-		//if empty try to infer
-		if(empty($location)){
-			if($ssl){
-				$location = 'https://'.ELoader::$root_path.'/v1';
-			} else {
-				$location = 'http://'.ELoader::$root_path.'/v1';
-			}
-		}
-		
 		$modules = array();
 		
-		if(class_exists("person")){ $modules[] = "person"; }
-		if(class_exists("friend")){ $modules[] = "friend"; }
-		if(class_exists("message")){ $modules[] = "message"; }
-		if(class_exists("activity")){ $modules[] = "activity"; }
-		if(class_exists("content")){ $modules[] = "content"; }
-		if(class_exists("fan")){ $modules[] = "fan"; }
-		if(class_exists("knowledgebase")){ $modules[] = "knowledgebase"; }
-		if(class_exists("event")){ $modules[] = "event"; }
+		//preconfigured for future modules
+		if(class_exists("OCSUser")){ $modules[] = "person"; } //TODO: OCSUser should become OCSPerson
+		if(class_exists("OCSFriend")){ $modules[] = "friend"; }
+		if(class_exists("OCSMessage")){ $modules[] = "message"; }
+		if(class_exists("OCSActivity")){ $modules[] = "activity"; }
+		if(class_exists("OCSContent")){ $modules[] = "content"; }
+		if(class_exists("OCSFan")){ $modules[] = "fan"; }
+		if(class_exists("OCSKnowledgebase")){ $modules[] = "knowledgebase"; }
+		if(class_exists("OCSEvent")){ $modules[] = "event"; }
 		
-		echo '<providers>
+		$xml = '';
+		
+		EUtility::hide_output();
+		$xml .= "<providers>
 			<provider>
-				<id>opendesktop</id>
-				<location>'.$location.'</location>
-				<name>openDesktop.org</name>
+				<id>$serverid</id>
+				<location>$location</location>
+				<name>$name</name>
 				<icon/>
-				<termsofuse>https://opendesktop.org/terms/</termsofuse>
-				<register>https://opendesktop.org/usermanager/new.php</register>
-				<services>';
+				<termsofuse>$termsofuse</termsofuse>
+				<register>$register</register>
+				<services>\n";
 					foreach($modules as $module){
-						echo "<$module ocsversion=\"$version\"/>";
+						$xml.= "\t\t\t\t<$module ocsversion=\"$version\"/>\n";
 					}
-				echo '</services>
+				$xml .= "\t\t\t\t</services>
 			</provider>
-		</providers>';
+		</providers>";
+		
+		return $xml;
 	}
 }
 ?>	

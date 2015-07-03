@@ -30,6 +30,11 @@ class OCSUser{
 		OCSUser::$persons = new EModel("ocs_person");
 	}
 	
+	
+	public static function version()
+	{
+		return '1.6';
+	}
 	/*
 	 * getters/setters
 	 */
