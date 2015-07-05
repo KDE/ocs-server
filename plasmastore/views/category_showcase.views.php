@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="/plasmastore/css/dashboard.css">
     <link rel="stylesheet" href="/plasmastore/css/logo.css">
     <link rel="stylesheet" href="/plasmastore/css/app.css">
+        <link rel="stylesheet" href="/plasmastore/css/pagination.css">
     <!--<link rel="stylesheet" href="css/responsive_preview.css">-->
   </head>
 
@@ -34,6 +35,8 @@
             <div class="col-lg-12">
                 <h1 class="page-header">Page Heading
                     <small>Secondary Text</small>
+                    <?php //echo $data[1]["ocs"]["meta"]["totalitems"];
+                    //echo "number of pages: ".ceil($data[1]["ocs"]["meta"]["totalitems"]/$data[1]["ocs"]["meta"]["itemsperpage"]);?>
                 </h1>
             </div>
         </div>
@@ -46,33 +49,7 @@
         <hr>
 
         <!-- Pagination -->
-        <div class="row text-center">
-            <div class="col-lg-12">
-                <ul class="pagination">
-                    <li>
-                        <a href="#">&laquo;</a>
-                    </li>
-                    <li class="active">
-                        <a href="/plasmastore/home/page/1">1</a>
-                    </li>
-                    <li>
-                        <a href="/plasmastore/home/page/2">2</a>
-                    </li>
-                    <li>
-                        <a href="#">3</a>
-                    </li>
-                    <li>
-                        <a href="#">4</a>
-                    </li>
-                    <li>
-                        <a href="#">5</a>
-                    </li>
-                    <li>
-                        <a href="#">&raquo;</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
+        <?php //EStructure::view("pagination", $data[1]) ?>
 
         <hr>
  </div> <!-- .col-md-7 col-md-offset-2 col-sm-offset-3-->

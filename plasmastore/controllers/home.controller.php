@@ -2,7 +2,8 @@
 class HomeController extends EController {
 	public function index ($args) {
 		$cat = new RetrieveModel();
-		EStructure::view("category_showcase", $cat->getCategories(), $cat->getData());
+		$pagination = new PaginationModel;
+		EStructure::view("category_showcase", $cat->getCategories(), $cat->getData(), $pagination->pagination(1));
 
 	}
 	public function delData ($args) {
@@ -12,7 +13,8 @@ class HomeController extends EController {
 
 	public function page ($args) {
 		$pag = new RetrieveModel();
-		EStructure::view("category_showcase", $pag->getCategories(), $pag->getDataPerPage($args[0]));
+		$pagination = new PaginationModel;
+		EStructure::view("category_showcase", $pag->getCategories(), $pag->getDataPerPage($args[0]), $pagination->pagination($args[0]));
 	}
 }
 ?>

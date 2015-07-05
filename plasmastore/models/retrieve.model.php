@@ -8,12 +8,12 @@ public function getCategories() {
 
 public function getData() {
 	$client = new OCSClient();
-	return $client->get("v1/content/data");
+	return $client->get("v1/content/data/?pagesize=1");
 }
 
 public function getDataPerPage($pagenumber) {
 	$client = new OCSClient();
-	return $client->get("v1/content/data/?page=$pagenumber");
+	return $client->get("v1/content/data/?pagesize=1&page=$pagenumber");
 }
 
 public function delData($id) {
