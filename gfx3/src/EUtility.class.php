@@ -45,22 +45,31 @@ class EUtility {
 	* which will be your password that you have to pass with ?password=yourpassword
 	* in your get requests.
 	* 
+	* TODO: move this to EProtect
 	*/
 	public static function protect()
 	{
-		//case in which it is 'no' or anything different from 'yes' or 'protected'
-		if(EConfig::$data['generic']['enabled']!='yes' and EConfig::$data['generic']['enabled']!='protected'){
-			die('Access denied.');
-		}
-		
-		//asks for password
-		if(EConfig::$data['generic']['enabled']=='protected'){
+		//keep enabled as standard choice
+		if(isset(EConfig::$data['generic']['enabled'])){
+			//case in which it is 'no' or anything different from 'yes' or 'protected'
+			if(EConfig::$data['generic']['enabled']!='yes' and EConfig::$data['generic']['enabled']!='protected'){
+				die('Access denied.');
+			}
+			
 			//asks for password
+			if(EConfig::$data['generic']['enabled']=='protected'){
+				//asks for password
+			}
 		}
 	}
 	
+	public static function redirect($page)
+	{
+		header('location: $page');
+	}
+	
 	/*
-	 * TODOC
+	 * TODO DOC
 	 */
 	public static function hide_output()
 	{

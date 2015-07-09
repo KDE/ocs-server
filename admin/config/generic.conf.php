@@ -1,4 +1,4 @@
-<?php die("You cannot see config in here."); ?>
+<?php die(); ?>
 render|yes
 protectheaders|yes
 database|yes
@@ -6,5 +6,5 @@ rewrite|yes
 users|no
 mvc|yes
 errormode|normal
-enabled|yes
-password|password
+enabled|protected
+password|billi

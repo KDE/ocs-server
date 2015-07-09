@@ -17,17 +17,8 @@
  */
 class OCSTest{
 	
-	public static function reset_ocs_database()
+	public static function install_ocs_database()
 	{
-		EDatabase::q("DROP TABLE IF EXISTS `ocs_apitraffic`;");
-		EDatabase::q("DROP TABLE IF EXISTS `ocs_comment`;");
-		EDatabase::q("DROP TABLE IF EXISTS `ocs_content`;");
-		EDatabase::q("DROP TABLE IF EXISTS `ocs_fan`;");
-		EDatabase::q("DROP TABLE IF EXISTS `ocs_person`;");
-		EDatabase::q("DROP TABLE IF EXISTS `ocs_activity`;");
-		EDatabase::q("DROP TABLE IF EXISTS `ocs_friendship`;");
-		EDatabase::q("DROP TABLE IF EXISTS `ocs_friendinvitation`;");
-		
 		EDatabase::q("
 		CREATE TABLE IF NOT EXISTS `ocs_apitraffic` (
 		  `ip` bigint(20) NOT NULL,
@@ -91,7 +82,7 @@ class OCSTest{
 		  PRIMARY KEY (`id`)
 		) ENGINE=MyISAM;");
 
-		EDatabase::q("CREATE TABLE `ocs_activity` (
+		EDatabase::q("CREATE TABLE IF NOT EXISTS `ocs_activity` (
 		  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
 		  `type` int(2) NOT NULL,
 		  `person` int(11) NOT NULL,
@@ -101,13 +92,13 @@ class OCSTest{
 		  KEY `person` (`person`)
 		) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;");
 
-		EDatabase::q("CREATE TABLE `ocs_friendship` (
+		EDatabase::q("CREATE TABLE IF NOT EXISTS `ocs_friendship` (
 		  `id1` int(11) NOT NULL,
 		  `id2` int(11) NOT NULL,
 		  UNIQUE KEY `id1` (`id1`,`id2`)
 		) ENGINE=InnoDB DEFAULT CHARSET=latin1;");
 
-		EDatabase::q("CREATE TABLE `ocs_friendinvitation` (
+		EDatabase::q("CREATE TABLE IF NOT EXISTS `ocs_friendinvitation` (
 		  `fromuser` varchar(255) NOT NULL,
 		  `touser` varchar(255) NOT NULL,
 		  `message` text NOT NULL,
@@ -118,6 +109,20 @@ class OCSTest{
 		  KEY `touser_2` (`touser`),
 		  KEY `fromuser_3` (`fromuser`)
 		) ENGINE=InnoDB DEFAULT CHARSET=latin1;");
+	}
+	
+	public static function reset_ocs_database()
+	{
+		EDatabase::q("DROP TABLE IF EXISTS `ocs_apitraffic`;");
+		EDatabase::q("DROP TABLE IF EXISTS `ocs_comment`;");
+		EDatabase::q("DROP TABLE IF EXISTS `ocs_content`;");
+		EDatabase::q("DROP TABLE IF EXISTS `ocs_fan`;");
+		EDatabase::q("DROP TABLE IF EXISTS `ocs_person`;");
+		EDatabase::q("DROP TABLE IF EXISTS `ocs_activity`;");
+		EDatabase::q("DROP TABLE IF EXISTS `ocs_friendship`;");
+		EDatabase::q("DROP TABLE IF EXISTS `ocs_friendinvitation`;");
+		
+		OCSTest::install_ocs_database();
 	}
 	
 }

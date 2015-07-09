@@ -1,7 +1,3 @@
-<?php
-//protecting whole website with auth and enabled
-EUtility::protect();
-?>
 <html>
 	<head>
 		<?php EStructure::view("css"); ?>

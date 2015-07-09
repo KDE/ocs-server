@@ -41,6 +41,7 @@ class EStructure {
 		$controller = ucfirst($controller)."Controller";
 		
 		$args = $chunks;
+		$string_args = array();
 		
 		//resetting array index and getting last element
 		$args = array_values($args);
@@ -58,9 +59,18 @@ class EStructure {
 			EHeaderDataParser::add_from_string($extraargs[1]);
 		}
 		
+		/* TODO: reevaluate this
+		//the final arrays cointains also the string version of the argument
+		//eg. $args['save'] = 0;
+		foreach($args as $arg){
+			$string_args[$arg] = 1; //just some random data
+		}
+		*/
+		
 		//checking if controller is available
 		if (class_exists($controller)){
 			$current_controller = new $controller();
+			$current_controller->set_args($args);
 			
 			if(empty($method)){
 				if(method_exists($current_controller, 'index')){

@@ -12,7 +12,14 @@ class StatusController extends EController
     {	
         EStructure::view("header");
         
-        echo "<h3>Server</h3>";
+        if(!isset($args[0])){
+			echo '<h3>OCS Actions</h3>';
+			echo '<p>If you put your server in production or experience malfunctionings, you better regenerate providers.xml!<br>
+			<a href="/admin/steps/step2">CONFIGURE OCS SERVER</a></p>';
+			echo '<p>Change password for accessing admin panel.<br>
+			<a href="/admin/steps/step3">CHANGE PASSWORD</a></p>';
+			
+		}
         
         EStructure::view("footer");
     }
@@ -23,6 +30,8 @@ class StatusController extends EController
         
         if(!isset($args[0])){
 			echo '<h3>Database</h3>';
+			echo '<p>If you just copied your ocs-server files to an other server, you would like to reconfigure database.<br>
+			<a href="/admin/steps/step1">CONFIGURE DATABASE</a></p>';
 			echo '<p>If you have a broken/unconsistent database running, you can attempt resetting your database.<br>
 			<a href="/admin/status/database/reset">RESET DATABASE</a></p>';
 			echo '<p>If you want to run sanity tests on your database you should install default data.<br>

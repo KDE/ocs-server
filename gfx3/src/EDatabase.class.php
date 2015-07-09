@@ -115,12 +115,12 @@ class EDatabase {
 			if(empty($error)){ 
 				$ret = $ret;
 			} else {
-				ELog::error($error."<br>Query string: ".$q);
+				ELog::warning($error."<br>Query string: ".$q);
 			}
 			return $ret;
 		} else {
 			if(EDatabase::$debug==false){
-				ELog::error("sql session not already opened!");
+				ELog::warning("sql session not already opened!");
 			}
 		}
 	}

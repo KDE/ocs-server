@@ -186,8 +186,6 @@ class OCSXML{
 		if(class_exists("OCSEvent")){ $modules[] = "event"; }
 		
 		$xml = '';
-		
-		EUtility::hide_output();
 		$xml .= "<providers>
 			<provider>
 				<id>$serverid</id>

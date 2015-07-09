@@ -399,7 +399,7 @@ In order to build a nice title (also if it's not useful for your app logic you s
 	
 	$url = ERewriter::prettify("I'm a terrible title");
 
-Rewriting can be enabled/disabled via general.cong.php:
+Rewriting can be enabled/disabled via general.conf.php:
 	<?php die("You cannot see config in here."); ?>
 	rewrite|yes
 	rewrite|no

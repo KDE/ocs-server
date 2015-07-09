@@ -169,6 +169,8 @@ ELoader::loadAllModules();
 //loading current website configuration
 EConfig::load();
 
+//protecting whole website with auth and enabled
+EUtility::protect();
 
 //rewrite url if needed
 if (EConfig::$data['generic']['rewrite'] == "yes"){
