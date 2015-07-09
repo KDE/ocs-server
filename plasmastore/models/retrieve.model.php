@@ -39,10 +39,10 @@ public function getUserInfo() {
 	return $user->get ("v1/person/self");
 }
 
-public function getUserData() {
+public function getUserData($pagenumber) {
 	$user = new OCSClient;
 	$name = $_COOKIE["login"];
-	return $user->get("v1/content/data/?user=$name");
+	return $user->get("v1/content/data/?user=$name&page=$pagenumber");
 }
 
 }

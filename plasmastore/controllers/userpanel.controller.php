@@ -18,6 +18,11 @@ class UserPanelController extends EController {
 		$dat = new UserpanelModel();
 		$dat->edit($args[0]);
 	}
+		public function page ($args) {
+		$dat2 = new RetrieveModel();
+		$pag = new RetrieveModel();
+		EStructure::view("user_control_panel", $dat2->getUserInfo(), $dat2->getUserData($args[0]));
+	}
 }
 
 ?>

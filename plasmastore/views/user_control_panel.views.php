@@ -8,11 +8,11 @@
     <meta name="description" content="ocs-server webclient">
     <meta name="author" content="woffy">
     <title>PlasmaStore</title>
-    <link rel="stylesheet" href="../css/bootstrap.css">
-    <link rel="stylesheet" href="../css/dashboard.css">
-    <link rel="stylesheet" href="../css/logo.css">
-    <link rel="stylesheet" href="../css/app.css">
-    <link rel="stylesheet" href="../css/navbar-center.css">
+    <link rel="stylesheet" href="/plasmastore/css/bootstrap.css">
+    <link rel="stylesheet" href="/plasmastore/css/dashboard.css">
+    <link rel="stylesheet" href="/plasmastore/css/logo.css">
+    <link rel="stylesheet" href="/plasmastore/css/app.css">
+    <link rel="stylesheet" href="/plasmastore/css/navbar-center.css">
     <!--<link rel="stylesheet" href="css/responsive_preview.css">-->
   </head>
 
@@ -137,7 +137,7 @@
                         </thead>
                         <tbody>";
                     foreach($data[1]["ocs"]["data"]["content"] as $content){
-                        if(OCSUser::login()==$content["personid"]){
+                        //if(OCSUser::login()==$content["personid"]){
                                     $number=$number+1;
                                     echo "
                             <tr>
@@ -199,12 +199,16 @@
                                 </td>
                         </tr>";
                         }
-                    }
+                    //}
                 echo"</tbody>";
             ?>
                 </table>
             </div>
         </div>
+        <?php 
+        $name = OCSUser::login();
+        $pager1 = new Pager("userpanel","v1/content/data/?user=$name");
+        $pager1->pagination(); ?>
     </div>
 
        
@@ -215,13 +219,13 @@
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
-    <script src="../js/jquery.js"></script>
-    <script src="../js/bootstrap.js"></script>
-    <script src="../js/sidebuttons.js"></script>
-    <script src="../js/uploadbox.js"></script>
-    <script src="../js/editbox.js"></script>
+    <script src="/plasmastore/js/jquery.js"></script>
+    <script src="/plasmastore/js/bootstrap.js"></script>
+    <script src="/plasmastore/js/sidebuttons.js"></script>
+    <script src="/plasmastore/js/uploadbox.js"></script>
+    <script src="/plasmastore/js/editbox.js"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+    <script src="/plasmastore/js/ie10-viewport-bug-workaround.js"></script>
 </body>
 </html>
 
