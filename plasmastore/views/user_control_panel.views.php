@@ -61,6 +61,16 @@
                                 </div>
                             </div>
                             <div class="form-group">
+                                <label for="type" class="col-sm-2 control-label">Category</label>
+                                <div class="col-sm-10">
+                                    <select name="type">
+                                        <?php  foreach($data[2]["ocs"]["data"]["category"] as $category) {
+                                            echo "<option value=".$category["id"].">".$category["name"]."</option>";
+                                        } ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
                                 <label for="inputDownloadName" class="col-sm-2 control-label">Download name</label>
                                 <div class="col-sm-10">
                                     <input type="text" class="form-control" name="inputDownloadName" placeholder="this label will be shown to download your app">
@@ -156,6 +166,22 @@
                                                 </div>
                                             </div>
                                             <div class=\"form-group\">
+                                                <label for=\"type\" class=\"col-sm-2 control-label\">Category</label>
+                                                <div class=\"col-sm-10\">
+                                                    <select name=\"type\">";
+                                                         foreach($data[2]["ocs"]["data"]["category"] as $category) {
+                                                            if ($category["id"]==$content["id"]){
+                                                                echo "<option value=".$category["id"]." selected>".$category["name"]."</option>";
+                                                            }
+                                                            else {
+                                                                echo "<option value=".$category["id"].">".$category["name"]."</option>";
+                                                            }
+                                                        }
+                                                        echo "
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class=\"form-group\">
                                                 <label for=\"inputDownloadName\" class=\"col-sm-2 control-label\">Download name</label>
                                                 <div class=\"col-sm-10\">
                                                     <input type=\"text\" class=\"form-control\" name=\"inputDownloadName\" value=\"".$content["downloadname1"]."\">
@@ -165,6 +191,30 @@
                                                 <label for=\"inputDownloadLink\" class=\"col-sm-2 control-label\">Download link</label>
                                                 <div class=\"col-sm-10\">
                                                     <input type=\"text\" class=\"form-control\" name=\"inputDownloadLink\" value=\"".$content["downloadlink1"]."\">
+                                                </div>
+                                            </div>
+                                            <div class=\"form-group\">
+                                                <label for=\"inputDownloadFile\" class=\"col-sm-2 control-label\">Download File</label>
+                                                <div class=\"col-sm-10\">
+                                                    <input type=\"file\" class=\"form-control\" name=\"inputDownloadFile\" id=\"inputDownloadFile\">
+                                                </div>
+                                            </div>
+                                            <div class=\"form-group\">
+                                                <label for=\"inputScreenshot1\" class=\"col-sm-2 control-label\">Screenshot 1</label>
+                                                <div class=\"col-sm-10\">
+                                                    <input type=\"file\" class=\"form-control\" name=\"inputScreenshot1\" id=\"inputScreenshot1\">
+                                                </div>
+                                            </div>
+                                            <div class=\"form-group\">
+                                                <label for=\"inputScreenshot2\" class=\"col-sm-2 control-label\">Screenshot 2</label>
+                                                <div class=\"col-sm-10\">
+                                                    <input type=\"file\" class=\"form-control\" name=\"inputScreenshot2\" id=\"inputScreenshot2\">
+                                                </div>
+                                            </div>
+                                            <div class=\"form-group\">
+                                                <label for=\"inputScreenshot1\" class=\"col-sm-2 control-label\">Screenshot 3</label>
+                                                <div class=\"col-sm-10\">
+                                                    <input type=\"file\" class=\"form-control\" name=\"inputScreenshot3\" id=\"inputScreenshot1\">
                                                 </div>
                                             </div>
                                             <div class=\"form-group\">
