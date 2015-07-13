@@ -8,11 +8,11 @@
     <meta name="description" content="ocs-server webclient">
     <meta name="author" content="woffy">
     <title>PlasmaStore</title>
-    <link rel="stylesheet" href="../css/bootstrap.css">
-    <link rel="stylesheet" href="../css/dashboard.css">
-    <link rel="stylesheet" href="../css/logo.css">
-    <link rel="stylesheet" href="../css/app.css">
-    <link rel="stylesheet" href="../css/navbar-center.css">
+    <link rel="stylesheet" href="/plasmastore/css/bootstrap.css">
+    <link rel="stylesheet" href="/plasmastore/css/dashboard.css">
+    <link rel="stylesheet" href="/plasmastore/css/logo.css">
+    <link rel="stylesheet" href="/plasmastore/css/app.css">
+    <link rel="stylesheet" href="/plasmastore/css/navbar-center.css">
     <!--<link rel="stylesheet" href="css/responsive_preview.css">-->
   </head>
 
@@ -58,6 +58,16 @@
                                 <label for="inputTitle" class="col-sm-2 control-label">Title</label>
                                 <div class="col-sm-10">
                                     <input type="text" class="form-control" name="inputTitle" placeholder="Title">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="type" class="col-sm-2 control-label">Category</label>
+                                <div class="col-sm-10">
+                                    <select name="type">
+                                        <?php  foreach($data[2]["ocs"]["data"]["category"] as $category) {
+                                            echo "<option value=".$category["id"].">".$category["name"]."</option>";
+                                        } ?>
+                                    </select>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -137,7 +147,7 @@
                         </thead>
                         <tbody>";
                     foreach($data[1]["ocs"]["data"]["content"] as $content){
-                        if(OCSUser::login()==$content["personid"]){
+                        //if(OCSUser::login()==$content["personid"]){
                                     $number=$number+1;
                                     echo "
                             <tr>
@@ -156,6 +166,22 @@
                                                 </div>
                                             </div>
                                             <div class=\"form-group\">
+                                                <label for=\"type\" class=\"col-sm-2 control-label\">Category</label>
+                                                <div class=\"col-sm-10\">
+                                                    <select name=\"type\">";
+                                                         foreach($data[2]["ocs"]["data"]["category"] as $category) {
+                                                            if ($category["id"]==$content["id"]){
+                                                                echo "<option value=".$category["id"]." selected>".$category["name"]."</option>";
+                                                            }
+                                                            else {
+                                                                echo "<option value=".$category["id"].">".$category["name"]."</option>";
+                                                            }
+                                                        }
+                                                        echo "
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class=\"form-group\">
                                                 <label for=\"inputDownloadName\" class=\"col-sm-2 control-label\">Download name</label>
                                                 <div class=\"col-sm-10\">
                                                     <input type=\"text\" class=\"form-control\" name=\"inputDownloadName\" value=\"".$content["downloadname1"]."\">
@@ -165,6 +191,30 @@
                                                 <label for=\"inputDownloadLink\" class=\"col-sm-2 control-label\">Download link</label>
                                                 <div class=\"col-sm-10\">
                                                     <input type=\"text\" class=\"form-control\" name=\"inputDownloadLink\" value=\"".$content["downloadlink1"]."\">
+                                                </div>
+                                            </div>
+                                            <div class=\"form-group\">
+                                                <label for=\"inputDownloadFile\" class=\"col-sm-2 control-label\">Download File</label>
+                                                <div class=\"col-sm-10\">
+                                                    <input type=\"file\" class=\"form-control\" name=\"inputDownloadFile\" id=\"inputDownloadFile\">
+                                                </div>
+                                            </div>
+                                            <div class=\"form-group\">
+                                                <label for=\"inputScreenshot1\" class=\"col-sm-2 control-label\">Screenshot 1</label>
+                                                <div class=\"col-sm-10\">
+                                                    <input type=\"file\" class=\"form-control\" name=\"inputScreenshot1\" id=\"inputScreenshot1\">
+                                                </div>
+                                            </div>
+                                            <div class=\"form-group\">
+                                                <label for=\"inputScreenshot2\" class=\"col-sm-2 control-label\">Screenshot 2</label>
+                                                <div class=\"col-sm-10\">
+                                                    <input type=\"file\" class=\"form-control\" name=\"inputScreenshot2\" id=\"inputScreenshot2\">
+                                                </div>
+                                            </div>
+                                            <div class=\"form-group\">
+                                                <label for=\"inputScreenshot1\" class=\"col-sm-2 control-label\">Screenshot 3</label>
+                                                <div class=\"col-sm-10\">
+                                                    <input type=\"file\" class=\"form-control\" name=\"inputScreenshot3\" id=\"inputScreenshot1\">
                                                 </div>
                                             </div>
                                             <div class=\"form-group\">
@@ -199,12 +249,16 @@
                                 </td>
                         </tr>";
                         }
-                    }
+                    //}
                 echo"</tbody>";
             ?>
                 </table>
             </div>
         </div>
+        <?php 
+        $name = OCSUser::login();
+        $pager1 = new Pager("userpanel","v1/content/data/?user=$name");
+        $pager1->pagination(); ?>
     </div>
 
        
@@ -215,13 +269,13 @@
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
-    <script src="../js/jquery.js"></script>
-    <script src="../js/bootstrap.js"></script>
-    <script src="../js/sidebuttons.js"></script>
-    <script src="../js/uploadbox.js"></script>
-    <script src="../js/editbox.js"></script>
+    <script src="/plasmastore/js/jquery.js"></script>
+    <script src="/plasmastore/js/bootstrap.js"></script>
+    <script src="/plasmastore/js/sidebuttons.js"></script>
+    <script src="/plasmastore/js/uploadbox.js"></script>
+    <script src="/plasmastore/js/editbox.js"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+    <script src="/plasmastore/js/ie10-viewport-bug-workaround.js"></script>
 </body>
 </html>
 

@@ -49,7 +49,8 @@
         <hr>
 
         <!-- Pagination -->
-        <?php //EStructure::view("pagination", $data[1]) ?>
+        <?php $pager1= new Pager("home","v1/content/data/?pagesize=1");
+        $pager1->pagination(); ?>
 
         <hr>
  </div> <!-- .col-md-7 col-md-offset-2 col-sm-offset-3-->
