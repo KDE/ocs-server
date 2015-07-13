@@ -17,6 +17,8 @@
  */
 class EPageProperties {
 	
+	public static $request_uri = '';
+	
 	public static function get_page_name(){
 		
 		$name = substr($_SERVER["SCRIPT_NAME"],strrpos($_SERVER["SCRIPT_NAME"],"/")+1);

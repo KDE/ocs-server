@@ -30,39 +30,6 @@ class EUtility {
 		return $string;
 	}
 	
-	/*Use this function to protect your webpage.
-	* this works by adding those properties to local generic.conf.php:
-	* 
-	* enabled|yes
-	* enabled|no
-	* enabled|protected
-	* 
-	* which can be 'yes' or 'no'. If nonsense is written, gfx will keep no
-	* as default.
-	* 
-	* password|yourpassword
-	* 
-	* which will be your password that you have to pass with ?password=yourpassword
-	* in your get requests.
-	* 
-	* TODO: move this to EProtect
-	*/
-	public static function protect()
-	{
-		//keep enabled as standard choice
-		if(isset(EConfig::$data['generic']['enabled'])){
-			//case in which it is 'no' or anything different from 'yes' or 'protected'
-			if(EConfig::$data['generic']['enabled']!='yes' and EConfig::$data['generic']['enabled']!='protected'){
-				die('Access denied.');
-			}
-			
-			//asks for password
-			if(EConfig::$data['generic']['enabled']=='protected'){
-				//asks for password
-			}
-		}
-	}
-	
 	public static function redirect($page)
 	{
 		header('location: $page');
@@ -87,6 +54,8 @@ class EUtility {
 	 *
 	 * @debug bool $debug
 	 * @return string
+	 * 
+	 * TODO: move to EPageProperties
 	 */
 	public static function get_domain($domain, $debug = false)
 	{
@@ -189,6 +158,8 @@ class EUtility {
 	/**
 	 * Get domain without .com or .co.uk etc...
 	 * "www.example.com" -> "example"
+	 * 
+	 * TODO: move to EPageProperties
 	 */
 	public static function get_clear_domain($domain)
 	{

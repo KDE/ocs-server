@@ -24,6 +24,8 @@ class ELoader{
 	public static $prev_path; // /var/www/html
 	public static $abs_path; // /var/www/html/gfx/src
 	public static $root_path; // localhost
+	public static $request_uri = "";
+	public static $subsite_path = ""; //only the name of the main rendered subsite
 	public static $source_path = "gfx3/src";
 	public static $cache_path = "gfx3/cache";
 	public static $libs_path = "gfx3/libs";
@@ -40,6 +42,7 @@ class ELoader{
 	//look for gfx3 installation path
 	public static function getLibInstallPath(){
 		if(is_dir(ELoader::$config_path) and !ELoader::$setted_config){
+			ELoader::$subsite_path = str_replace(ELoader::$prev_path,'',getcwd());
 			ELoader::$config_path = getcwd()."/".ELoader::$config_path;
 			ELoader::$controllers_path = getcwd()."/".ELoader::$controllers_path;
 			ELoader::$models_path = getcwd()."/".ELoader::$models_path;
@@ -65,7 +68,7 @@ class ELoader{
 	 * in the subdirectory.
 	 */
 	public static function checkForSubsites(){
-		$current_uri = $_SERVER['REQUEST_URI'];
+		ELoader::$request_uri = $current_uri = $_SERVER['REQUEST_URI'];
 		$dirs = explode("/", $current_uri);
 		
 		foreach($dirs as $key => $dir){
@@ -100,7 +103,7 @@ class ELoader{
 		//the engine will later check for gfx presence in an upper folder
 		ELoader::checkForSubsites();
 		
-		ELoader::$abs_path = ELoader::getLibInstallPath();
+		ELoader::$abs_path = ELoader::getLibInstallPath(); 
 		
 		//include source
 		if(chdir(ELoader::$abs_path)){
@@ -170,7 +173,7 @@ ELoader::loadAllModules();
 EConfig::load();
 
 //protecting whole website with auth and enabled
-EUtility::protect();
+EProtect::load();
 
 //rewrite url if needed
 if (EConfig::$data['generic']['rewrite'] == "yes"){

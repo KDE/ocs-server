@@ -1,0 +1,17 @@
+<providers>
+			<provider>
+				<id>ocs_localhost</id>
+				<location>http://localhost/v1</location>
+				<name>Localhost OCS Server</name>
+				<icon/>
+				<termsofuse></termsofuse>
+				<register></register>
+				<services>
+				<person ocsversion="1.6"/>
+				<friend ocsversion="1.6"/>
+				<activity ocsversion="1.6"/>
+				<content ocsversion="1.6"/>
+				<fan ocsversion="1.6"/>
+				</services>
+			</provider>
+		</providers>

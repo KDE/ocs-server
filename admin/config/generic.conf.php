@@ -7,4 +7,4 @@ users|no
 mvc|yes
 errormode|normal
 enabled|protected
-password|billi
+password|esempio

@@ -72,7 +72,7 @@ class V1Controller extends EController
 		$ex=explode('/',$url);
 		
 		//var_dump($ex);
-
+		
 		// eventhandler
 		if(count($ex)==2){
 			H01_GUI::showtemplate('apidoc');

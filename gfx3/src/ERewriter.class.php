@@ -47,7 +47,7 @@ class ERewriter{
 		//treat url erasing extra parts
 		$current_uri = $_SERVER['REQUEST_URI'];
 		//keeping a local copy
-		ERewriter::$oldurl = $current_uri;
+        ERewriter::$oldurl = $current_uri;
 		
 		$matches = array();
 		
@@ -59,7 +59,7 @@ class ERewriter{
 			
 			//handle with normal rewrite that
 			//permits to have parameters
-			if($value[1]=="normal"){			
+			if($value[1]=="normal"){
 				$pos = strpos($current_uri,$key);
 				
 				//if we found a rewrite rule that can be applied

@@ -8,6 +8,11 @@ class StatusController extends EController
 	
 	private $example_contentid;
 	
+	public function logout()
+	{
+		EProtect::logout();
+	}
+	
     public function index($args)
     {	
         EStructure::view("header");

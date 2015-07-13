@@ -66,11 +66,13 @@ class EHeaderDataParser {
 	public static function get_cookie($key){
 		if(isset($_COOKIE[$key])){
 			return $_COOKIE[$key];
+		} else {
+			return false;
 		}
 	}
 	
-	public static function set_cookie($key, $value){
-		setcookie($key,$value, time()+(86400 * 30), "/");
+	public static function set_cookie($key, $value, $time=86400){
+		setcookie($key,$value, time()+($time * 30), "/"); //TODO: seriously inspect on time being multiplied for 30
 	}
 
 	public static function del_cookie($key){
