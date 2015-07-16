@@ -4,7 +4,7 @@ class UserPanelController extends EController {
 	public function index ($args) {
 		$dat2 = new RetrieveModel();
 		if (isset($_COOKIE["login"])) {
-			EStructure::view("user_control_panel", $dat2->getUserInfo(), $dat2->getUserData(1), $dat2->getCategories());
+			EStructure::view("user_control_panel", $dat2->getSelfInfo(), $dat2->getUserData(1), $dat2->getCategories());
 		}
 		else {echo "ERROR: You're not logged in";}
 	}
@@ -21,7 +21,7 @@ class UserPanelController extends EController {
 		public function page ($args) {
 		$dat2 = new RetrieveModel();
 		$pag = new RetrieveModel();
-		EStructure::view("user_control_panel", $dat2->getUserInfo(), $dat2->getUserData($args[0]), $dat2->getCategories());
+		EStructure::view("user_control_panel", $dat2->getSelfInfo(), $dat2->getUserData($args[0]), $dat2->getCategories());
 	}
 }
 
