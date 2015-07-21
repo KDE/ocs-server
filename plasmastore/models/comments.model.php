@@ -22,8 +22,6 @@ class CommentsModel extends EModel {
         $check = $client->post("v1/comments/add",$postdata);
 
         if($check["ocs"]["meta"]["statuscode"]=="100"){
-            
-            $id = $check["ocs"]["data"]["content"]["id"];
             //cosa fare se va a buon fine
             header("Location: /plasmastore/app_description/show/$id");
         }

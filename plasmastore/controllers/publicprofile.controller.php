@@ -2,9 +2,11 @@
 class PublicProfileController extends EController {
 	
 	public function index ($args) {
-		$dat2 = new RetrieveModel();
+		$dat = new RetrieveModel();
+		$friend = new FriendModel;
+		$self = new OCSUser;
 		if (OCSUser::is_logged()) {
-			EStructure::view("public_profile", $dat2->getUserInfo($args[0]), $dat2->getUserData(1));
+			EStructure::view("public_profile", $dat->getUserInfo($args[0]), $dat->getUserData(1), $friend->listFriends($self->login()));
 		}
 	}
 	public function addFriend ($args){

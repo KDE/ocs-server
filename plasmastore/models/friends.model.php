@@ -5,6 +5,12 @@ class FriendModel extends EModel {
 		$client->set_auth_info(OCSUser::$login, EHeaderDataParser::get_cookie("password"));
 		$check = $client->post("/v1/friend/invite/",$id);
 	}
+	public function listFriends($id){
+		$client = new OCSClient();
+		$self = new OCSUser();
+		$client->set_auth_info($self->login(), EHeaderDataParser::get_cookie("password"));
+		return $client->get("/v1/friend/data/$id");
+	}
 }
 
 ?>
