@@ -135,6 +135,7 @@
                     </div>
                 </div> <!-- .div class="row" id="post-uploadapp-box" style="display:none" -->
                 <?php 
+                if (isset($data[1]["ocs"]["data"]["content"])){
                     $number="0";
                         echo "<table class=\"table table-striped\">
                         <thead>
@@ -248,6 +249,7 @@
                                 </div> 
                                 </td>
                         </tr>";
+                    }
                         }
                     //}
                 echo"</tbody>";
