@@ -915,6 +915,8 @@ class V1Controller extends EController
 				$xml[0]['firstname']=$DBuser['firstname'];
 				$xml[0]['lastname']=$DBuser['lastname'];
 				$xml[0]['email']=$DBuser['email'];
+				
+				//ELog::pd($xml);
 				//$xml[0]['description']=H01_UTIL::bbcode2html($DBuser['description']);
 				
 				$txt=OCSXML::generatexml(EConfig::$data["ocsserver"]["format"],'ok',100,'',$xml,'person','full',2);
@@ -930,6 +932,12 @@ class V1Controller extends EController
     {
 			$pl = new OCSPersonLister;
 			$xml = $pl->ocs_person_search($username,$page,$pagesize);
+			
+			for($i=0;$i<count($xml);$i++){
+				$xml[$i]['personid'] = $xml[$i]['login'];
+				//unset($xml[$i]['login']);
+			}
+			
 			$plcount = count($xml);
 			
 			$txt=OCSXML::generatexml(EConfig::$data["ocsserver"]["format"],'ok',100,'',$xml,'person','summary',2,$plcount,$pagesize);

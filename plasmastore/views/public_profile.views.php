@@ -29,7 +29,7 @@
             <h4>First Name: ".$data[0]["ocs"]["data"]["person"][0]["firstname"]."</h4>
             <h4>Last Name:  ".$data[0]["ocs"]["data"]["person"][0]["lastname"]."</h4>
             <h4>Email: ".$data[0]["ocs"]["data"]["person"][0]["email"]."</h4> 
-            <a class=\"btn btn-success\" href=\"/plasmastore/publicprofile/addfriend".$data[0]["ocs"]["data"]["person"][0]["personid"].">Send firendship request</a>";
+            <a class=\"btn btn-success\" href=\"/plasmastore/publicprofile/addfriend".$data[0]["ocs"]["data"]["person"][0]["personid"]."\">Send friendship request</a>";
             ?>
             
         </div>

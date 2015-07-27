@@ -49,7 +49,7 @@
         <hr>
 
         <!-- Pagination -->
-        <?php $pager1= new Pager("home","v1/content/data/?pagesize=1");
+        <?php $pager1= new Pager("home","v1/content/data/"); //?pagesize=1"
         $pager1->pagination(); ?>
 
         <hr>
