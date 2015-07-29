@@ -58,7 +58,10 @@ class OCSContentLister extends OCSLister {
 		parent::__construct($data);
 	}
 	
-	public function ocs_content_list($searchstr,$sortmode="new",$page=1,$pagesize=10,$user=""){
+	public function ocs_content_list($searchstr,$sortmode="new",$page=1,$pagesize=10,$user="",$category=""){
+		
+		$whereuser = "";
+		$wherecategory = "";
 		
 		if(empty($page)){ $page=1; }
 		//setting dynamic page size
@@ -87,14 +90,27 @@ class OCSContentLister extends OCSLister {
 			$whereuser = "";
 		}
 		
+		if(!empty($category)){
+			$wherecategory = " AND type = '$category' ";
+		} else {
+			$wherecategory = "";
+		}
+		
 		//TODO: move this into parent class constructor
 		// or better: inspect why datatable isn't initialized by constructor
 		if(is_null($this->datatable)){
 			$this->datatable = new EModel("ocs_content");
 		}
 		
-		$r = $this->datatable->find("id,owner,personid,description,changelog,preview1,votes,score,name,type,downloadname1,downloadlink1,version,summary,license","WHERE name LIKE '%$searchstr%' $whereuser $where");
-		$this->totalitems = EDatabase::sq("SELECT COUNT(*) FROM ocs_content WHERE name LIKE '%$searchstr%' $whereuser");
+		$r = $this->datatable->find("id,owner,personid,description,changelog,preview1,votes,score,name,type,downloadname1,downloadlink1,version,summary,license","WHERE name LIKE '%$searchstr%' $whereuser $wherecategory $where");
+		
+		// TODO: remove me because I'm wrong
+		for($i=0;$i<count($r);$i++){
+			$r[$i]['previewpic1'] = $r[$i]['preview1'];
+			$r[$i]['preview1'] = '';
+		}
+		
+		$this->totalitems = EDatabase::sq("SELECT COUNT(*) FROM ocs_content WHERE name LIKE '%$searchstr%' $whereuser $wherecategory");
 		
 		return $r;
 	}

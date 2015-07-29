@@ -45,7 +45,7 @@ class EModel {
 	
 	
 	
-	/*
+	/**
 	 * Prints debug informations about a database table.
 	 */
 	public function print_debug_info(){
@@ -56,7 +56,7 @@ class EModel {
 		echo "</pre>";
 	}
 	
-	/*
+	/**
 	 * Set this to true in order to make EData just simulate modifications
 	 * and echo the query. Use only for debug purposes.
 	 */
@@ -64,14 +64,14 @@ class EModel {
 		$this->noquery = $b;
 	}
 	
-	/*
+	/**
 	 * Rewrite debug rule.
 	 */
 	public function set_debug($b){
 		$this->dbg = $b;
 	}
 	
-	/*
+	/**
 	 * check if table is loaded,
 	 * if not, empty model is been used
 	 * and warning is printed

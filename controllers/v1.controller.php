@@ -47,7 +47,6 @@ class V1Controller extends EController
 		// overwrite the 404 error page returncode
 		header("HTTP/1.0 200 OK");
 		*/
-
 		if($_SERVER['REQUEST_METHOD'] == 'GET') {
 			 $method='get';
 		}elseif($_SERVER['REQUEST_METHOD'] == 'PUT') {
@@ -1066,7 +1065,7 @@ class V1Controller extends EController
 		//$this->checktrafficlimit($user);
 		
 		$conl = new OCSContentLister("ocs_content");
-		$xml = $conl->ocs_content_list($searchstr,$sortmode,$page,$pagesize,$searchuser);
+		$xml = $conl->ocs_content_list($searchstr,$sortmode,$page,$pagesize,$searchuser,$contents);
 		$totalitems = $conl->get_totalitems();
 		/*
 		 * test page: http://localhost/v1/content/data?search=lolol

@@ -1,7 +1,7 @@
 <providers>
 			<provider>
 				<id>ocs_localhost</id>
-				<location>http://localhost/v1</location>
+				<location>http://localhost/v1/</location>
 				<name>Localhost OCS Server</name>
 				<icon/>
 				<termsofuse></termsofuse>
