@@ -108,7 +108,7 @@
         </div> <!-- .ratings -->
         <div class="text-left">
             <?php
-            echo "<a class=\"btn btn-success\" href=\"".$data[1]["ocs"]["data"]["content"][0]["downloadlink1"]."\"><span class=\"glyphicon glyphicon-download-alt\"></span> Download it!</a>";
+            echo "<a class=\"btn btn-success\" style=\"margin-left:10px;\" href=\"".$data[1]["ocs"]["data"]["content"][0]["downloadlink1"]."\"><span class=\"glyphicon glyphicon-download-alt\"></span> Download it!</a>";
             ?>
         </div>
         <br>

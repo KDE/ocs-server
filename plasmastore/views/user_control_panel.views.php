@@ -159,7 +159,7 @@
 
                                 <div class=\"row post-editapp-box".$content["id"]."\" style=\"display:none\">
                                     <div class=\"col-md-12\">
-                                        <form class=\"form-horizontal\" accept-charset=\"UTF-8\" action=\"/plasmastore/userpanel/edit/".$content["id"]."\" method=\"post\">
+                                        <form class=\"form-horizontal\" enctype=\"multipart/form-data\" action=\"/plasmastore/userpanel/edit/".$content["id"]."\" method=\"post\">
                                             <div class=\"form-group\">
                                                 <label for=\"inputTitle\" class=\"col-sm-2 control-label\">Title</label>
                                                 <div class=\"col-sm-10\">

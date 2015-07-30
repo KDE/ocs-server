@@ -28,7 +28,7 @@ class UserPanelModel extends EModel {
 		$check = $client->post("v1/content/add",$postdata);
 		 //print_r($_FILES);
 		 //print_r($_FILES['localfile']['tmp_name']);
-
+        $id = "";
 		if($check["ocs"]["meta"]["statuscode"]=="100"){
 			
 			$id = $check["ocs"]["data"]["content"][0]["id"];
@@ -52,16 +52,16 @@ class UserPanelModel extends EModel {
                         $result = $client->post("v1/content/uploadpreview/$id/3");
                         if($result["ocs"]["meta"]["statuscode"]=="100"){
                             //cosa fare se va a buon fine
-                            header("Location: /plasmastore/app_description/show/$id/$name");
+                            
                         } 
                     }
                 }
-            } else {ELog::pd($result);}
-		}
+            } //else {ELog::pd($result);}
+		} header("Location: /plasmastore/app_description/show/$id/$name");
 	}
 
     public function edit ($args) {
-        $id=$args;
+        $id= $args;
         $name = EHeaderDataParser::secure_post("inputTitle");
         $type = EHeaderDataParser::secure_post("type");
         $downloadname1 = EHeaderDataParser::secure_post("inputDownloadName");
@@ -89,8 +89,32 @@ class UserPanelModel extends EModel {
     $check = $client->post("v1/content/edit/$id",$postdata);
 
     if($check["ocs"]["meta"]["statuscode"]=="100"){
-        
-        //$id = $check["ocs"]["data"]["content"]["id"];
+            $client = new OCSClient(EConfig::$data["ocs"]["host"]);
+            $client->set_auth_info(EHeaderDataParser::get_cookie("login"),EHeaderDataParser::get_cookie("password"));
+            if(!empty($_FILES['inputDownloadFile'])){
+                $client->set_upload_file($_FILES['inputDownloadFile']['tmp_name']);
+                $result = $client->post("v1/content/uploaddownload/$id");
+            }
+            if(!empty($_FILES['inputScreenshot1'])){
+                $client->set_upload_file($_FILES['inputScreenshot1']['tmp_name']);
+                $result = $client->post("v1/content/uploadpreview/$id/1");
+                ELog::pd($result);
+            
+                if(!empty($_FILES['inputScreenshot2'])){
+                    $client->set_upload_file($_FILES['inputScreenshot2']['tmp_name']);
+                    $result = $client->post("v1/content/uploadpreview/$id/2");
+                
+                    if(!empty($_FILES['inputScreenshot3'])){
+                        $client->set_upload_file($_FILES['inputScreenshot3']['tmp_name']);
+                        $result = $client->post("v1/content/uploadpreview/$id/3");
+
+                        if($result["ocs"]["meta"]["statuscode"]=="100"){
+                            //ELog::pd($check); //cosa fare se va a buon fine
+                            
+                        } 
+                    }
+                }
+            } //else {ELog::pd($result);}
         //cosa fare se va a buon fine
         header("Location: /plasmastore/app_description/show/$id");
     }
