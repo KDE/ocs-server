@@ -29,6 +29,9 @@ class EModel {
 	private $fields = array();
 	private $noquery = false;
 	
+	private $conditions = "";
+	private $is_first_contidion = true;
+	
 	public function __construct($tbl=""){
 		if(!empty($tbl)){
 			$this->table = $tbl;
@@ -180,7 +183,12 @@ class EModel {
 	 */
 	public function find($what=" * ", $where="") {
 		if(!$this->is_ready_test()) { return; }
-		$q = "SELECT $what FROM ".$this->table." $where";
+		
+		//build the query, if any condition is present, attach right conditions
+		$q = "SELECT $what FROM ".$this->table;
+		if(!empty($this->conditions)){ $q .= ' '.$this->conditions.' '; }
+		$q .= " $where";
+		
 		$r = EDatabase::q($q);
 		while($arr = $r->fetch_assoc()){
 			$result[] = $arr;
@@ -194,6 +202,15 @@ class EModel {
 			}
 		} else {
 			echo $q;
+		}
+	}
+	
+	public function add_condition($c){
+		if($this->is_first_contidion){
+			$this->conditions .= " WHERE $c ";
+			$this->is_first_contidion = false;
+		} else {
+			$this->conditions .= " AND $c ";
 		}
 	}
 	

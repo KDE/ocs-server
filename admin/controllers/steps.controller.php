@@ -155,7 +155,7 @@ class StepsController extends EController
 		}
 		
 		if(empty($location)){
-			$location = 'http://'.ELoader::$root_path.'/v1';
+			$location = 'http://'.ELoader::$root_path.'/v1/';
 		}
 		
 		if($ssl=='yes'){

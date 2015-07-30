@@ -65,7 +65,7 @@ class OCSContentLister extends OCSLister {
 		
 		if(empty($page)){ $page=1; }
 		//setting dynamic page size
-		$page = ($page-1)*($pagesize);
+		$page = abs(($page-1)*($pagesize));
 		switch($sortmode){
 			case "new":
 				$where = "ORDER BY id DESC LIMIT $page,$pagesize";
@@ -84,30 +84,36 @@ class OCSContentLister extends OCSLister {
 				break;
 		}
 		
-		if(!empty($user)){
-			$whereuser = " AND personid = '$user' ";
-		} else {
-			$whereuser = "";
-		}
-		
-		if(!empty($category)){
-			$wherecategory = " AND type = '$category' ";
-		} else {
-			$wherecategory = "";
-		}
-		
 		//TODO: move this into parent class constructor
 		// or better: inspect why datatable isn't initialized by constructor
 		if(is_null($this->datatable)){
 			$this->datatable = new EModel("ocs_content");
 		}
 		
-		$r = $this->datatable->find("id,owner,personid,description,changelog,preview1,votes,score,name,type,downloadname1,downloadlink1,version,summary,license","WHERE name LIKE '%$searchstr%' $whereuser $wherecategory $where");
+		if(!empty($searchstr)){
+			$this->datatable->add_condition("name LIKE '%$searchstr%'");
+		}
 		
-		// TODO: remove me because I'm wrong
+		if(!empty($user)){
+			$this->datatable->add_condition("personid = '$user'");
+		}
+		
+		if(!empty($category)){
+			$this->datatable->add_condition("type = '$category'");
+		}
+		
+		$r = $this->datatable->find("id,owner,personid,description,changelog,preview1,votes,score,name,type,downloadname1,downloadlink1,version,summary,license","$where");
+		
+		// adjusting correct keys
 		for($i=0;$i<count($r);$i++){
-			$r[$i]['previewpic1'] = $r[$i]['preview1'];
-			$r[$i]['preview1'] = '';
+			if(isset($r[$i]['preview1']) and !empty($r[$i]['preview1'])){
+				$r[$i]['previewpic1'] = $r[$i]['preview1'];
+				$r[$i]['preview1'] = '';
+			}
+			if(isset($r[$i]['type']) and !empty($r[$i]['type'])){
+				$r[$i]['typeid'] = $r[$i]['type'];
+				unset($r[$i]['type']);
+			}
 		}
 		
 		$this->totalitems = EDatabase::sq("SELECT COUNT(*) FROM ocs_content WHERE name LIKE '%$searchstr%' $whereuser $wherecategory");

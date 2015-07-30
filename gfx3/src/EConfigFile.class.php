@@ -105,7 +105,7 @@ class EConfigFile {
 			//memory deletion
 			unset($this->data[$var]);
 			//rebuilding array indexes
-			$this->data = array_values($this->data);
+			//$this->data = array_values($this->data);
 		}
 	}
 }

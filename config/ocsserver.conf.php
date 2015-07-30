@@ -9,4 +9,4 @@ name|Localhost OCS Server
 termsofuse|
 register|
 serverid|ocs_localhost
-location|http://localhost/v1
+location|http://localhost/v1/
