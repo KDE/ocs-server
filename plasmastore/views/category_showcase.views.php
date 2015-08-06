@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="/plasmastore/css/dashboard.css">
     <link rel="stylesheet" href="/plasmastore/css/logo.css">
     <link rel="stylesheet" href="/plasmastore/css/app.css">
-        <link rel="stylesheet" href="/plasmastore/css/pagination.css">
+
     <!--<link rel="stylesheet" href="css/responsive_preview.css">-->
   </head>
 
@@ -61,7 +61,7 @@
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="/plasmastore/js/jquery.js"></script>
     <script src="/plasmastore/js/bootstrap.js"></script>
-    <script src="/plasmastore/js/sidebuttons.js"></script>
+    
     <script src="/plasmastore/js/uploadbox.js"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <script src="/plasmastore/js/ie10-viewport-bug-workaround.js"></script>

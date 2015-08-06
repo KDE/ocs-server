@@ -1,10 +1,5 @@
 <?php
-class HomeController extends EController {
-	public function index ($args) {
-		$cat = new RetrieveModel();
-		EStructure::view("category_showcase", $cat->getCategories(), $cat->getData());
-
-	}
+class CategoryController extends EController {
 	public function category ($args) {
 		$cat = new RetrieveModel();
 		EStructure::view("category_showcase", $cat->getCategories(), $cat->getCategoryData($args[0]));

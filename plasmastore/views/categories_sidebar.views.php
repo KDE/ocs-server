@@ -4,7 +4,7 @@
           <ul class="nav nav-sidebar sidebuttons">
             <?php
                 foreach($data[0]["ocs"]["data"]["category"] as $category){
-                    echo "<li><a href=\"\">".$category["name"]."</a></li>";
+                    echo "<li><a href=\"/plasmastore/home/category/".$category["id"]."\">".$category["name"]."</a></li>";
                 }
             ?>
           </ul>
