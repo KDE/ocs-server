@@ -9,7 +9,7 @@ class UserPanelModel extends EModel {
         $summary = EHeaderDataParser::secure_post("inputSummary");
         $version = EHeaderDataParser::secure_post("inputVersion");
         $changelog = EHeaderDataParser::secure_post("inputChangelog");
-        $personid = EHeaderDataParser::get_cookie("login");
+        $personid = OCSUser::login();
 
         $postdata = array(
             "name" => $name,
@@ -24,7 +24,7 @@ class UserPanelModel extends EModel {
             );
 
 		$client = new OCSClient(EConfig::$data["ocs"]["host"]);
-		$client->set_auth_info(EHeaderDataParser::get_cookie("login"),EHeaderDataParser::get_cookie("password"));
+		$client->set_auth_info($personid,EHeaderDataParser::get_cookie("password"));
 		$check = $client->post("v1/content/add",$postdata);
 		 //print_r($_FILES);
 		 //print_r($_FILES['localfile']['tmp_name']);
@@ -34,7 +34,7 @@ class UserPanelModel extends EModel {
 			$id = $check["ocs"]["data"]["content"][0]["id"];
 			
 			$client = new OCSClient(EConfig::$data["ocs"]["host"]);
-			$client->set_auth_info(EHeaderDataParser::get_cookie("login"),EHeaderDataParser::get_cookie("password"));
+			$client->set_auth_info($personid,EHeaderDataParser::get_cookie("password"));
             if(!empty($_FILES['inputDownloadFile'])){
                 $client->set_upload_file($_FILES['inputDownloadFile']['tmp_name']);
                 $result = $client->post("v1/content/uploaddownload/$id");
@@ -70,7 +70,7 @@ class UserPanelModel extends EModel {
         $summary = EHeaderDataParser::secure_post("inputSummary");
         $version = EHeaderDataParser::secure_post("inputVersion");
         $changelog = EHeaderDataParser::secure_post("inputChangelog");
-        $personid = EHeaderDataParser::get_cookie("login");
+        $personid = OCSUser::login();
 
         $postdata = array(
             "name" => $name,
@@ -85,12 +85,12 @@ class UserPanelModel extends EModel {
             );
 
     $client = new OCSClient(EConfig::$data["ocs"]["host"]);
-    $client->set_auth_info(EHeaderDataParser::get_cookie("login"),EHeaderDataParser::get_cookie("password"));
+    $client->set_auth_info($personid,EHeaderDataParser::get_cookie("password"));
     $check = $client->post("v1/content/edit/$id",$postdata);
 
     if($check["ocs"]["meta"]["statuscode"]=="100"){
             $client = new OCSClient(EConfig::$data["ocs"]["host"]);
-            $client->set_auth_info(EHeaderDataParser::get_cookie("login"),EHeaderDataParser::get_cookie("password"));
+            $client->set_auth_info($personid,EHeaderDataParser::get_cookie("password"));
             if(!empty($_FILES['inputDownloadFile'])){
                 $client->set_upload_file($_FILES['inputDownloadFile']['tmp_name']);
                 $result = $client->post("v1/content/uploaddownload/$id");
