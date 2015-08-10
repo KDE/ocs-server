@@ -24,13 +24,13 @@ a:active {
     line-height:30px;
     background-color:#eeeeee;
     height:300px;
-    width:200px;
+    width:15%;
+    min-width:100px;
     float:left;
     padding:5px;
+    margin: 10px;
 }
 #section {
-    width:1000px;
-    float:left;
     padding:10px;
 }
 #footer {
