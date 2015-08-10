@@ -6,5 +6,4 @@ rewrite|yes
 users|no
 mvc|yes
 errormode|normal
-enabled|protected
-password|esempio
+enabled|yes

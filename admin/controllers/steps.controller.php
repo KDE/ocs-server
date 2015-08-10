@@ -231,10 +231,13 @@ class StepsController extends EController
 			}
 			EStructure::view('wizard/step3save');
 		} else {
-			$password = EConfig::$data['generic']['password'];
-			
 			$data = array();
-			$data['pass'] = $password;
+			
+			if(isset(EConfig::$data['generic']['password'])){
+				$data['pass'] = EConfig::$data['generic']['password'];
+			} else {
+				$data['pass'] = '';
+			}
 			
 			EStructure::view('wizard/step3', $data);
 		}
