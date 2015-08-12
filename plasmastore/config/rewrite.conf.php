@@ -1,3 +1,3 @@
 <?php die(); ?>
 /publicprofile|/publicprofile/index|normal
-/publicprofile/addfriend|/publicprofile/addfriend|exact
+/publicprofile/addfriend|/publicprofile/addfriend|normal

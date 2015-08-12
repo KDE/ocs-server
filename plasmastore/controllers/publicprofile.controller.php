@@ -9,10 +9,11 @@ class PublicProfileController extends EController {
 			EStructure::view("public_profile", $dat->getUserInfo($args[0]), $dat->getUserData(1), $friend->listFriends($self->login()));
 		}
 	}
-	public function addFriend ($args){
-	$friend = new FriendModel();
+	
+	public function addfriend ($args){
+		$friend = new FriendModel();
 		if (OCSUser::is_logged()) {
-			$friend->sendRequest($args[0]);
+			var_dump($friend->sendRequest($args[0]));
 		}
 	}
 }
