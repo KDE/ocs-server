@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="/plasmastore/css/dashboard.css">
     <link rel="stylesheet" href="/plasmastore/css/logo.css">
     <link rel="stylesheet" href="/plasmastore/css/app.css">
+    <link rel="stylesheet" href="/plasmastore/jRating/jquery/jRating.jquery.css">
     <!--<link rel="stylesheet" href="css/responsive_preview.css">-->
   </head>
 
@@ -160,14 +161,16 @@
                             <div class=\"row\">
                             <div class=\"col-md-12\">
                             <b>".$comment["subject"]."</b>
-                            <p>".$comment["text"]."
-                            <p>left by".$comment["user"]."
+                            <p>".$comment["text"]."</p>
+                            <p>left by <a href=/plasmastore/publicprofile/".$comment["user"].">".$comment["user"]."</a></p>
                             <span class=\"pull-right\">".$comment["date"]."</span>
+                            </div>
+                            </div>
                             <hr>";
                         }
                     } else {echo "no comments found";}
                     ?>
-                    <div class="row">
+                    <!--div class="row">
                         <div class="col-md-12">
                             <span class="glyphicon glyphicon-star"></span>
                             <span class="glyphicon glyphicon-star"></span>
@@ -194,7 +197,7 @@
                             <span class="pull-right">10 days ago</span>
                             <p>bbb</p>
                         </div>
-                    </div>
+                    </div-->
                 </div> <!-- .well -->
          </div>
 
@@ -218,6 +221,7 @@
     <script src="/plasmastore/js/bootstrap.js"></script>
     <script src="/plasmastore/js/sidebuttons.js"></script>
     <script src="/plasmastore/js/reviewbox.js"></script>
+    <script src="/plasmastore/jRating/jquery/jRating.jquery.js"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <script src="/plasmastore/js/ie10-viewport-bug-workaround.js"></script>
 </body>

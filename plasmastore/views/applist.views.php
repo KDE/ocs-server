@@ -11,7 +11,7 @@ if(isset($data[0]["ocs"]["data"])){
 			<div class=\"col-md-5\">
 				<h3>".$content["name"]."</h3>";
 				if(OCSUser::is_logged()) {
-					echo "<a href=/plasmastore/publicprofile/".OCSUser::login()."><h4>".$content["personid"]."</h4></a>";
+					echo "<a href=/plasmastore/publicprofile/".$content["personid"]."><h4>".$content["personid"]."</h4></a>";
 				}
 				else{
 					echo "<h4>".$content["personid"]."</h4>";
