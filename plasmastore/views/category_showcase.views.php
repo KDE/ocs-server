@@ -19,7 +19,9 @@
 <body>
 <?php 
     EStructure::view("topbar");
-    EStructure::view("categories_sidebar", $data[0]);
+    //EStructure::view("categories_sidebar", $data[0]);
+    $categoriesTabs = new CategoriesTabs();
+    $categoriesTabs->CategoryFilter(); 
 ?>
 
 <div class="col-md-7 col-md-offset-2 col-sm-offset-3">
